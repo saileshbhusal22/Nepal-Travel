@@ -1,4 +1,3 @@
-
 <!-- 1. Nature & Adventure -->
 <section id="nature" class="container" style="padding-top: 60px;">
     <h2 class="section-title" style="margin-bottom: 30px;">Nature & <span class="script-font" style="font-size:40px; color:var(--primary-yellow);">Adventure</span></h2>
@@ -46,7 +45,3 @@
         </div>
     </div>
 </section>
-
-
-
-<link rel="stylesheet" href="assets/css/styles.css"> 
