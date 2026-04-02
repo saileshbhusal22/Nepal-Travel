@@ -1,9 +1,9 @@
-<?php include 'includes/header.php'; ?>
+<?php include '../includes/header.php'; ?>
 
 <!-- Sanskar Part -->
 <!-- Travel Style Hero Section -->
 <section class="malaysia-hero">
-    <div class="mh-bg" style="background-image: url('images/pokhara_lake.png');"></div>
+    <div class="mh-bg" style="background-image: url('../images/pokhara_lake.png');"></div>
     <div class="mh-overlay"></div>
     
     <!-- Left/Right Nav Arrows -->
@@ -131,4 +131,4 @@
     </div>
 </section>
 
-<?php include 'includes/footer.php'; ?>
+<?php include '../includes/footer.php'; ?>
