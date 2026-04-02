@@ -2,7 +2,7 @@
 session_start();
 
 require __DIR__ . '/../vendor/autoload.php';
-include __DIR__ . '/../db.php';
+require_once __DIR__ . '/../config/db.php';
 
 $client = new Google_Client([
     'client_id' => '1045079519630-reec2mcusabp0hg13bufjrmnpvm2a0jb.apps.googleusercontent.com'

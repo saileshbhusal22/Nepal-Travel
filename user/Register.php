@@ -3,7 +3,7 @@ session_start();
 
 require __DIR__ . '/../vendor/autoload.php';
 include 'mail.php';
-include __DIR__ . '/../db.php';
+require_once __DIR__ . '/../config/db.php';
 
 $message = "";
 $message_type = "";
