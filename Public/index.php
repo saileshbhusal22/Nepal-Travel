@@ -1,5 +1,5 @@
 
-
+<!-- 1. bijay part-->
 <?php 
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
@@ -49,6 +49,8 @@ include __DIR__ . '/../includes/header.php';
     </div>
 </section>
 
+
+<!-- 1. bijay part-->
 <!-- 1. Nature & Adventure -->
 <section id="nature" class="container" style="padding-top: 60px;">
     <h2 class="section-title" style="margin-bottom: 30px;">Nature & <span class="script-font" style="font-size:40px; color:var(--primary-yellow);">Adventure</span></h2>
