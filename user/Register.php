@@ -163,7 +163,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 </div>
 </div>
 
-<script src="assets/register.js"></script>
+<script src="../assets/js/register.js"></script>
 <script src="https://accounts.google.com/gsi/client?hl=en"  async defer></script>
 <script>
   function handleGoogleResponse(response) {
@@ -175,7 +175,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
     xhr.onload = function () {
       if (xhr.status === 200 && xhr.responseText.trim() === "ok") {
-        window.location.href = "../index.php";
+        window.location.href = "../Public/index.php";
       } else {
         alert("Google login failed: " + xhr.responseText);
       }
@@ -233,7 +233,7 @@ window.onload = function () {
 
         xhr.onload = function () {
           if (xhr.status === 200 && xhr.responseText.trim() === "ok") {
-            window.location.href = "../index.php";
+            window.location.href = "../Public/index.php"
           } else {
             alert("Facebook login failed: " + xhr.responseText);
           }
