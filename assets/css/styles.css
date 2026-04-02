@@ -1,0 +1,143 @@
+/* ===== RESET ===== */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* ===== HERO SECTION ===== */
+.Nepal-hero {
+  position: relative;
+  height: 100vh;
+  width: 100%;
+  overflow: hidden;
+  font-family: "Segoe UI", sans-serif;
+}
+
+/* Background Image */
+.mh-bg {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  z-index: 1;
+}
+
+/* Dark Overlay */
+.mh-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  z-index: 2;
+}
+
+/* ===== HERO CONTENT CENTER ===== */
+.mh-content {
+  position: relative;
+  z-index: 5;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  text-align: center;
+}
+
+.mh-subtitle {
+  letter-spacing: 3px;
+  font-size: 18px;
+  margin-bottom: 15px;
+}
+
+.mh-title {
+  font-size: 110px;
+  font-weight: 800;
+  margin-bottom: 30px;
+}
+
+/* Button */
+.mh-btn {
+  background: #f4a825;
+  padding: 14px 35px;
+  color: #000;
+  text-decoration: none;
+  font-weight: 700;
+  border-radius: 6px;
+  transition: 0.3s ease;
+}
+
+.mh-btn:hover {
+  background: #e09512;
+}
+
+/* ===== ARROWS ===== */
+.mh-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  color: white;
+  width: 45px;
+  height: 45px;
+  border-radius: 50%;
+  cursor: pointer;
+  z-index: 6;
+}
+
+.mh-left {
+  left: 25px;
+}
+
+.mh-right {
+  right: 25px;
+}
+
+/* ===== BOTTOM CATEGORY BAR ===== */
+.mh-bottom-nav {
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+  padding: 25px 0;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.9), transparent);
+  z-index: 6;
+}
+
+.mh-cat-list {
+  list-style: none;
+  display: flex;
+  justify-content: center;
+  gap: 40px;
+  flex-wrap: wrap;
+}
+
+.mh-cat-link {
+  color: white;
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  transition: 0.3s;
+}
+
+.mh-cat-link:hover {
+  color: #f4a825;
+}
+
+/* Active category underline */
+.mh-cat-item.active .mh-cat-link {
+  border-bottom: 3px solid #f4a825;
+  padding-bottom: 6px;
+}
+
+/* ===== FORCE HEADER NAV TEXT WHITE ===== */
+header a,
+nav a {
+  color: white !important;
+}
+
+header a:hover,
+nav a:hover {
+  color: #f4a825 !important;
+}
