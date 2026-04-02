@@ -38,23 +38,27 @@
                 </div>
                 <div class="utility-right" style="display: flex; gap: 25px; align-items: center;">
                     <a href="saved.php" style="color: #fff; text-decoration: none; display: flex; align-items: center; gap: 6px;">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#f5a623" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.7 0l-1.1 1-1.1-1a5.5 5.5 0 0 0-7.8 7.8l1 1 7.9 8 7.8-7.9 1-1a5.5 5.5 0 0 0 0-7.8z"></path></svg>
                         SAVED
                     </a>
                     <a href="#" style="color: #fff; text-decoration: none; display: flex; align-items: center; gap: 6px;">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#f5a623" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
                         SEARCH
                     </a>
-                    <a href="#" style="color: #fff; text-decoration: none; display: flex; align-items: center; gap: 6px;">
-                        LOGIN
+                    <a href="/Nepal-Travel/user/login.php" style="color: #fff; text-decoration: none; display: flex; align-items: center; gap: 6px;">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#f5a623" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
+                        Login
                     </a>
-                    <a href="#" style="color: #fff; text-decoration: none; display: flex; align-items: center; gap: 6px;">
-                        SIGN UP
+                    <a href="/Nepal-Travel/user/Register.php" style="color: #fff; text-decoration: none; display: flex; align-items: center; gap: 6px;">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#f5a623" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                        Signup
                     </a>
                 </div>
             </div>
         </div>
 
         <div class="main-nav-bar" style="background: <?php echo $nav_bg; ?>; padding: 25px 0;">
-            <div class="container" style="display: flex; justify-content: space-between; align-items: center; max-width: 1400px; padding: 0 40px;">
+            <div class="container" style="display: flex; justify-content: space-between; align-items: center; max-width:85%; padding: 0 40px;">
                 <div class="logo-wrapper">
                     <a href="index.php" style="display: flex; flex-direction: column; text-decoration: none; line-height: 1; margin-top: -5px;">
                         <div style="display: flex; align-items: baseline; justify-content: center; margin-left: 20px;">
@@ -83,3 +87,4 @@
             </div>
         </div>
     </header>
+<!-- Done by Sanskar -->

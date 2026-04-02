@@ -1,4 +1,5 @@
-    <footer class="footer">
+<!-- Done by developer Ramal -->
+   <footer class="footer">
         <div class="container">
             <div class="footer-grid">
                 <div class="footer-col">
