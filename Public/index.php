@@ -2,7 +2,7 @@
 
 <!-- Sanskar Part -->
 <!-- Travel Style Hero Section -->
-<section class="Nepal-hero">
+<section class="malaysia-hero">
     <div class="mh-bg" style="background-image: url('../images/pokhara_lake.png');"></div>
     <div class="mh-overlay"></div>
     
