@@ -28,6 +28,16 @@
         $text_main = $is_home ? '#ffffff' : '#1b3a5a';
         $text_shadow = $is_home ? '0 4px 6px rgba(0,0,0,0.6)' : 'none';
         $script_color = $is_home ? '#f5a623' : '#285da1';
+        
+        // ---- Profile image resolution ----
+        $profileImageUrl = null;
+        if (!empty($_SESSION['profile_image']) && $_SESSION['profile_image'] !== 'default.png') {
+            $absPath = rtrim($_SERVER['DOCUMENT_ROOT'], '/') . '/Nepal-Travel/' . ltrim($_SESSION['profile_image'], '/');
+            if (file_exists($absPath)) {
+                $profileImageUrl = '/Nepal-Travel/' . ltrim($_SESSION['profile_image'], '/') . '?t=' . time();
+            }
+        }
+        $initials = strtoupper(substr($_SESSION['user_name'] ?? 'U', 0, 1));
     ?>
     <header class="site-header" style="<?php echo $header_style; ?>">
         <!-- Top Utility Bar matching reference -->
@@ -45,13 +55,28 @@
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#f5a623" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
                         SEARCH
                     </a>
-                    <a href="/Nepal-Travel/user/login.php" style="color: #fff; text-decoration: none; display: flex; align-items: center; gap: 6px;">
-    Login
-</a>
-                    <a href="/Nepal-Travel/user/Register.php" style="color: #fff; text-decoration: none; display: flex; align-items: center; gap: 6px;">
-                        
-                        Signup
-                    </a>
+                    
+                    <!-- ✅ USER SECTION START -->
+                    <?php if (isset($_SESSION['user_id'])): ?>
+                        <!-- Avatar + greeting → dashboard -->
+                        <a href="/Nepal-Travel/user/dashboard.php" style="color: #fff; text-decoration: none; display: flex; align-items: center; gap: 8px;">
+                            <?php if ($profileImageUrl): ?>
+                                <img src="<?php echo $profileImageUrl; ?>"
+                                     style="width: 28px; height: 28px; border-radius: 50%; border: 2px solid #f5a623; object-fit: cover;">
+                            <?php else: ?>
+                                <span style="width: 28px; height: 28px; border-radius: 50%; border: 2px solid #f5a623; background: linear-gradient(135deg, #1b3a5a, #285da1); display: inline-flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: #fff;">
+                                    <?php echo $initials; ?>
+                                </span>
+                            <?php endif; ?>
+                            <span>Hi, <?php echo htmlspecialchars($_SESSION['user_name']); ?></span>
+                        </a>
+                        <a href="/Nepal-Travel/user/logout.php" style="color: #fff; text-decoration: none; display: flex; align-items: center; gap: 6px;">Logout</a>
+                    <?php else: ?>
+                        <a href="/Nepal-Travel/user/login.php" style="color: #fff; text-decoration: none; display: flex; align-items: center; gap: 6px;">Login</a>
+                        <a href="/Nepal-Travel/user/Register.php" style="color: #fff; text-decoration: none; display: flex; align-items: center; gap: 6px;">Signup</a>
+                    <?php endif; ?>
+                    <!-- ✅ USER SECTION END -->
+                    
                 </div>
             </div>
         </div>
@@ -77,7 +102,7 @@
                         .nav-links a:hover { color: <?php echo $script_color; ?>; }
                         .nav-links a.active::after { content: ''; position: absolute; bottom: -5px; left: 0; width: 100%; height: 2px; background: <?php echo $text_main; ?>; }
                     </style>
-                    <a href="about.php" class="<?php echo $current_page == 'about.php' ? 'active' : ''; ?>">ABOUT NEPAL</a>
+                    <a href="about-nepal.php" class="<?php echo $current_page == 'about-nepal.php' ? 'active' : ''; ?>">ABOUT NEPAL</a>
                     <a href="experience.php" class="<?php echo $current_page == 'experience.php' ? 'active' : ''; ?>">EXPERIENCE</a>
                     <a href="travel-ideas.php" class="<?php echo $current_page == 'travel-ideas.php' ? 'active' : ''; ?>">TRAVEL IDEAS</a>
                     <a href="deals-and-packages.php" class="<?php echo $current_page == 'deals-and-packages.php' ? 'active' : ''; ?>">DEALS & PACKAGES</a>
