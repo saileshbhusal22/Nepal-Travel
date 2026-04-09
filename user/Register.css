@@ -122,15 +122,15 @@ body {
 /* INPUT FIELDS */
 form input {
   width: 100%;
-  padding: 12px;
-  margin-bottom: 10px;
+  padding: 16px 18px; /* bigger height and horizontal padding */
+  margin-bottom: 15px; /* slightly more spacing */
+  font-size: 16px; /* bigger text */
   border: 1px solid rgba(255, 255, 255, 0.6);
-  border-radius: 6px;
+  border-radius: 8px; /* slightly more rounded */
   background: rgba(255, 255, 255, 0.3);
   color: #000;
   outline: none;
 }
-
 form input::placeholder {
   color: #555;
 }
@@ -143,21 +143,24 @@ form input::placeholder {
 }
 
 /* BUTTON */
+/* MATCH BUTTON TO INPUT FIELDS */
 .create-btn {
-  width: 100%;
-  padding: 12px;
+  width: 100%; /* full width of .form-box */
+  height: 52px; /* same as input height: 16px padding + text */
+  padding: 0; /* no extra padding, height handles it */
+  font-size: 16px;
+  border-radius: 8px; /* same as inputs */
   background: #0e4d1d;
   color: white;
   border: none;
-  border-radius: 6px;
   cursor: pointer;
-  font-weight: bold;
+  box-sizing: border-box; /* includes border/padding in width/height */
+  display: block; /* ensures full width in flex/inline context */
 }
 
 .create-btn:hover {
   background: #0a3a15;
 }
-
 /* RIGHT SIDE (EMPTY NOW, IMAGE IS ON BODY) */
 .right-panel {
   width: 100%;

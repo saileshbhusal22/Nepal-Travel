@@ -1,3 +1,36 @@
+<?php
+session_start();
+require_once __DIR__ . '/../config/db.php';
+
+$message = "";
+
+if ($_SERVER["REQUEST_METHOD"] === "POST") {
+    $login_input = trim($_POST['login_input'] ?? '');
+    $password = $_POST['password'] ?? '';
+
+    if (empty($login_input) || empty($password)) {
+        $message = "Please fill in all fields.";
+    } else {
+        $stmt = $conn->prepare("SELECT id, full_name, password, email_verified FROM users WHERE email = ? OR username = ?");
+        $stmt->bind_param("ss", $login_input, $login_input);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $user = $result->fetch_assoc();
+        $stmt->close();
+
+        if (!$user || !password_verify($password, $user['password'])) {
+            $message = "Invalid email/username or password.";
+        } elseif ($user['email_verified'] != 1) {
+            $message = "Please verify your email before logging in. Check your inbox.";
+        } else {
+            $_SESSION['user_id'] = $user['id'];
+            $_SESSION['user_name'] = $user['full_name'];
+            header("Location: ../Public/index.php");
+            exit;
+        }
+    }
+}
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -13,7 +46,6 @@
             display: flex;
         }
 
-        /* LEFT SIDE */
         .login-left {
             width: 530px;
             min-width: 530px;
@@ -93,9 +125,7 @@
             margin-top: -0.5rem;
         }
 
-        .forgot-password:hover {
-            color: #fff;
-        }
+        .forgot-password:hover { color: #fff; }
 
         .btn-login {
             width: 100%;
@@ -110,20 +140,17 @@
             letter-spacing: 0.5px;
         }
 
-        .btn-login:hover {
-            background: #245c27;
-        }
+        .btn-login:hover { background: #245c27; }
 
         .message {
-            color: #ff6b6b;
             font-size: 13px;
             margin-bottom: 1rem;
-            background: rgba(255,0,0,0.1);
             padding: 8px 12px;
             border-radius: 4px;
+            background: rgba(255,0,0,0.1);
+            color: #ff6b6b;
         }
 
-        /* RIGHT SIDE */
         .login-right {
             flex: 1;
             background-image: url('../images/pokhara_lake.png');
@@ -154,19 +181,18 @@
 </head>
 <body>
 
-<!-- LEFT: Form -->
 <div class="login-left">
     <div class="form-content">
         <h2>Login</h2>
         <p class="subtitle">Don't have an account? <a href="/Nepal-Travel/user/register.php">Sign Up</a></p>
 
-        <?php if (isset($_GET['error'])): ?>
-            <p class="message">Invalid email or password</p>
+        <?php if (!empty($message)): ?>
+            <p class="message"><?php echo htmlspecialchars($message); ?></p>
         <?php endif; ?>
 
-        <form action="login_process.php" method="POST">
+        <form action="" method="POST">
             <div class="form-group">
-                <input type="email" name="email" placeholder="Email" required>
+                <input type="text" name="login_input" placeholder="Email or Username" required>
             </div>
             <div class="form-group">
                 <input type="password" name="password" placeholder="Password" required>
@@ -177,10 +203,7 @@
     </div>
 </div>
 
-<!-- RIGHT: Image with text -->
-<div class="login-right">
-   
-</div>
+<div class="login-right"></div>
 
 </body>
 </html>
