@@ -1,9 +1,5 @@
 <?php
-<<<<<<< HEAD
-require_once __DIR__ . '/../config/db.php';
-=======
 session_start();
->>>>>>> aac85d9bbbc6bf1c950d58f48bc1736fc6c35d1e
 
 require_once __DIR__ . '/../config/db.php';
 if (isset($_GET['token'])) {
