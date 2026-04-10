@@ -1,3 +1,8 @@
+<<<<<<< HEAD
+<<<<<<< HEAD
+=======
+/* Container */
+=======
 /* Sanskar */
 :root {
   --primary-blue: #1b3a5a;
@@ -34,6 +39,7 @@ body {
   font-weight: 400;
 }
 
+>>>>>>> main
 .container {
   width: 100%;
   max-width: 1200px;
@@ -1125,4 +1131,8 @@ footer {
   border-right: 12px solid transparent;
   border-top: 12px solid var(--primary-yellow);
 }
+<<<<<<< HEAD
+>>>>>>> c40da9012c9430c95126bcf09c768ac7e9d68298
+=======
 /* style end  */
+>>>>>>> main
