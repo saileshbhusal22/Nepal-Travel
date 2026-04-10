@@ -163,7 +163,7 @@
 
             <!-- Navigation Links -->
             <nav class="nav-links" style="display: flex; gap: 40px; align-items: center; margin-left: auto;">
-                <a href="about-nepal.php" class="<?php echo $current_page == 'about-nepal.php' ? 'active' : ''; ?>">ABOUT NEPAL</a>
+                <a href="about.php" class="<?php echo $current_page == 'about.php' ? 'active' : ''; ?>">ABOUT NEPAL</a>
                 <a href="experience.php" class="<?php echo $current_page == 'experience.php' ? 'active' : ''; ?>">EXPERIENCE</a>
                 <a href="travel-ideas.php" class="<?php echo $current_page == 'travel-ideas.php' ? 'active' : ''; ?>">TRAVEL IDEAS</a>
                 <a href="deals-and-packages.php" class="<?php echo $current_page == 'deals-and-packages.php' ? 'active' : ''; ?>">DEALS & PACKAGES</a>
