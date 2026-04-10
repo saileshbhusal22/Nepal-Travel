@@ -1,0 +1,270 @@
+html,
+body {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  font-family: Arial, sans-serif;
+  background-image: url("mountain.jpg");
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
+}
+
+.container {
+  display: flex;
+  height: 100%;
+  width: 100%;
+  background: transparent;
+}
+
+/* MAIN CONTAINER */
+.container {
+  display: flex;
+  height: 100vh;
+}
+
+/* LEFT SIDE (GLASS EFFECT) */
+.left-panel {
+  width: 35%;
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(15px);
+  -webkit-backdrop-filter: blur(15px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* FORM BOX */
+.form-box {
+  width: 300px;
+  color: #000;
+}
+
+/* TITLE */
+.form-box h1 {
+  color: #0e4d1d;
+  font-size: 40px;
+  margin-bottom: 10px;
+}
+
+/* LOGIN TEXT */
+.login-text {
+  font-size: 14px;
+  margin-bottom: 20px;
+}
+
+.login-text a {
+  color: #0e4d1d;
+  font-weight: bold;
+  text-decoration: none;
+}
+
+/* FORM BOX */
+.form-box {
+  width: 320px;
+  color: #000;
+}
+
+.social-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 20px;
+  width: 100%;
+}
+
+#googleButtonContainer {
+  width: 100%;
+}
+
+#googleButtonContainer > div {
+  width: 100% !important;
+}
+
+#googleButtonContainer iframe {
+  width: 100% !important;
+}
+
+.social-btn {
+  width: 300px;
+  height: 40px;
+  padding: 0 16px;
+  border-radius: 4px;
+  border: 1px solid #dadce0;
+  background: blueviolet;
+  color: #3c4043;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  text-align: center;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.facebook {
+  background: rgba(59, 89, 152, 0.8);
+  color: white;
+  border: 1px solid #dadce0;
+}
+
+/* DIVIDER */
+.divider {
+  text-align: center;
+  margin: 20px 0;
+  color: #555;
+}
+
+/* INPUT FIELDS */
+form input {
+  width: 100%;
+  padding: 16px 18px; /* bigger height and horizontal padding */
+  margin-bottom: 15px; /* slightly more spacing */
+  font-size: 16px; /* bigger text */
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  border-radius: 8px; /* slightly more rounded */
+  background: rgba(255, 255, 255, 0.3);
+  color: #000;
+  outline: none;
+}
+form input::placeholder {
+  color: #555;
+}
+
+/* TERMS */
+.terms {
+  font-size: 12px;
+  margin-bottom: 15px;
+  color: #333;
+}
+
+/* BUTTON */
+/* MATCH BUTTON TO INPUT FIELDS */
+.create-btn {
+  width: 100%; /* full width of .form-box */
+  height: 52px; /* same as input height: 16px padding + text */
+  padding: 0; /* no extra padding, height handles it */
+  font-size: 16px;
+  border-radius: 8px; /* same as inputs */
+  background: #0e4d1d;
+  color: white;
+  border: none;
+  cursor: pointer;
+  box-sizing: border-box; /* includes border/padding in width/height */
+  display: block; /* ensures full width in flex/inline context */
+}
+
+.create-btn:hover {
+  background: #0a3a15;
+}
+/* RIGHT SIDE (EMPTY NOW, IMAGE IS ON BODY) */
+.right-panel {
+  width: 100%;
+  background: transparent;
+  position: relative;
+
+  display: flex;
+  justify-content: center; /* horizontal center */
+  align-items: center; /* vertical center */
+}
+/* TEXT OVER IMAGE */
+.overlay-text {
+  position: absolute; /* 🔥 key fix */
+  top: 50%;
+  left: 69%;
+  transform: translate(-50%, -50%); /* perfect center */
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+
+  color: white;
+  text-align: center;
+  text-shadow: 2px 2px 15px rgba(0, 0, 0, 0.7);
+}
+
+/* small text floating */
+.small-text {
+  font-size: 18px;
+  letter-spacing: 3px;
+  font-weight: 500;
+
+  animation: floatText 3s ease-in-out infinite;
+}
+
+/* big text zoom + glow */
+.big-text {
+  font-size: 70px;
+  font-weight: bold;
+  letter-spacing: 5px;
+  margin-top: 5px;
+  font-family: "Times New Roman", serif;
+
+  animation: zoomPulse 4s ease-in-out infinite;
+}
+@keyframes fadeZoom {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes floatText {
+  0% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+  100% {
+    transform: translateY(0px);
+  }
+}
+
+@keyframes zoomPulse {
+  0% {
+    transform: scale(1);
+    text-shadow: 2px 2px 15px rgba(0, 0, 0, 0.7);
+  }
+  50% {
+    transform: scale(1.05);
+    text-shadow: 0 0 25px rgba(255, 255, 255, 0.8);
+  }
+  100% {
+    transform: scale(1);
+    text-shadow: 2px 2px 15px rgba(0, 0, 0, 0.7);
+  }
+}
+.spinner-box {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 12px;
+}
+
+.spinner {
+  width: 35px;
+  height: 35px;
+  border: 5px solid #d9d9d9;
+  border-top: 5px solid #222;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
