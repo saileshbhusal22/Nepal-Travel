@@ -7,7 +7,7 @@ if (!isset($_SESSION['user_id'])) {
     exit;
 }
 
-require_once '../config/db.php'; // $conn = mysqli connection
+require_once '../config/db.php';
 
 // Fetch fresh user data
 $stmt = $conn->prepare("SELECT id, full_name, username, email, profile_image, created_at FROM users WHERE id = ?");
@@ -44,6 +44,134 @@ $memberSince  = date('F Y', strtotime($user['created_at']));
 
 // Active tab
 $activeTab = $_GET['tab'] ?? 'overview';
+
+// ─────────────── HANDLE SETTINGS POST REQUESTS ───────────────
+$settings_message = '';
+$settings_msg_type = '';
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && $activeTab === 'settings') {
+    // Update full name
+    if (isset($_POST['update_name'])) {
+        $new_name = trim($_POST['full_name'] ?? '');
+        if (empty($new_name)) {
+            $settings_message = 'Full name cannot be empty.';
+            $settings_msg_type = 'error';
+        } else {
+            $stmt = $conn->prepare("UPDATE users SET full_name = ? WHERE id = ?");
+            $stmt->bind_param("si", $new_name, $_SESSION['user_id']);
+            if ($stmt->execute()) {
+                $_SESSION['user_name'] = $new_name;
+                $userName = htmlspecialchars($new_name);
+                $settings_message = 'Full name updated successfully!';
+                $settings_msg_type = 'success';
+            } else {
+                $settings_message = 'Database error. Please try again.';
+                $settings_msg_type = 'error';
+            }
+            $stmt->close();
+        }
+    }
+
+    // Change password
+    if (isset($_POST['change_password'])) {
+        $current_password = $_POST['current_password'] ?? '';
+        $new_password     = $_POST['new_password'] ?? '';
+        $confirm_password = $_POST['confirm_password'] ?? '';
+
+        if (empty($current_password) || empty($new_password) || empty($confirm_password)) {
+            $settings_message = 'All password fields are required.';
+            $settings_msg_type = 'error';
+        } elseif ($new_password !== $confirm_password) {
+            $settings_message = 'New password and confirmation do not match.';
+            $settings_msg_type = 'error';
+        } elseif (strlen($new_password) < 6) {
+            $settings_message = 'New password must be at least 6 characters.';
+            $settings_msg_type = 'error';
+        } else {
+            $stmt = $conn->prepare("SELECT password FROM users WHERE id = ?");
+            $stmt->bind_param("i", $_SESSION['user_id']);
+            $stmt->execute();
+            $stmt->bind_result($hashed_password);
+            $stmt->fetch();
+            $stmt->close();
+
+            if (!password_verify($current_password, $hashed_password)) {
+                $settings_message = 'Current password is incorrect.';
+                $settings_msg_type = 'error';
+            } else {
+                $new_hashed = password_hash($new_password, PASSWORD_DEFAULT);
+                $stmt = $conn->prepare("UPDATE users SET password = ? WHERE id = ?");
+                $stmt->bind_param("si", $new_hashed, $_SESSION['user_id']);
+                if ($stmt->execute()) {
+                    $settings_message = 'Password changed successfully!';
+                    $settings_msg_type = 'success';
+                } else {
+                    $settings_message = 'Database error. Please try again.';
+                    $settings_msg_type = 'error';
+                }
+                $stmt->close();
+            }
+        }
+    }
+}
+
+// ─────────────── HANDLE BOOKING ACTIONS (Update guests / Cancel) ───────────────
+$booking_action_message = '';
+$booking_action_type = '';
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['booking_action'])) {
+    $booking_id = (int)($_POST['booking_id'] ?? 0);
+    $action = $_POST['booking_action'];
+
+    // Verify booking belongs to user
+    $check = $conn->prepare("SELECT id, status FROM bookings WHERE id = ? AND user_id = ?");
+    $check->bind_param("ii", $booking_id, $_SESSION['user_id']);
+    $check->execute();
+    $check_result = $check->get_result();
+    $booking = $check_result->fetch_assoc();
+    $check->close();
+
+    if (!$booking) {
+        $booking_action_message = 'Invalid booking.';
+        $booking_action_type = 'error';
+    } elseif ($action === 'update_guests') {
+        $new_guests = (int)($_POST['guests'] ?? 0);
+        if ($new_guests < 1 || $new_guests > 50) {
+            $booking_action_message = 'Guests must be between 1 and 50.';
+            $booking_action_type = 'error';
+        } elseif ($booking['status'] === 'cancelled') {
+            $booking_action_message = 'Cannot update a cancelled booking.';
+            $booking_action_type = 'error';
+        } else {
+            $update = $conn->prepare("UPDATE bookings SET guests = ? WHERE id = ?");
+            $update->bind_param("ii", $new_guests, $booking_id);
+            if ($update->execute()) {
+                $booking_action_message = 'Guest count updated successfully!';
+                $booking_action_type = 'success';
+            } else {
+                $booking_action_message = 'Database error. Please try again.';
+                $booking_action_type = 'error';
+            }
+            $update->close();
+        }
+    } elseif ($action === 'cancel') {
+        if ($booking['status'] === 'cancelled') {
+            $booking_action_message = 'Booking is already cancelled.';
+            $booking_action_type = 'error';
+        } else {
+            $cancel = $conn->prepare("UPDATE bookings SET status = 'cancelled' WHERE id = ?");
+            $cancel->bind_param("i", $booking_id);
+            if ($cancel->execute()) {
+                $booking_action_message = 'Booking cancelled successfully.';
+                $booking_action_type = 'success';
+            } else {
+                $booking_action_message = 'Database error. Please try again.';
+                $booking_action_type = 'error';
+            }
+            $cancel->close();
+        }
+    }
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -99,7 +227,6 @@ $activeTab = $_GET['tab'] ?? 'overview';
             overflow-y: auto;
         }
 
-        /* Sidebar brand */
         .sidebar-brand {
             padding: 28px 30px 20px;
             border-bottom: 1px solid rgba(255,255,255,0.08);
@@ -121,7 +248,6 @@ $activeTab = $_GET['tab'] ?? 'overview';
             display: inline-block;
         }
 
-        /* ---- Profile Card inside sidebar ---- */
         .sidebar-profile {
             padding: 28px 24px 24px;
             display: flex;
@@ -130,7 +256,6 @@ $activeTab = $_GET['tab'] ?? 'overview';
             border-bottom: 1px solid rgba(255,255,255,0.08);
         }
 
-        /* Avatar ring */
         .avatar-ring {
             position: relative;
             width: 100px;
@@ -185,7 +310,6 @@ $activeTab = $_GET['tab'] ?? 'overview';
             color: var(--white);
         }
 
-        /* Camera hover overlay */
         .avatar-overlay {
             position: absolute;
             inset: 3px;
@@ -206,7 +330,6 @@ $activeTab = $_GET['tab'] ?? 'overview';
         .avatar-overlay svg { width: 22px; height: 22px; fill: #fff; }
         .avatar-overlay span { font-size: 9px; color: #fff; font-weight: 700; letter-spacing: 0.8px; text-transform: uppercase; }
 
-        /* Upload spinner */
         .upload-spinner {
             display: none;
             position: absolute;
@@ -261,7 +384,6 @@ $activeTab = $_GET['tab'] ?? 'overview';
             transform: translateY(-1px);
         }
 
-        /* Sidebar Nav */
         .sidebar-nav {
             padding: 20px 0;
             flex: 1;
@@ -303,7 +425,6 @@ $activeTab = $_GET['tab'] ?? 'overview';
 
         .nav-item svg { width: 18px; height: 18px; flex-shrink: 0; }
 
-        /* Sidebar footer */
         .sidebar-footer {
             padding: 20px 30px;
             border-top: 1px solid rgba(255,255,255,0.08);
@@ -330,7 +451,6 @@ $activeTab = $_GET['tab'] ?? 'overview';
             min-height: 100vh;
         }
 
-        /* Top bar */
         .topbar {
             background: var(--white);
             border-bottom: 1px solid var(--border);
@@ -349,12 +469,6 @@ $activeTab = $_GET['tab'] ?? 'overview';
             color: var(--navy);
         }
 
-        .topbar-actions {
-            display: flex;
-            align-items: center;
-            gap: 16px;
-        }
-
         .topbar-actions a {
             font-size: 13px;
             font-weight: 600;
@@ -370,7 +484,6 @@ $activeTab = $_GET['tab'] ?? 'overview';
             color: var(--white);
         }
 
-        /* Page body */
         .page-body {
             padding: 36px 40px;
             flex: 1;
@@ -387,35 +500,6 @@ $activeTab = $_GET['tab'] ?? 'overview';
             margin-bottom: 32px;
         }
 
-        .welcome-banner::before {
-            content: '';
-            position: absolute;
-            top: -40px; right: -40px;
-            width: 220px; height: 220px;
-            border-radius: 50%;
-            background: rgba(245,166,35,0.12);
-        }
-
-        .welcome-banner::after {
-            content: '';
-            position: absolute;
-            bottom: -60px; right: 80px;
-            width: 160px; height: 160px;
-            border-radius: 50%;
-            background: rgba(255,255,255,0.05);
-        }
-
-        .welcome-banner h2 {
-            font-family: var(--font-disp);
-            font-size: 28px;
-            margin-bottom: 6px;
-        }
-
-        .welcome-banner p {
-            font-size: 14px;
-            opacity: 0.75;
-        }
-
         .welcome-banner .member-badge {
             display: inline-block;
             background: rgba(245,166,35,0.2);
@@ -428,6 +512,12 @@ $activeTab = $_GET['tab'] ?? 'overview';
             padding: 4px 14px;
             margin-bottom: 12px;
             text-transform: uppercase;
+        }
+
+        .welcome-banner h2 {
+            font-family: var(--font-disp);
+            font-size: 28px;
+            margin-bottom: 6px;
         }
 
         /* Stats grid */
@@ -447,23 +537,12 @@ $activeTab = $_GET['tab'] ?? 'overview';
             align-items: center;
             gap: 18px;
             transition: transform 0.2s, box-shadow 0.2s;
-            animation: fadeUp 0.5s ease both;
         }
 
         .stat-card:hover {
             transform: translateY(-3px);
             box-shadow: 0 10px 30px rgba(27,58,90,0.1);
         }
-
-        @keyframes fadeUp {
-            from { opacity: 0; transform: translateY(20px); }
-            to   { opacity: 1; transform: translateY(0); }
-        }
-
-        .stat-card:nth-child(1) { animation-delay: 0.05s; }
-        .stat-card:nth-child(2) { animation-delay: 0.10s; }
-        .stat-card:nth-child(3) { animation-delay: 0.15s; }
-        .stat-card:nth-child(4) { animation-delay: 0.20s; }
 
         .stat-icon {
             width: 50px; height: 50px;
@@ -476,21 +555,16 @@ $activeTab = $_GET['tab'] ?? 'overview';
 
         .stat-icon svg { width: 24px; height: 24px; }
 
-        .stat-icon.blue  { background: rgba(40,93,161,0.1);  }
-        .stat-icon.blue svg  { fill: var(--blue); }
-        .stat-icon.gold  { background: rgba(245,166,35,0.1); }
-        .stat-icon.gold svg  { fill: var(--gold); }
-        .stat-icon.teal  { background: rgba(27,140,110,0.1); }
-        .stat-icon.teal svg  { fill: var(--teal); }
-        .stat-icon.navy  { background: rgba(27,58,90,0.1);   }
-        .stat-icon.navy svg  { fill: var(--navy); }
+        .stat-icon.blue  { background: rgba(40,93,161,0.1);  fill: var(--blue); }
+        .stat-icon.gold  { background: rgba(245,166,35,0.1); fill: var(--gold); }
+        .stat-icon.teal  { background: rgba(27,140,110,0.1); fill: var(--teal); }
+        .stat-icon.navy  { background: rgba(27,58,90,0.1);   fill: var(--navy); }
 
         .stat-info h4 {
             font-size: 26px;
             font-weight: 800;
             color: var(--navy);
             line-height: 1;
-            margin-bottom: 4px;
         }
 
         .stat-info p {
@@ -499,7 +573,6 @@ $activeTab = $_GET['tab'] ?? 'overview';
             font-weight: 500;
         }
 
-        /* Section title */
         .section-title {
             font-family: var(--font-disp);
             font-size: 20px;
@@ -517,14 +590,12 @@ $activeTab = $_GET['tab'] ?? 'overview';
             background: var(--border);
         }
 
-        /* Account info card */
         .info-card {
             background: var(--white);
             border-radius: 14px;
             border: 1px solid var(--border);
             overflow: hidden;
             margin-bottom: 32px;
-            animation: fadeUp 0.4s ease 0.25s both;
         }
 
         .info-card-header {
@@ -555,31 +626,19 @@ $activeTab = $_GET['tab'] ?? 'overview';
             gap: 16px;
         }
 
-        .info-row:last-child { border-bottom: none; }
-
         .info-row label {
             width: 140px;
             font-size: 12px;
             font-weight: 600;
             color: var(--muted);
             text-transform: uppercase;
-            letter-spacing: 0.5px;
-            flex-shrink: 0;
         }
 
-        .info-row span {
-            font-size: 14px;
-            font-weight: 500;
-            color: var(--navy);
-        }
-
-        /* Quick links */
         .quick-links {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
             gap: 16px;
             margin-bottom: 32px;
-            animation: fadeUp 0.4s ease 0.3s both;
         }
 
         .quick-link-card {
@@ -589,10 +648,8 @@ $activeTab = $_GET['tab'] ?? 'overview';
             padding: 22px 20px;
             display: flex;
             flex-direction: column;
-            align-items: flex-start;
             gap: 10px;
-            cursor: pointer;
-            transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+            transition: transform 0.2s;
         }
 
         .quick-link-card:hover {
@@ -601,22 +658,184 @@ $activeTab = $_GET['tab'] ?? 'overview';
             border-color: var(--blue);
         }
 
-        .quick-link-card .ql-icon {
-            width: 42px; height: 42px;
-            border-radius: 10px;
-            display: flex; align-items: center; justify-content: center;
+        .settings-form {
+            background: var(--white);
+            border-radius: 14px;
+            border: 1px solid var(--border);
+            padding: 28px 30px;
+            margin-bottom: 32px;
         }
 
-        .quick-link-card .ql-icon svg { width: 20px; height: 20px; }
-        .quick-link-card .ql-title { font-size: 13px; font-weight: 700; color: var(--navy); }
-        .quick-link-card .ql-sub   { font-size: 11px; color: var(--muted); }
+        .settings-form h3 {
+            font-family: var(--font-disp);
+            font-size: 18px;
+            margin-bottom: 20px;
+        }
 
-        /* ===================== TOAST ===================== */
+        .settings-form .form-group {
+            margin-bottom: 20px;
+        }
+
+        .settings-form label {
+            display: block;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--muted);
+            text-transform: uppercase;
+            margin-bottom: 6px;
+        }
+
+        .settings-form input {
+            width: 100%;
+            max-width: 380px;
+            padding: 10px 14px;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            font-size: 14px;
+        }
+
+        .settings-form button {
+            background: var(--blue);
+            color: white;
+            border: none;
+            padding: 10px 22px;
+            border-radius: 30px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .settings-message, .booking-message {
+            padding: 12px 18px;
+            border-radius: 12px;
+            margin-bottom: 24px;
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        .settings-message.success, .booking-message.success {
+            background: rgba(27,140,110,0.1);
+            border-left: 4px solid var(--teal);
+            color: #1b6e56;
+        }
+
+        .settings-message.error, .booking-message.error {
+            background: rgba(229,57,53,0.08);
+            border-left: 4px solid #e53935;
+            color: #b91c1c;
+        }
+
+        /* Bookings Table */
+        .bookings-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+
+        .bookings-table th {
+            text-align: left;
+            padding: 14px 12px;
+            background: #f8f6f2;
+            border-bottom: 1px solid var(--border);
+            font-weight: 700;
+        }
+
+        .bookings-table td {
+            padding: 14px 12px;
+            border-bottom: 1px solid var(--border);
+            vertical-align: middle;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 30px;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .status-pending {
+            background: #fef3c7;
+            color: #b45309;
+        }
+
+        .status-confirmed {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .status-cancelled {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .btn-view-ticket, .btn-update, .btn-cancel {
+            display: inline-block;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+            text-decoration: none;
+            cursor: pointer;
+            border: none;
+            margin: 2px;
+        }
+
+        .btn-view-ticket {
+            background: var(--navy);
+            color: white;
+        }
+
+        .btn-update {
+            background: var(--teal);
+            color: white;
+        }
+
+        .btn-cancel {
+            background: #e53935;
+            color: white;
+        }
+
+        .btn-update:hover { background: #0f5e4a; }
+        .btn-cancel:hover { background: #b91c1c; }
+        .btn-view-ticket:hover { background: #0f2a3b; }
+
+        .inline-form {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .inline-form input {
+            width: 60px;
+            padding: 4px 6px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            text-align: center;
+        }
+
+        .empty-bookings {
+            padding: 50px 30px;
+            text-align: center;
+            color: var(--muted);
+        }
+
+        .btn-book-now {
+            display: inline-block;
+            margin-top: 20px;
+            background: var(--blue);
+            color: white;
+            padding: 8px 20px;
+            border-radius: 30px;
+            text-decoration: none;
+        }
+
         .profile-toast {
             position: fixed;
             bottom: 28px; right: 28px;
             background: var(--navy);
-            color: var(--white);
+            color: white;
             padding: 14px 22px;
             border-radius: 12px;
             font-size: 13px;
@@ -626,23 +845,43 @@ $activeTab = $_GET['tab'] ?? 'overview';
             opacity: 0;
             transition: all 0.35s cubic-bezier(0.34,1.56,0.64,1);
             z-index: 9999;
-            display: flex;
-            align-items: center;
-            gap: 10px;
             pointer-events: none;
         }
 
-        .profile-toast.show   { transform: translateY(0); opacity: 1; }
+        .profile-toast.show { transform: translateY(0); opacity: 1; }
         .profile-toast.success { border-left: 4px solid var(--teal); }
         .profile-toast.error   { border-left: 4px solid #e53935; }
 
-        /* ===================== RESPONSIVE ===================== */
         @media (max-width: 768px) {
             .sidebar { transform: translateX(-100%); transition: transform 0.3s ease; }
             .sidebar.open { transform: translateX(0); }
             .main-content { margin-left: 0; }
             .page-body { padding: 24px 20px; }
             .topbar { padding: 14px 20px; }
+            .bookings-table, .bookings-table thead, .bookings-table tbody, .bookings-table th, .bookings-table td, .bookings-table tr {
+                display: block;
+            }
+            .bookings-table thead { display: none; }
+            .bookings-table tr {
+                margin-bottom: 20px;
+                border: 1px solid var(--border);
+                border-radius: 12px;
+                overflow: hidden;
+            }
+            .bookings-table td {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 10px 15px;
+                border-bottom: 1px solid var(--border);
+            }
+            .bookings-table td:last-child { border-bottom: none; }
+            .bookings-table td::before {
+                content: attr(data-label);
+                font-weight: 700;
+                color: var(--muted);
+                width: 40%;
+            }
         }
     </style>
 </head>
@@ -650,375 +889,218 @@ $activeTab = $_GET['tab'] ?? 'overview';
 
 <div class="dash-wrap">
 
-    <!-- ==================== SIDEBAR ==================== -->
+    <!-- SIDEBAR (unchanged) -->
     <aside class="sidebar" id="sidebar">
-
-        <!-- Brand -->
         <div class="sidebar-brand">
-            <a href="/Nepal-Travel/Public/index.php">
-                <span class="dot"></span> Nepal
-            </a>
+            <a href="/Nepal-Travel/Public/index.php"><span class="dot"></span> Nepal</a>
         </div>
-
-        <!-- Profile Card -->
         <div class="sidebar-profile">
-
-            <div class="avatar-ring" id="avatarRing" onclick="document.getElementById('profileFileInput').click()" title="Change profile photo">
-
+            <div class="avatar-ring" id="avatarRing" onclick="document.getElementById('profileFileInput').click()">
                 <div class="avatar-inner" id="avatarInner">
                     <?php if ($profileImageUrl): ?>
                         <img src="<?php echo $profileImageUrl; ?>" id="avatarImg" alt="Profile">
                     <?php else: ?>
-                        <div class="avatar-placeholder" id="avatarPlaceholder">
-                            <?php echo $initials; ?>
-                        </div>
+                        <div class="avatar-placeholder" id="avatarPlaceholder"><?php echo $initials; ?></div>
                     <?php endif; ?>
                 </div>
-
                 <div class="avatar-overlay">
                     <svg viewBox="0 0 24 24"><path d="M9 3L7.17 5H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-3.17L15 3H9zm3 14a5 5 0 1 1 0-10 5 5 0 0 1 0 10z"/></svg>
                     <span>Change</span>
                 </div>
-
-                <div class="upload-spinner" id="uploadSpinner">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="#f5a623" stroke-width="2.5">
-                        <circle cx="12" cy="12" r="9" stroke-dasharray="28 56" stroke-linecap="round"/>
-                    </svg>
-                </div>
+                <div class="upload-spinner" id="uploadSpinner"><svg viewBox="0 0 24 24" fill="none" stroke="#f5a623" stroke-width="2.5"><circle cx="12" cy="12" r="9" stroke-dasharray="28 56" stroke-linecap="round"/></svg></div>
             </div>
-
             <input type="file" id="profileFileInput" accept="image/jpeg,image/png,image/gif,image/webp">
-
             <p class="profile-name-sidebar"><?php echo $userName; ?></p>
             <p class="profile-email-sidebar"><?php echo $userEmail; ?></p>
-
-            <button class="btn-change-photo" onclick="document.getElementById('profileFileInput').click()">
-                📷 Change Photo
-            </button>
-
+            <button class="btn-change-photo" onclick="document.getElementById('profileFileInput').click()">📷 Change Photo</button>
         </div>
-
-        <!-- Nav -->
         <nav class="sidebar-nav">
             <p class="nav-label">Menu</p>
-
-            <a href="?tab=overview" class="nav-item <?php echo $activeTab === 'overview' ? 'active' : ''; ?>">
-                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
-                Overview
-            </a>
-
-            <a href="?tab=bookings" class="nav-item <?php echo $activeTab === 'bookings' ? 'active' : ''; ?>">
-                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17 12h-5v5h5v-5zM16 1v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2h-1V1h-2zm3 18H5V8h14v11z"/></svg>
-                My Bookings
-            </a>
-
-            <a href="?tab=saved" class="nav-item <?php echo $activeTab === 'saved' ? 'active' : ''; ?>">
-                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17 3H7c-1.1 0-1.99.9-1.99 2L5 21l7-3 7 3V5c0-1.1-.9-2-2-2z"/></svg>
-                Saved Places
-            </a>
-
-            <a href="?tab=settings" class="nav-item <?php echo $activeTab === 'settings' ? 'active' : ''; ?>">
-                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
-                Settings
-            </a>
-
+            <a href="?tab=overview" class="nav-item <?php echo $activeTab === 'overview' ? 'active' : ''; ?>"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg> Overview</a>
+            <a href="?tab=bookings" class="nav-item <?php echo $activeTab === 'bookings' ? 'active' : ''; ?>"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M17 12h-5v5h5v-5zM16 1v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2h-1V1h-2zm3 18H5V8h14v11z"/></svg> My Bookings</a>
+            <a href="?tab=saved" class="nav-item <?php echo $activeTab === 'saved' ? 'active' : ''; ?>"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M17 3H7c-1.1 0-1.99.9-1.99 2L5 21l7-3 7 3V5c0-1.1-.9-2-2-2z"/></svg> Saved Places</a>
+            <a href="?tab=settings" class="nav-item <?php echo $activeTab === 'settings' ? 'active' : ''; ?>"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg> Settings</a>
             <p class="nav-label" style="margin-top:10px;">Explore</p>
-
-            <a href="/Nepal-Travel/pages/experience.php" class="nav-item">
-                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
-                Experiences
-            </a>
-
-            <a href="/Nepal-Travel/pages/deals-and-packages.php" class="nav-item">
-                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M21.41 11.58l-9-9C12.05 2.22 11.55 2 11 2H4c-1.1 0-2 .9-2 2v7c0 .55.22 1.05.59 1.42l9 9c.36.36.86.58 1.41.58.55 0 1.05-.22 1.41-.59l7-7c.37-.36.59-.86.59-1.41 0-.55-.23-1.06-.59-1.42zM5.5 7C4.67 7 4 6.33 4 5.5S4.67 4 5.5 4 7 4.67 7 5.5 6.33 7 5.5 7z"/></svg>
-                Deals & Packages
-            </a>
+            <a href="/Nepal-Travel/pages/experience.php" class="nav-item"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg> Experiences</a>
+            <a href="/Nepal-Travel/pages/deals-and-packages.php" class="nav-item"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M21.41 11.58l-9-9C12.05 2.22 11.55 2 11 2H4c-1.1 0-2 .9-2 2v7c0 .55.22 1.05.59 1.42l9 9c.36.36.86.58 1.41.58.55 0 1.05-.22 1.41-.59l7-7c.37-.36.59-.86.59-1.41 0-.55-.23-1.06-.59-1.42zM5.5 7C4.67 7 4 6.33 4 5.5S4.67 4 5.5 4 7 4.67 7 5.5 6.33 7 5.5 7z"/></svg> Deals & Packages</a>
         </nav>
-
-        <!-- Logout -->
         <div class="sidebar-footer">
-            <a href="/Nepal-Travel/user/logout.php">
-                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/></svg>
-                Sign Out
-            </a>
+            <a href="/Nepal-Travel/user/logout.php"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/></svg> Sign Out</a>
         </div>
-
     </aside>
 
-    <!-- ==================== MAIN ==================== -->
+    <!-- MAIN CONTENT -->
     <div class="main-content">
-
-        <!-- Topbar -->
         <div class="topbar">
-            <h1 class="topbar-title">
-                <?php
-                    $titles = [
-                        'overview' => 'Dashboard',
-                        'bookings' => 'My Bookings',
-                        'saved'    => 'Saved Places',
-                        'settings' => 'Settings',
-                    ];
-                    echo $titles[$activeTab] ?? 'Dashboard';
-                ?>
-            </h1>
-            <div class="topbar-actions">
-                <a href="/Nepal-Travel/Public/index.php">← Back to Site</a>
-            </div>
+            <h1 class="topbar-title"><?php echo $titles[$activeTab] ?? 'Dashboard'; ?></h1>
+            <div class="topbar-actions"><a href="/Nepal-Travel/Public/index.php">← Back to Site</a></div>
         </div>
-
-        <!-- Page Body -->
         <div class="page-body">
 
             <?php if ($activeTab === 'overview'): ?>
-
-                <!-- Welcome Banner -->
                 <div class="welcome-banner">
                     <span class="member-badge">Member since <?php echo $memberSince; ?></span>
                     <h2>Welcome back, <?php echo $userName; ?>! 🏔️</h2>
                     <p>Ready to explore the Himalayas? Your next adventure awaits.</p>
                 </div>
-
-                <!-- Stats -->
                 <div class="stats-grid">
-                    <div class="stat-card">
-                        <div class="stat-icon blue">
-                            <svg viewBox="0 0 24 24"><path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5z"/><path d="M4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/></svg>
-                        </div>
-                        <div class="stat-info">
-                            <h4>0</h4>
-                            <p>Trips Taken</p>
-                        </div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-icon gold">
-                            <svg viewBox="0 0 24 24"><path d="M17 3H7c-1.1 0-1.99.9-1.99 2L5 21l7-3 7 3V5c0-1.1-.9-2-2-2z"/></svg>
-                        </div>
-                        <div class="stat-info">
-                            <h4>0</h4>
-                            <p>Saved Places</p>
-                        </div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-icon teal">
-                            <svg viewBox="0 0 24 24"><path d="M17 12h-5v5h5v-5zM16 1v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2h-1V1h-2zm3 18H5V8h14v11z"/></svg>
-                        </div>
-                        <div class="stat-info">
-                            <h4>0</h4>
-                            <p>Upcoming Bookings</p>
-                        </div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-icon navy">
-                            <svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
-                        </div>
-                        <div class="stat-info">
-                            <h4>0</h4>
-                            <p>Places Explored</p>
-                        </div>
-                    </div>
+                    <div class="stat-card"><div class="stat-icon blue"><svg viewBox="0 0 24 24"><path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/></svg></div><div class="stat-info"><h4>0</h4><p>Trips Taken</p></div></div>
+                    <div class="stat-card"><div class="stat-icon gold"><svg viewBox="0 0 24 24"><path d="M17 3H7c-1.1 0-1.99.9-1.99 2L5 21l7-3 7 3V5c0-1.1-.9-2-2-2z"/></svg></div><div class="stat-info"><h4>0</h4><p>Saved Places</p></div></div>
+                    <div class="stat-card"><div class="stat-icon teal"><svg viewBox="0 0 24 24"><path d="M17 12h-5v5h5v-5zM16 1v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2h-1V1h-2zm3 18H5V8h14v11z"/></svg></div><div class="stat-info"><h4>0</h4><p>Upcoming Bookings</p></div></div>
+                    <div class="stat-card"><div class="stat-icon navy"><svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg></div><div class="stat-info"><h4>0</h4><p>Places Explored</p></div></div>
                 </div>
-
-                <!-- Account Info -->
                 <h2 class="section-title">Account Information</h2>
                 <div class="info-card">
-                    <div class="info-card-header">
-                        <h3>Personal Details</h3>
-                        <a href="?tab=settings">Edit →</a>
-                    </div>
-                    <div class="info-row">
-                        <label>Full Name</label>
-                        <span><?php echo $userName; ?></span>
-                    </div>
-                    <div class="info-row">
-                        <label>Username</label>
-                        <span>@<?php echo $userUsername; ?></span>
-                    </div>
-                    <div class="info-row">
-                        <label>Email</label>
-                        <span><?php echo $userEmail; ?></span>
-                    </div>
-                    <div class="info-row">
-                        <label>Member Since</label>
-                        <span><?php echo $memberSince; ?></span>
-                    </div>
-                    <div class="info-row">
-                        <label>Profile Photo</label>
-                        <span><?php echo $profileImageUrl ? '✅ Uploaded' : '⚠️ Not uploaded — click your avatar to add one'; ?></span>
-                    </div>
+                    <div class="info-card-header"><h3>Personal Details</h3><a href="?tab=settings">Edit →</a></div>
+                    <div class="info-row"><label>Full Name</label><span><?php echo $userName; ?></span></div>
+                    <div class="info-row"><label>Username</label><span>@<?php echo $userUsername; ?></span></div>
+                    <div class="info-row"><label>Email</label><span><?php echo $userEmail; ?></span></div>
+                    <div class="info-row"><label>Member Since</label><span><?php echo $memberSince; ?></span></div>
+                    <div class="info-row"><label>Profile Photo</label><span><?php echo $profileImageUrl ? '✅ Uploaded' : '⚠️ Not uploaded — click your avatar to add one'; ?></span></div>
                 </div>
-
-                <!-- Quick Links -->
                 <h2 class="section-title">Quick Actions</h2>
                 <div class="quick-links">
-                    <a href="/Nepal-Travel/pages/experience.php" class="quick-link-card">
-                        <div class="ql-icon" style="background:rgba(40,93,161,0.1);">
-                            <svg viewBox="0 0 24 24" fill="#285da1"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
-                        </div>
-                        <span class="ql-title">Explore Nepal</span>
-                        <span class="ql-sub">Discover destinations</span>
-                    </a>
-                    <a href="/Nepal-Travel/pages/deals-and-packages.php" class="quick-link-card">
-                        <div class="ql-icon" style="background:rgba(245,166,35,0.1);">
-                            <svg viewBox="0 0 24 24" fill="#f5a623"><path d="M21.41 11.58l-9-9C12.05 2.22 11.55 2 11 2H4c-1.1 0-2 .9-2 2v7c0 .55.22 1.05.59 1.42l9 9c.36.36.86.58 1.41.58.55 0 1.05-.22 1.41-.59l7-7c.37-.36.59-.86.59-1.41 0-.55-.23-1.06-.59-1.42zM5.5 7C4.67 7 4 6.33 4 5.5S4.67 4 5.5 4 7 4.67 7 5.5 6.33 7 5.5 7z"/></svg>
-                        </div>
-                        <span class="ql-title">View Deals</span>
-                        <span class="ql-sub">Packages & offers</span>
-                    </a>
-                    <a href="/Nepal-Travel/pages/events.php" class="quick-link-card">
-                        <div class="ql-icon" style="background:rgba(27,140,110,0.1);">
-                            <svg viewBox="0 0 24 24" fill="#1b8c6e"><path d="M17 12h-5v5h5v-5zM16 1v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2h-1V1h-2zm3 18H5V8h14v11z"/></svg>
-                        </div>
-                        <span class="ql-title">Events</span>
-                        <span class="ql-sub">Festivals & culture</span>
-                    </a>
-                    <a href="/Nepal-Travel/pages/saved.php" class="quick-link-card">
-                        <div class="ql-icon" style="background:rgba(27,58,90,0.1);">
-                            <svg viewBox="0 0 24 24" fill="#1b3a5a"><path d="M17 3H7c-1.1 0-1.99.9-1.99 2L5 21l7-3 7 3V5c0-1.1-.9-2-2-2z"/></svg>
-                        </div>
-                        <span class="ql-title">Saved Places</span>
-                        <span class="ql-sub">Your wishlist</span>
-                    </a>
+                    <a href="/Nepal-Travel/pages/experience.php" class="quick-link-card"><div class="ql-icon" style="background:rgba(40,93,161,0.1);"><svg viewBox="0 0 24 24" fill="#285da1"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/></svg></div><span class="ql-title">Explore Nepal</span><span class="ql-sub">Discover destinations</span></a>
+                    <a href="/Nepal-Travel/pages/deals-and-packages.php" class="quick-link-card"><div class="ql-icon" style="background:rgba(245,166,35,0.1);"><svg viewBox="0 0 24 24" fill="#f5a623"><path d="M21.41 11.58l-9-9C12.05 2.22 11.55 2 11 2H4c-1.1 0-2 .9-2 2v7c0 .55.22 1.05.59 1.42l9 9c.36.36.86.58 1.41.58.55 0 1.05-.22 1.41-.59l7-7c.37-.36.59-.86.59-1.41 0-.55-.23-1.06-.59-1.42zM5.5 7C4.67 7 4 6.33 4 5.5S4.67 4 5.5 4 7 4.67 7 5.5 6.33 7 5.5 7z"/></svg></div><span class="ql-title">View Deals</span><span class="ql-sub">Packages & offers</span></a>
+                    <a href="/Nepal-Travel/pages/events.php" class="quick-link-card"><div class="ql-icon" style="background:rgba(27,140,110,0.1);"><svg viewBox="0 0 24 24" fill="#1b8c6e"><path d="M17 12h-5v5h5v-5zM16 1v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2h-1V1h-2z"/></svg></div><span class="ql-title">Events</span><span class="ql-sub">Festivals & culture</span></a>
+                    <a href="/Nepal-Travel/pages/saved.php" class="quick-link-card"><div class="ql-icon" style="background:rgba(27,58,90,0.1);"><svg viewBox="0 0 24 24" fill="#1b3a5a"><path d="M17 3H7c-1.1 0-1.99.9-1.99 2L5 21l7-3 7 3V5c0-1.1-.9-2-2-2z"/></svg></div><span class="ql-title">Saved Places</span><span class="ql-sub">Your wishlist</span></a>
                 </div>
 
-            <?php elseif ($activeTab === 'bookings'): ?>
-                <div class="info-card" style="padding:40px; text-align:center; color:var(--muted);">
-                    <p style="font-size:40px; margin-bottom:12px;">🗓️</p>
-                    <p style="font-size:16px; font-weight:600;">No bookings yet</p>
-                    <p style="font-size:13px; margin-top:6px;">Start exploring Nepal and make your first booking!</p>
+            <?php elseif ($activeTab === 'bookings'): 
+                // Fetch bookings
+                $stmt = $conn->prepare("SELECT id, destination, date, guests, status, created_at FROM bookings WHERE user_id = ? ORDER BY created_at DESC");
+                $stmt->bind_param("i", $_SESSION['user_id']);
+                $stmt->execute();
+                $bookings = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+                $stmt->close();
+            ?>
+                <div class="info-card">
+                    <div class="info-card-header"><h3>📋 Your Booking History</h3><a href="/Nepal-Travel/Public/booking.php">+ New Booking</a></div>
+                    <?php if (!empty($booking_action_message)): ?>
+                        <div class="booking-message <?php echo $booking_action_type; ?>" style="margin: 20px 26px 0;"><?php echo htmlspecialchars($booking_action_message); ?></div>
+                    <?php endif; ?>
+                    <?php if (count($bookings) === 0): ?>
+                        <div class="empty-bookings"><p>🗓️</p><p>No bookings yet</p><p>Start exploring Nepal and make your first booking!</p><a href="/Nepal-Travel/Public/booking.php" class="btn-book-now">Book Now →</a></div>
+                    <?php else: ?>
+                        <div style="overflow-x: auto;">
+                            <table class="bookings-table">
+                                <thead><tr><th>Booking ID</th><th>Destination</th><th>Travel Date</th><th>Guests</th><th>Status</th><th>Booked On</th><th>Actions</th></tr></thead>
+                                <tbody>
+                                    <?php foreach ($bookings as $booking): ?>
+                                        <tr>
+                                            <td data-label="Booking ID">#<?php echo str_pad($booking['id'], 6, '0', STR_PAD_LEFT); ?></td>
+                                            <td data-label="Destination"><?php echo htmlspecialchars($booking['destination']); ?></td>
+                                            <td data-label="Travel Date"><?php echo date('M j, Y', strtotime($booking['date'])); ?></td>
+                                            <td data-label="Guests">
+                                                <?php if ($booking['status'] !== 'cancelled'): ?>
+                                                    <form method="POST" action="?tab=bookings" class="inline-form">
+                                                        <input type="hidden" name="booking_id" value="<?php echo $booking['id']; ?>">
+                                                        <input type="hidden" name="booking_action" value="update_guests">
+                                                        <input type="number" name="guests" value="<?php echo $booking['guests']; ?>" min="1" max="50" style="width:70px;">
+                                                        <button type="submit" class="btn-update">Update</button>
+                                                    </form>
+                                                <?php else: ?>
+                                                    <span><?php echo $booking['guests']; ?></span>
+                                                <?php endif; ?>
+                                            </td>
+                                            <td data-label="Status">
+                                                <span class="status-badge 
+                                                    <?php echo $booking['status'] === 'pending' ? 'status-pending' : ($booking['status'] === 'cancelled' ? 'status-cancelled' : 'status-confirmed'); ?>">
+                                                    <?php echo ucfirst($booking['status']); ?>
+                                                </span>
+                                            </td>
+                                            <td data-label="Booked On"><?php echo date('M j, Y', strtotime($booking['created_at'])); ?></td>
+                                            <td data-label="Actions">
+                                                <a href="/Nepal-Travel/Public/ticket.php?id=<?php echo $booking['id']; ?>" class="btn-view-ticket">🎟️ Ticket</a>
+                                                <?php if ($booking['status'] !== 'cancelled'): ?>
+                                                    <form method="POST" action="?tab=bookings" style="display:inline-block;">
+                                                        <input type="hidden" name="booking_id" value="<?php echo $booking['id']; ?>">
+                                                        <input type="hidden" name="booking_action" value="cancel">
+                                                        <button type="submit" class="btn-cancel" onclick="return confirm('Are you sure you want to cancel this booking?')">Cancel</button>
+                                                    </form>
+                                                <?php endif; ?>
+                                            </td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                </tbody>
+                            </table>
+                        </div>
+                    <?php endif; ?>
                 </div>
 
             <?php elseif ($activeTab === 'saved'): ?>
-                <div class="info-card" style="padding:40px; text-align:center; color:var(--muted);">
-                    <p style="font-size:40px; margin-bottom:12px;">🔖</p>
-                    <p style="font-size:16px; font-weight:600;">No saved places yet</p>
-                    <p style="font-size:13px; margin-top:6px;">Browse experiences and save your favourites.</p>
-                </div>
+                <div class="info-card" style="padding:40px; text-align:center;"><p style="font-size:40px;">🔖</p><p>No saved places yet</p><p>Browse experiences and save your favourites.</p></div>
 
             <?php elseif ($activeTab === 'settings'): ?>
-                <div class="info-card">
-                    <div class="info-card-header"><h3>Account Settings</h3></div>
-                    <div style="padding:28px 26px; color:var(--muted); font-size:14px;">
-                        Settings panel coming soon. For now, update your profile photo by clicking your avatar in the sidebar.
-                    </div>
-                </div>
+                <?php if (!empty($settings_message)): ?>
+                    <div class="settings-message <?php echo $settings_msg_type; ?>"><?php echo htmlspecialchars($settings_message); ?></div>
+                <?php endif; ?>
+                <div class="settings-form"><h3>✏️ Update Full Name</h3><form method="POST" action="?tab=settings"><div class="form-group"><label>Full Name</label><input type="text" name="full_name" value="<?php echo $userName; ?>" required></div><button type="submit" name="update_name">Save Name</button></form></div>
+                <div class="settings-form"><h3>🔒 Change Password</h3><form method="POST" action="?tab=settings"><div class="form-group"><label>Current Password</label><input type="password" name="current_password" required></div><div class="form-group"><label>New Password (min. 6)</label><input type="password" name="new_password" required></div><div class="form-group"><label>Confirm New Password</label><input type="password" name="confirm_password" required></div><button type="submit" name="change_password">Change Password</button></form></div>
+                <div class="settings-form" style="background:#f9fafc;"><h3>📧 Email Address</h3><div class="form-group"><label>Email (cannot be changed)</label><input type="email" value="<?php echo $userEmail; ?>" disabled style="background:#eef2f5;"></div></div>
             <?php endif; ?>
 
-        </div><!-- /page-body -->
-    </div><!-- /main-content -->
+        </div>
+    </div>
+</div>
 
-</div><!-- /dash-wrap -->
-
-<!-- Toast -->
 <div class="profile-toast" id="profileToast"></div>
 
-<!-- ==================== PROFILE UPLOAD JS ==================== -->
 <script>
 (function () {
-    const fileInput     = document.getElementById('profileFileInput');
-    const avatarInner   = document.getElementById('avatarInner');
+    const fileInput = document.getElementById('profileFileInput');
+    const avatarInner = document.getElementById('avatarInner');
     const uploadSpinner = document.getElementById('uploadSpinner');
-    const toast         = document.getElementById('profileToast');
+    const toast = document.getElementById('profileToast');
 
     fileInput.addEventListener('change', function () {
         if (!this.files || !this.files[0]) return;
-
         const file = this.files[0];
-
-        if (file.size > 5 * 1024 * 1024) {
-            showToast('File too large — max 5 MB.', 'error');
-            return;
-        }
-
-        // Instant preview
+        if (file.size > 5 * 1024 * 1024) { showToast('File too large — max 5 MB.', 'error'); return; }
         const reader = new FileReader();
         reader.onload = function (e) {
             let img = avatarInner.querySelector('img');
             if (!img) {
                 avatarInner.innerHTML = '';
                 img = document.createElement('img');
-                img.id  = 'avatarImg';
+                img.id = 'avatarImg';
                 img.alt = 'Profile';
                 avatarInner.appendChild(img);
             }
             img.src = e.target.result;
         };
         reader.readAsDataURL(file);
-
-        // Upload
         uploadSpinner.classList.add('active');
-
         const fd = new FormData();
         fd.append('profile_image', file);
-
-        fetch('/Nepal-Travel/user/upload_profile.php', {
-            method: 'POST',
-            body: fd
-        })
-        .then(r => {
-            // Get raw text first so we can debug non-JSON responses
-            return r.text().then(text => {
-                try {
-                    return JSON.parse(text);
-                } catch(e) {
-                    // Server returned non-JSON (PHP error/warning)
-                    throw new Error('Server response: ' + text.substring(0, 200));
-                }
-            });
-        })
-        .then(data => {
-            uploadSpinner.classList.remove('active');
-            if (data.success) {
-                showToast('✓ Profile photo updated!', 'success');
-
-                // ── Update sidebar avatar live ──────────────────
-                let img = avatarInner.querySelector('img');
-                if (!img) {
-                    // Remove placeholder letter div and create real img
-                    avatarInner.innerHTML = '';
-                    img = document.createElement('img');
-                    img.id  = 'avatarImg';
-                    img.alt = 'Profile';
-                    img.style.width        = '100%';
-                    img.style.height       = '100%';
-                    img.style.objectFit    = 'cover';
-                    img.style.borderRadius = '50%';
-                    avatarInner.appendChild(img);
-                }
-                img.src = data.image_url;
-
-                // ── Update header avatar live ───────────────────
-                const ha = document.getElementById('headerProfileAvatar');
-                if (ha) {
-                    if (ha.tagName === 'IMG') {
-                        ha.src = data.image_url;
-                    } else {
-                        // Header shows a letter span — swap it for an img
-                        const newImg = document.createElement('img');
-                        newImg.id        = 'headerProfileAvatar';
-                        newImg.src       = data.image_url;
-                        newImg.className = ha.className.replace('header-avatar-initial', 'header-avatar-img');
-                        newImg.alt       = 'Profile';
-                        ha.replaceWith(newImg);
+        fetch('/Nepal-Travel/user/upload_profile.php', { method: 'POST', body: fd })
+            .then(r => r.json())
+            .then(data => {
+                uploadSpinner.classList.remove('active');
+                if (data.success) {
+                    showToast('✓ Profile photo updated!', 'success');
+                    let img = avatarInner.querySelector('img');
+                    if (!img) {
+                        avatarInner.innerHTML = '';
+                        img = document.createElement('img');
+                        img.id = 'avatarImg';
+                        img.alt = 'Profile';
+                        img.style.width = '100%';
+                        img.style.height = '100%';
+                        img.style.objectFit = 'cover';
+                        img.style.borderRadius = '50%';
+                        avatarInner.appendChild(img);
                     }
-                }
-
-            } else {
-                showToast('✗ ' + (data.message || 'Upload failed.'), 'error');
-                console.error('Upload error:', data.message);
-            }
-        })
-        .catch(err => {
-            uploadSpinner.classList.remove('active');
-            showToast('✗ ' + (err.message || 'Upload failed.'), 'error');
-            console.error('Upload exception:', err);
-        });
-
+                    img.src = data.image_url;
+                } else { showToast('✗ ' + (data.message || 'Upload failed.'), 'error'); }
+            })
+            .catch(err => { uploadSpinner.classList.remove('active'); showToast('✗ ' + (err.message || 'Upload failed.'), 'error'); });
         this.value = '';
     });
 
     function showToast(msg, type) {
         toast.textContent = msg;
-        toast.className   = 'profile-toast ' + type + ' show';
+        toast.className = 'profile-toast ' + type + ' show';
         setTimeout(() => toast.classList.remove('show'), 3500);
     }
 })();
