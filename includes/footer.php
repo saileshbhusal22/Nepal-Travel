@@ -19,7 +19,7 @@
                                 <path d="M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z" />
                             </svg>
                         </a>
-                        <a href="https://www.instagram.com/visitnepal_2026/" target="_blank" class="social-icon" aria-label="Instagram">
+                        <a href="https://www.instagram.com/_sanopaila.np/" target="_blank" class="social-icon" aria-label="Instagram">
                             <svg viewBox="0 0 24 24">
                                 <path
                                     d="M7 2h10a5 5 0 015 5v10a5 5 0 01-5 5H7a5 5 0 01-5-5V7a5 5 0 015-5zm10.5 4a1.5 1.5 0 100 3 1.5 1.5 0 000-3zM12 7a5 5 0 100 10 5 5 0 000-10zm0 2a3 3 0 110 6 3 3 0 010-6z" />
