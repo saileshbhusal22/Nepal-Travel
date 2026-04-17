@@ -51,10 +51,10 @@
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#f5a623" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.7 0l-1.1 1-1.1-1a5.5 5.5 0 0 0-7.8 7.8l1 1 7.9 8 7.8-7.9 1-1a5.5 5.5 0 0 0 0-7.8z"></path></svg>
                         SAVED
                     </a>
-                    <a href="#" class="utility-link">
+                    <button id="openSearchBtn" class="utility-link" style="background: none; border: none; padding: 0; cursor: pointer;">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#f5a623" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
                         SEARCH
-                    </a>
+                    </button>
                     
                     <!-- USER SECTION START -->
                     <?php if (isset($_SESSION['user_id'])): ?>
@@ -72,31 +72,12 @@
                         <a href="/Nepal-Travel/user/Register.php" class="utility-link">Signup</a>
                     <?php endif; ?>
                     <!-- USER SECTION END -->
-                <div class="utility-right" style="display: flex; gap: 25px; align-items: center;">
-                    <a href="saved.php" style="color: #fff; text-decoration: none; display: flex; align-items: center; gap: 6px;">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#f5a623" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.7 0l-1.1 1-1.1-1a5.5 5.5 0 0 0-7.8 7.8l1 1 7.9 8 7.8-7.9 1-1a5.5 5.5 0 0 0 0-7.8z"></path></svg>
-                        SAVED
-                    </a>
-                    <a href="#" style="color: #fff; text-decoration: none; display: flex; align-items: center; gap: 6px;">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#f5a623" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-                        SEARCH
-                    </a>
-                    <a href="/Nepal-Travel/user/login.php" style="color: #fff; text-decoration: none; display: flex; align-items: center; gap: 6px;">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#f5a623" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
-                        Login
-                    </a>
-                    <a href="/Nepal-Travel/user/Register.php" style="color: #fff; text-decoration: none; display: flex; align-items: center; gap: 6px;">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#f5a623" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
-                        Signup
-                    </a>
                 </div>
             </div>
         </div>
 
-        <div class="main-nav-bar" style="background: <?php echo $nav_bg; ?>;">
+        <div class="main-nav-bar">
             <div class="container">
-        <div class="main-nav-bar" style="background: <?php echo $nav_bg; ?>; padding: 25px 0;">
-            <div class="container" style="display: flex; justify-content: space-between; align-items: center; max-width:85%; padding: 0 40px;">
                 <div class="logo-wrapper">
                     <a href="index.php" class="logo-link">
                         <div class="visit-badge">Visit</div>
@@ -108,14 +89,59 @@
                     </a>
                 </div>
 
-                <nav class="nav-links">
-                    <a href="about-nepal.php" class="<?php echo $current_page == 'about-nepal.php' ? 'active' : ''; ?>" style="color: <?php echo $text_main; ?>; text-shadow: <?php echo $text_shadow; ?>;">ABOUT NEPAL</a>
-                    <a href="experience.php" class="<?php echo $current_page == 'experience.php' ? 'active' : ''; ?>" style="color: <?php echo $text_main; ?>; text-shadow: <?php echo $text_shadow; ?>;">EXPERIENCE</a>
-                    <a href="travel-ideas.php" class="<?php echo $current_page == 'travel-ideas.php' ? 'active' : ''; ?>" style="color: <?php echo $text_main; ?>; text-shadow: <?php echo $text_shadow; ?>;">TRAVEL IDEAS</a>
-                    <a href="deals-and-packages.php" class="<?php echo $current_page == 'deals-and-packages.php' ? 'active' : ''; ?>" style="color: <?php echo $text_main; ?>; text-shadow: <?php echo $text_shadow; ?>;">DEALS & PACKAGES</a>
-                    <a href="events.php" class="<?php echo $current_page == 'events.php' ? 'active' : ''; ?>" style="color: <?php echo $text_main; ?>; text-shadow: <?php echo $text_shadow; ?>;">EVENTS & HAPPENINGS</a>
+                <nav class="nav-links" style="color: <?php echo $text_main; ?>; text-shadow: <?php echo $text_shadow; ?>;">
+                    <a href="about-nepal.php" class="<?php echo $current_page == 'about-nepal.php' ? 'active' : ''; ?>">ABOUT NEPAL</a>
+                    <a href="experience.php" class="<?php echo $current_page == 'experience.php' ? 'active' : ''; ?>">EXPERIENCE</a>
+                    <a href="travel-ideas.php" class="<?php echo $current_page == 'travel-ideas.php' ? 'active' : ''; ?>">TRAVEL IDEAS</a>
+                    <a href="deals-and-packages.php" class="<?php echo $current_page == 'deals-and-packages.php' ? 'active' : ''; ?>">DEALS & PACKAGES</a>
+                    <a href="events.php" class="<?php echo $current_page == 'events.php' ? 'active' : ''; ?>">EVENTS & HAPPENINGS</a>
                 </nav>
             </div>
         </div>
     </header>
 <!-- Done by Sanskar -->
+
+    <!-- Global Search Portal Overlay -->
+    <div id="searchPortal" class="search-overlay">
+        <button id="closeSearch" class="search-close" aria-label="Close Search">✕</button>
+        <div class="search-container">
+            <div class="search-header">
+                <h2>Discovery Portal</h2>
+                <div class="portal-search-wrapper">
+                    <input type="text" id="globalSearchInput" placeholder="What are you looking for?" autocomplete="off">
+                    <button id="clearSearchInput" class="search-clear-btn" title="Clear search">×</button>
+                    <div id="searchPulse" class="searching-pulse"></div>
+                </div>
+                <!-- Suggestions -->
+                <div id="suggestionsPanel" class="suggestions-panel">
+                    <div class="suggestion-block" id="recentSearchesBlock" style="display: none;">
+                        <div class="suggestion-title">RECENT SEARCHES</div>
+                        <div class="suggestion-chips" id="recentSearchesChips"></div>
+                    </div>
+                    <div class="suggestion-block">
+                        <div class="suggestion-title">TRENDING NOW</div>
+                        <div class="suggestion-chips">
+                            <span class="suggestion-chip">Everest</span>
+                            <span class="suggestion-chip">Pokhara</span>
+                            <span class="suggestion-chip">Lumbini</span>
+                            <span class="suggestion-chip">Trekking</span>
+                            <span class="suggestion-chip">Authentic</span>
+                        </div>
+                    </div>
+                </div>
+                <!-- Discovery Tabs -->
+                <div class="search-tabs-container">
+                    <button class="search-tab-btn active" data-tab="all">ALL <span class="tab-count" id="count-all">0</span></button>
+                    <button class="search-tab-btn" data-tab="experiences">STORIES <span class="tab-count" id="count-experiences">0</span></button>
+                    <button class="search-tab-btn" data-tab="ideas">IDEAS <span class="tab-count" id="count-ideas">0</span></button>
+                    <button class="search-tab-btn" data-tab="deals">DEALS & PACKAGES <span class="tab-count" id="count-deals">0</span></button>
+                </div>
+            </div>
+
+            <div id="searchResultsGrid" class="search-results-grid">
+                <!-- Results will be injected here -->
+            </div>
+        </div>
+    </div>
+
+    <script src="../assets/js/global-search.js"></script>
