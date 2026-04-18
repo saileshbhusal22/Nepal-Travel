@@ -447,7 +447,7 @@ table.bkt tr:hover td{background:rgba(247,244,239,0.8)}
     Settings
   </a>
   <div class="tab-gap"></div>
-  <a href="/Nepal-Travel/pages/experience.php" class="tab-explore">
+  <a href="/Nepal-Travel/Public/experience.php" class="tab-explore">
     <svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
     Explore Nepal
   </a>
@@ -614,7 +614,7 @@ table.bkt tr:hover td{background:rgba(247,244,239,0.8)}
   <div class="sh">
     <span class="sh-title">Saved Places</span>
     <div class="sh-rule"></div>
-    <a href="/Nepal-Travel/deals-and-packages.php" class="sh-link">Browse all →</a>
+    <a href="/Nepal-Travel/Public/deals-and-packages.php" class="sh-link">Browse all →</a>
   </div>
 
   <?php if (empty($saved_deals)): ?>
@@ -624,7 +624,7 @@ table.bkt tr:hover td{background:rgba(247,244,239,0.8)}
       <div class="saved-ph"><div class="saved-ph-glyph">🕌</div><p>Favourite temples &amp; heritage sites</p></div>
     </div>
     <div class="cta-row">
-      <a href="/Nepal-Travel/deals-and-packages.php" class="btn-plan">Explore &amp; Save Places →</a>
+      <a href="/Nepal-Travel/Public/deals-and-packages.php" class="btn-plan">Explore &amp; Save Places →</a>
     </div>
 
   <?php else: ?>
@@ -632,7 +632,7 @@ table.bkt tr:hover td{background:rgba(247,244,239,0.8)}
       <?php foreach ($saved_deals as $deal): ?>
       <div style="background:var(--snow); border:1px solid var(--mist); border-radius:12px; overflow:hidden; display:flex; flex-direction:column; transition:transform 0.2s,box-shadow 0.2s;" onmouseover="this.style.transform='translateY(-4px)';this.style.boxShadow='0 12px 32px rgba(43,38,32,0.12)'" onmouseout="this.style.transform='';this.style.boxShadow=''">
 
-        <a href="/Nepal-Travel/pages/deal-details.php?id=<?= (int)$deal['id'] ?>" style="display:block; position:relative;">
+        <a href="/Nepal-Travel/Public/deal-details.php?id=<?= (int)$deal['id'] ?>" style="display:block; position:relative;">
           <img src="<?= htmlspecialchars($deal['image_url']) ?>" alt="<?= htmlspecialchars($deal['title']) ?>" style="width:100%; height:200px; object-fit:cover; display:block;">
           <?php if (!empty($deal['category'])): ?>
           <span style="position:absolute; top:12px; right:12px; background:var(--stone); color:var(--sand); font-size:10px; font-weight:700; letter-spacing:1px; text-transform:uppercase; padding:5px 12px; border-radius:4px;">

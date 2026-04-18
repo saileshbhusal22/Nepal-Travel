@@ -81,7 +81,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         .form-content h2 {
             font-size: 36px;
             font-weight: 700;
-            color: #1a5c2a;
+            color: wheat;
             margin-bottom: 0.4rem;
         }
 
@@ -92,7 +92,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         }
 
         .form-content .subtitle a {
-            color: #3db85a;
+            color: wheat;
             font-weight: 600;
             text-decoration: none;
         }
