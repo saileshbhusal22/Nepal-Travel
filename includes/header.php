@@ -109,13 +109,13 @@
                     SAVED
                 </a>
                 
-                <a href="#" style="color: #fff; text-decoration: none; display: flex; align-items: center; gap: 6px;">
+                <button id="openSearchBtn" style="background: none; border: none; color: #fff; text-decoration: none; display: flex; align-items: center; gap: 6px; cursor: pointer; padding: 0;">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#f5a623" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <circle cx="11" cy="11" r="8"></circle>
                         <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
                     </svg>
                     SEARCH
-                </a>
+                </button>
 
                 <!-- User Section -->
                 <?php if (isset($_SESSION['user_id'])): ?>
@@ -173,4 +173,70 @@
     </div>
 </header>
 
+<!-- Search Portal -->
+<div id="searchPortal" class="search-portal">
+    <div class="search-portal-content">
+        <div class="search-header">
+            <div class="search-input-wrapper">
+                <svg class="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                </svg>
+                <input type="text" id="globalSearchInput" class="search-input" placeholder="Search experiences, ideas, deals...">
+                <span id="searchPulse" class="search-pulse"></span>
+                <button id="clearSearchInput" class="clear-search-btn" title="Clear search">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+            <button id="closeSearch" class="close-search-btn" title="Close search">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+            </button>
+        </div>
+
+        <!-- Search Tabs -->
+        <div class="search-tabs">
+            <button class="search-tab-btn active" data-tab="all">
+                All (<span id="count-all">0</span>)
+            </button>
+            <button class="search-tab-btn" data-tab="experiences">
+                Stories (<span id="count-experiences">0</span>)
+            </button>
+            <button class="search-tab-btn" data-tab="ideas">
+                Ideas (<span id="count-ideas">0</span>)
+            </button>
+            <button class="search-tab-btn" data-tab="deals">
+                Deals (<span id="count-deals">0</span>)
+            </button>
+        </div>
+
+        <!-- Suggestions Panel -->
+        <div id="suggestionsPanel" class="suggestions-panel">
+            <div class="suggestions-section">
+                <h3>Suggested for you</h3>
+                <div class="suggestion-chips">
+                    <span class="suggestion-chip">Everest Trek</span>
+                    <span class="suggestion-chip">Pokhara</span>
+                    <span class="suggestion-chip">Kathmandu</span>
+                    <span class="suggestion-chip">Budget Travel</span>
+                </div>
+            </div>
+            <div id="recentSearchesBlock" class="suggestions-section" style="display: none;">
+                <h3>Recent searches</h3>
+                <div id="recentSearchesChips" class="suggestion-chips"></div>
+            </div>
+        </div>
+
+        <!-- Search Results Grid -->
+        <div id="searchResultsGrid" class="search-results-grid"></div>
+    </div>
+</div>
+
 <!-- Done by Sanskar -->
+
+<script src="../assets/js/global-search.js"></script>
