@@ -11,7 +11,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     if (empty($login_input) || empty($password)) {
         $message = "Please fill in all fields.";
     } else {
-        $stmt = $conn->prepare("SELECT id, full_name, password, email_verified FROM users WHERE email = ? OR username = ?");
+        $stmt = $conn->prepare("SELECT id, full_name, password, email_verified, role FROM users WHERE email = ? OR username = ?");
         $stmt->bind_param("ss", $login_input, $login_input);
         $stmt->execute();
         $result = $stmt->get_result();
@@ -23,9 +23,15 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         } elseif ($user['email_verified'] != 1) {
             $message = "Please verify your email before logging in. Check your inbox.";
         } else {
-            $_SESSION['user_id'] = $user['id'];
+            $_SESSION['user_id']   = $user['id'];
             $_SESSION['user_name'] = $user['full_name'];
-            header("Location: ../Public/index.php");
+            $_SESSION['role']      = $user['role'];
+
+            if ($user['role'] === 'admin') {
+                header("Location: ../admin/dashboard.php");
+            } else {
+                header("Location: ../Public/index.php");
+            }
             exit;
         }
     }
@@ -75,7 +81,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         .form-content h2 {
             font-size: 36px;
             font-weight: 700;
-            color: #1a5c2a;
+            color: wheat;
             margin-bottom: 0.4rem;
         }
 
@@ -86,13 +92,14 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         }
 
         .form-content .subtitle a {
-            color: #3db85a;
+            color: wheat;
             font-weight: 600;
             text-decoration: none;
         }
 
         .form-group {
             margin-bottom: 1rem;
+            position: relative;
         }
 
         .form-group input {
@@ -115,6 +122,25 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             border-color: rgba(255,255,255,0.5);
         }
 
+        /* password toggle */
+        .pass-wrap { position: relative; }
+        .pass-wrap input { padding-right: 44px; }
+        .eye-btn {
+            position: absolute;
+            right: 13px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: rgba(255,255,255,0.6);
+            padding: 0;
+            display: flex;
+            align-items: center;
+        }
+        .eye-btn:hover { color: #fff; }
+        .eye-btn svg { width: 18px; height: 18px; }
+
         .forgot-password {
             display: block;
             text-align: right;
@@ -122,9 +148,8 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             color: rgba(255,255,255,0.75);
             text-decoration: none;
             margin-bottom: 1.5rem;
-            margin-top: -0.5rem;
+            margin-top: -0.3rem;
         }
-
         .forgot-password:hover { color: #fff; }
 
         .btn-login {
@@ -138,18 +163,23 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             font-weight: 600;
             cursor: pointer;
             letter-spacing: 0.5px;
+            transition: background 0.2s;
         }
-
         .btn-login:hover { background: #245c27; }
 
         .message {
             font-size: 13px;
             margin-bottom: 1rem;
-            padding: 8px 12px;
-            border-radius: 4px;
-            background: rgba(255,0,0,0.1);
+            padding: 10px 14px;
+            border-radius: 6px;
+            background: rgba(255,0,0,0.12);
+            border: 1px solid rgba(255,80,80,0.25);
             color: #ff6b6b;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
+        .message::before { content: '✕'; font-weight: 700; font-size: 12px; }
 
         .login-right {
             flex: 1;
@@ -192,18 +222,53 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
         <form action="" method="POST">
             <div class="form-group">
-                <input type="text" name="login_input" placeholder="Email or Username" required>
+                <input type="text" name="login_input" placeholder="Email or Username"
+                       value="<?php echo htmlspecialchars($_POST['login_input'] ?? '') ?>" required>
             </div>
-            <div class="form-group">
-                <input type="password" name="password" placeholder="Password" required>
+
+            <div class="form-group pass-wrap">
+                <input type="password" name="password" id="passwordField" placeholder="Password" required>
+                <button type="button" class="eye-btn" onclick="togglePassword()" title="Show/hide password">
+                    <svg id="eyeOpen" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                        <circle cx="12" cy="12" r="3"/>
+                    </svg>
+                    <svg id="eyeClosed" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none">
+                        <path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94"/>
+                        <path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19"/>
+                        <line x1="1" y1="1" x2="23" y2="23"/>
+                    </svg>
+                </button>
             </div>
+
             <a href="forgot_password.php" class="forgot-password">Forgot password?</a>
             <button type="submit" class="btn-login">Login</button>
         </form>
     </div>
 </div>
 
-<div class="login-right"></div>
+<div class="login-right">
+    <p class="tagline">Discover the Himalayas</p>
+    <p class="big-title">NEPAL</p>
+</div>
+
+<script>
+function togglePassword() {
+    const field     = document.getElementById('passwordField');
+    const eyeOpen   = document.getElementById('eyeOpen');
+    const eyeClosed = document.getElementById('eyeClosed');
+
+    if (field.type === 'password') {
+        field.type      = 'text';
+        eyeOpen.style.display   = 'none';
+        eyeClosed.style.display = 'block';
+    } else {
+        field.type      = 'password';
+        eyeOpen.style.display   = 'block';
+        eyeClosed.style.display = 'none';
+    }
+}
+</script>
 
 </body>
 </html>
