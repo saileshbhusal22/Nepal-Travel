@@ -120,130 +120,133 @@ body {
 }
 
 /* INPUT FIELDS */
-form input {
+form input[type="text"],
+form input[type="email"],
+form input[type="password"] {
   width: 100%;
-  padding: 16px 18px; /* bigger height and horizontal padding */
-  margin-bottom: 15px; /* slightly more spacing */
-  font-size: 16px; /* bigger text */
+  padding: 16px 18px;
+  margin-bottom: 15px;
+  font-size: 16px;
   border: 1px solid rgba(255, 255, 255, 0.6);
-  border-radius: 8px; /* slightly more rounded */
+  border-radius: 8px;
   background: rgba(255, 255, 255, 0.3);
   color: #000;
   outline: none;
+  box-sizing: border-box;
 }
-form input::placeholder {
+form input[type="text"]::placeholder,
+form input[type="email"]::placeholder,
+form input[type="password"]::placeholder {
   color: #555;
 }
 
-/* TERMS */
+/* TERMS CHECKBOX — fixed alignment */
 .terms {
-  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
   margin-bottom: 15px;
   color: #333;
+  cursor: pointer;
+  line-height: 1.4;
+}
+
+.terms input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  min-width: 16px;
+  min-height: 16px;
+  margin: 0;
+  padding: 0;
+  flex-shrink: 0;
+  cursor: pointer;
+  accent-color: #0e4d1d;
+  border-radius: 3px;
+  box-sizing: border-box;
+}
+
+.terms span {
+  line-height: 1.4;
 }
 
 /* BUTTON */
-/* MATCH BUTTON TO INPUT FIELDS */
 .create-btn {
-  width: 100%; /* full width of .form-box */
-  height: 52px; /* same as input height: 16px padding + text */
-  padding: 0; /* no extra padding, height handles it */
+  width: 100%;
+  height: 52px;
+  padding: 0;
   font-size: 16px;
-  border-radius: 8px; /* same as inputs */
+  border-radius: 8px;
   background: #0e4d1d;
   color: white;
   border: none;
   cursor: pointer;
-  box-sizing: border-box; /* includes border/padding in width/height */
-  display: block; /* ensures full width in flex/inline context */
+  box-sizing: border-box;
+  display: block;
 }
 
 .create-btn:hover {
   background: #0a3a15;
 }
-/* RIGHT SIDE (EMPTY NOW, IMAGE IS ON BODY) */
+
+/* RIGHT SIDE */
 .right-panel {
   width: 100%;
   background: transparent;
   position: relative;
-
   display: flex;
-  justify-content: center; /* horizontal center */
-  align-items: center; /* vertical center */
+  justify-content: center;
+  align-items: center;
 }
+
 /* TEXT OVER IMAGE */
 .overlay-text {
-  position: absolute; /* 🔥 key fix */
+  position: absolute;
   top: 50%;
   left: 69%;
-  transform: translate(-50%, -50%); /* perfect center */
-
+  transform: translate(-50%, -50%);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-
   color: white;
   text-align: center;
   text-shadow: 2px 2px 15px rgba(0, 0, 0, 0.7);
 }
 
-/* small text floating */
 .small-text {
   font-size: 18px;
   letter-spacing: 3px;
   font-weight: 500;
-
   animation: floatText 3s ease-in-out infinite;
 }
 
-/* big text zoom + glow */
 .big-text {
   font-size: 70px;
   font-weight: bold;
   letter-spacing: 5px;
   margin-top: 5px;
   font-family: "Times New Roman", serif;
-
   animation: zoomPulse 4s ease-in-out infinite;
 }
+
 @keyframes fadeZoom {
-  from {
-    opacity: 0;
-    transform: scale(0.95);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
+  from { opacity: 0; transform: scale(0.95); }
+  to   { opacity: 1; transform: scale(1);    }
 }
 
 @keyframes floatText {
-  0% {
-    transform: translateY(0px);
-  }
-  50% {
-    transform: translateY(-8px);
-  }
-  100% {
-    transform: translateY(0px);
-  }
+  0%   { transform: translateY(0px);  }
+  50%  { transform: translateY(-8px); }
+  100% { transform: translateY(0px);  }
 }
 
 @keyframes zoomPulse {
-  0% {
-    transform: scale(1);
-    text-shadow: 2px 2px 15px rgba(0, 0, 0, 0.7);
-  }
-  50% {
-    transform: scale(1.05);
-    text-shadow: 0 0 25px rgba(255, 255, 255, 0.8);
-  }
-  100% {
-    transform: scale(1);
-    text-shadow: 2px 2px 15px rgba(0, 0, 0, 0.7);
-  }
+  0%   { transform: scale(1);    text-shadow: 2px 2px 15px rgba(0,0,0,0.7);      }
+  50%  { transform: scale(1.05); text-shadow: 0 0 25px rgba(255,255,255,0.8);    }
+  100% { transform: scale(1);    text-shadow: 2px 2px 15px rgba(0,0,0,0.7);      }
 }
+
 .spinner-box {
   display: flex;
   justify-content: center;
@@ -261,10 +264,6 @@ form input::placeholder {
 }
 
 @keyframes spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
 }
