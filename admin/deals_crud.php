@@ -7,7 +7,7 @@ require_once __DIR__ . '/../config/db.php';
 //     header('Location: /Nepal-Travel/user/login.php'); exit;
 // }
 
-$message = '';
+$message = ''; 
 $message_type = '';
 
 // ── CREATE ────────────────────────────────────────────────────────
