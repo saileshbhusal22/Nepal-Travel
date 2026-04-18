@@ -67,7 +67,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
     if ($stmt->execute()) {
         if (sendVerificationEmail($email, $fullname, $email_token)) {
-            $_SESSION['message'] = "Registration successful! Please verify your email before login.";
+            $_SESSION['message'] = "Registration successful! Please check your inbox and  verify your email";
             $_SESSION['message_type'] = "success";
         } else {
             $_SESSION['message'] = "Registered successfully, but email sending failed.";

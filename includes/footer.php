@@ -37,7 +37,7 @@
                 <div class="footer-col">
                     <h4>Quick Links</h4>
                     <ul>
-                        <li><a href="#">About Nepal</a></li>
+                        <li><a href="../Blogs/nepal.html">About Nepal</a></li>
                         <li><a href="#">Visa Information</a></li>
                         <li><a href="#">Travel Advisory</a></li>
                         <li><a href="#">Weather & Best Time</a></li>
@@ -47,7 +47,7 @@
                 <div class="footer-col">
                     <h4>Destinations</h4>
                     <ul>
-                        <li><a href="#">Kathmandu</a></li>
+                    <li><a href="../Blogs/kathmandu.html">Kathmandu</a></li>
                         <li><a href="#">Pokhara</a></li>
                         <li><a href="#">Chitwan</a></li>
                         <li><a href="#">Lumbini</a></li>
