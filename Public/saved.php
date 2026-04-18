@@ -1,12 +1,16 @@
 <?php 
-include '../includes/deals-data.php';
+require_once __DIR__ . '/../config/db.php';
+
+session_start();
 
 $saved_ids = $_SESSION['saved_deals'] ?? [];
+
 $saved_deals = [];
-foreach($saved_ids as $sid) {
-    if (isset($deals[$sid])) {
-        $saved_deals[] = $deals[$sid];
-    }
+
+if (!empty($saved_ids)) {
+    $ids = implode(',', array_map('intval', $saved_ids));
+    $result = $conn->query("SELECT * FROM deals WHERE id IN ($ids)");
+    $saved_deals = $result->fetch_all(MYSQLI_ASSOC);
 }
 
 $current_page = 'saved.php';
@@ -29,7 +33,7 @@ include '../includes/header.php';
     <div class="container">
         
         <?php if(isset($_SESSION['message'])): ?>
-            <div style="background: #e8f5e9; color: #2e7d32; padding: 15px; border-radius: 8px; margin-bottom: 40px; text-align: center; font-weight: bold; font-family: inherit; max-width: 800px; margin: 0 auto 40px;">
+            <div style="background: #e8f5e9; color: #2e7d32; padding: 15px; border-radius: 8px; margin-bottom: 40px; text-align: center; font-weight: bold; max-width: 800px; margin: 0 auto 40px;">
                 <?php echo $_SESSION['message']; unset($_SESSION['message']); ?>
             </div>
         <?php endif; ?>
@@ -42,30 +46,58 @@ include '../includes/header.php';
             </div>
         <?php else: ?>
             <div class="deals-options-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 30px;">
+                
                 <?php foreach($saved_deals as $deal): ?>
-                <div style="display: flex; flex-direction: column; background: white; text-decoration: none; position: relative; border: 1px solid #eee; transition: all 0.3s ease;" class="deal-card">
-                    <a href="deal.php?id=<?php echo htmlspecialchars($deal['id']); ?>" style="display: block; text-decoration: none; color: inherit; flex: 1; display: flex; flex-direction: column;">
+                <div class="deal-card" style="display:flex; flex-direction:column; background:white; border:1px solid #eee;">
+                    
+                    <a href="deal-details.php?id=<?php echo htmlspecialchars($deal['id']); ?>" 
+                       style="text-decoration:none; color:inherit; display:flex; flex-direction:column; height:100%;">
+
                         <div style="position: relative;">
-                            <img src="<?php echo htmlspecialchars($deal['image']); ?>" alt="Deal" style="width: 100%; height: 260px; object-fit: cover; display: block;">
-                            <div style="position: absolute; top: 15px; right: 15px; display: flex; gap: 5px;">
-                                <span style="background: <?php echo htmlspecialchars($deal['badge_color']); ?>; color: white; padding: 6px 14px; font-size: 11px; font-weight: 800; letter-spacing: 1px; border-radius: 4px; text-transform: uppercase; box-shadow: 0 4px 10px rgba(0,0,0,0.2);"><?php echo htmlspecialchars($deal['category_badge']); ?></span>
+                            <img src="<?php echo htmlspecialchars($deal['image_url']); ?>" 
+                                 style="width:100%; height:260px; object-fit:cover;">
+
+                            <!-- FIXED CATEGORY BADGE -->
+                            <div style="position:absolute; top:15px; right:15px;">
+                                <span style="background:#2563eb; color:white; padding:6px 14px; font-size:11px; font-weight:800; border-radius:4px;">
+                                    <?php echo htmlspecialchars($deal['category'] ?? 'Deal'); ?>
+                                </span>
                             </div>
                         </div>
 
-                        <div style="padding: 30px 20px 20px; flex: 1; display: flex; flex-direction: column;">
-                            <span style="color: var(--primary-yellow); font-weight: 800; font-size: 13px; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 12px; display: block;"><?php echo htmlspecialchars($deal['region']); ?></span>
-                            <h3 style="color: #333; font-size: 22px; font-weight: 800; line-height: 1.4; margin: 0 0 20px 0;"><?php echo htmlspecialchars($deal['title']); ?></h3>
+                        <div style="padding:30px 20px; flex:1; display:flex; flex-direction:column;">
                             
-                            <div style="margin-top: auto; display: flex; justify-content: space-between; align-items: flex-end;">
-                                <a href="save_deal.php?id=<?php echo htmlspecialchars($deal['id']); ?>&action=remove" style="padding: 10px 15px; background: #ffebee; color: #d32f2f; border-radius: 6px; font-weight: 800; font-size: 12px; text-decoration: none; text-transform: uppercase; position: relative; z-index: 10;">Remove</a>
-                                <span style="font-weight: 700; font-size: 13px; color: #3a6b9c;"><?php echo htmlspecialchars($deal['price']); ?></span>
+                            <!-- FIXED LOCATION -->
+                            <span style="color: var(--primary-yellow); font-weight:800; font-size:13px; margin-bottom:12px;">
+                                <?php echo htmlspecialchars($deal['location'] ?? 'Nepal'); ?>
+                            </span>
+
+                            <h3 style="color:#333; font-size:22px; font-weight:800; margin-bottom:20px;">
+                                <?php echo htmlspecialchars($deal['title']); ?>
+                            </h3>
+
+                            <div style="margin-top:auto; display:flex; justify-content:space-between; align-items:center;">
+                                
+                                <!-- REMOVE BUTTON -->
+                                <a href="save_deal.php?id=<?php echo htmlspecialchars($deal['id']); ?>&action=remove"
+                                   style="padding:10px 15px; background:#ffebee; color:#d32f2f; border-radius:6px; font-weight:800; font-size:12px; text-decoration:none;">
+                                   Remove
+                                </a>
+
+                                <!-- PRICE -->
+                                <span style="font-weight:700; font-size:14px; color:#3a6b9c;">
+                                    NPR <?php echo number_format((float)$deal['price']); ?>
+                                </span>
                             </div>
+
                         </div>
                     </a>
                 </div>
                 <?php endforeach; ?>
+
             </div>
         <?php endif; ?>
+
     </div>
 </section>
 
