@@ -38,6 +38,7 @@
     </div>
 </section>
 
+
 <!-- Category Sections -->
 
 <!-- Bijay Part -->
@@ -132,5 +133,11 @@
 </section>
 
 
+
+<link rel="stylesheet" href="assets/css/styles.css"> 
+</body>
+</html>
+
 <?php include '../includes/footer.php'; ?>
+
 
