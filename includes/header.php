@@ -12,7 +12,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,400..900;1,400..900&family=Great+Vibes&family=Playfair+Display:wght@700;900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="../assets/css/styles.css">
+    <link rel="stylesheet" href="../assets/css/styles.css?v=6">
 </head>
 
 <body>
@@ -134,7 +134,7 @@
                     <button class="search-tab-btn active" data-tab="all">ALL <span class="tab-count" id="count-all">0</span></button>
                     <button class="search-tab-btn" data-tab="experiences">STORIES <span class="tab-count" id="count-experiences">0</span></button>
                     <button class="search-tab-btn" data-tab="ideas">IDEAS <span class="tab-count" id="count-ideas">0</span></button>
-                    <button class="search-tab-btn" data-tab="deals">DEALS & PACKAGES <span class="tab-count" id="count-deals">0</span></button>
+                    <button class="search-tab-btn" data-tab="deals">DEALS <span class="tab-count" id="count-deals">0</span></button>
                 </div>
             </div>
 
@@ -144,4 +144,4 @@
         </div>
     </div>
 
-    <script src="../assets/js/global-search.js"></script>
+    <script src="../assets/js/global-search.js?v=6"></script>

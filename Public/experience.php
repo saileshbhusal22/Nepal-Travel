@@ -31,20 +31,36 @@
             
             <div class="filter-group">
                 <h4>Category</h4>
-                <label class="checkbox-label"><input type="checkbox"> Heritage & Culture</label>
-                <label class="checkbox-label"><input type="checkbox"> Nature & Wildlife</label>
-                <label class="checkbox-label"><input type="checkbox"> Trekking & Adventure</label>
-                <label class="checkbox-label"><input type="checkbox" checked> Spiritual & Wellness</label>
-                <label class="checkbox-label"><input type="checkbox"> City Excitement</label>
+                <label class="checkbox-label"><input type="checkbox"> <span>Heritage & Culture</span></label>
+                <label class="checkbox-label"><input type="checkbox"> <span>Nature & Wildlife</span></label>
+                <label class="checkbox-label"><input type="checkbox"> <span>Trekking & Adventure</span></label>
+                <label class="checkbox-label"><input type="checkbox" checked> <span>Spiritual & Wellness</span></label>
+                <label class="checkbox-label"><input type="checkbox"> <span>City Excitement</span></label>
             </div>
             
             <div class="filter-group">
                 <h4>Duration</h4>
-                <label class="checkbox-label"><input type="checkbox"> Half Day</label>
-                <label class="checkbox-label"><input type="checkbox"> 1 - 3 Days</label>
-                <label class="checkbox-label"><input type="checkbox" checked> 4 - 7 Days</label>
-                <label class="checkbox-label"><input type="checkbox"> 8 - 14 Days</label>
-                <label class="checkbox-label"><input type="checkbox"> 15+ Days</label>
+                <label class="checkbox-label"><input type="checkbox"> <span>Half Day</span></label>
+                <label class="checkbox-label"><input type="checkbox"> <span>1 - 3 Days</span></label>
+                <label class="checkbox-label"><input type="checkbox" checked> <span>4 - 7 Days</span></label>
+                <label class="checkbox-label"><input type="checkbox"> <span>8 - 14 Days</span></label>
+                <label class="checkbox-label"><input type="checkbox"> <span>15+ Days</span></label>
+            </div>
+            
+            <div class="filter-group">
+                <h4>Best Time to Visit</h4>
+                <label class="checkbox-label"><input type="checkbox"> <span>January</span></label>
+                <label class="checkbox-label"><input type="checkbox"> <span>February</span></label>
+                <label class="checkbox-label"><input type="checkbox"> <span>March</span></label>
+                <label class="checkbox-label"><input type="checkbox"> <span>April</span></label>
+                <label class="checkbox-label"><input type="checkbox"> <span>May</span></label>
+                <label class="checkbox-label"><input type="checkbox"> <span>June</span></label>
+                <label class="checkbox-label"><input type="checkbox"> <span>July</span></label>
+                <label class="checkbox-label"><input type="checkbox"> <span>August</span></label>
+                <label class="checkbox-label"><input type="checkbox"> <span>September</span></label>
+                <label class="checkbox-label"><input type="checkbox"> <span>October</span></label>
+                <label class="checkbox-label"><input type="checkbox"> <span>November</span></label>
+                <label class="checkbox-label"><input type="checkbox"> <span>December</span></label>
             </div>
             
             <button class="btn btn-primary" style="width: 100%; border-radius: 8px; padding: 12px; margin-top: 10px;">Apply Filters</button>
@@ -92,3 +108,5 @@
 </section>
 
 <?php include __DIR__ . '/../includes/footer.php'; ?>
+
+<script src="../assets/js/experience-filter.js"></script>

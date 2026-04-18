@@ -89,6 +89,27 @@ document.addEventListener("DOMContentLoaded", function () {
         type: "IDEA",
         link: "/Nepal-Travel/Public/travel-ideas.php",
       },
+      {
+        id: 17,
+        title: "Kathmandu Heritage Walk",
+        image: "/Nepal-Travel/images/kathmandu_night_hero.png",
+        type: "IDEA",
+        link: "/Nepal-Travel/Public/travel-ideas.php",
+      },
+      {
+        id: 18,
+        title: "Everest Panorama Story",
+        image: "/Nepal-Travel/images/everest_trek.png",
+        type: "IDEA",
+        link: "/Nepal-Travel/Public/travel-ideas.php",
+      },
+      {
+        id: 19,
+        title: "Pokhara Lakeside Escape",
+        image: "/Nepal-Travel/images/pokhara_lake.png",
+        type: "IDEA",
+        link: "/Nepal-Travel/Public/travel-ideas.php",
+      },
     ],
     deals: [
       {
@@ -138,6 +159,27 @@ document.addEventListener("DOMContentLoaded", function () {
         title: "Pokhara Lake & Mountain Package",
         image: "/Nepal-Travel/images/pokhara_lake.png",
         type: "PACKAGE",
+        link: "/Nepal-Travel/Public/deals-and-packages.php",
+      },
+      {
+        id: 17,
+        title: "Kathmandu Valley - 5D4N Heritage Exploration",
+        image: "/Nepal-Travel/images/bhaktapur_temple.png",
+        type: "DEAL",
+        link: "/Nepal-Travel/Public/deals-and-packages.php",
+      },
+      {
+        id: 18,
+        title: "Pokhara Honeymoon Escape",
+        image: "/Nepal-Travel/images/pokhara_lake.png",
+        type: "DEAL",
+        link: "/Nepal-Travel/Public/deals-and-packages.php",
+      },
+      {
+        id: 19,
+        title: "Everest Base Camp Special Offer",
+        image: "/Nepal-Travel/images/everest_trek.png",
+        type: "DEAL",
         link: "/Nepal-Travel/Public/deals-and-packages.php",
       },
     ],
@@ -192,6 +234,7 @@ document.addEventListener("DOMContentLoaded", function () {
   if (clearSearchBtn) {
     clearSearchBtn.addEventListener("click", function () {
       searchInput.value = "";
+      searchResults = { all: [], experiences: [], ideas: [], deals: [] };
       clearSearchBtn.classList.remove("visible");
       searchPulse.classList.remove("active");
       resultsGrid.innerHTML = "";
@@ -206,6 +249,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     if (query.length === 0) {
       clearSearchBtn.classList.remove("visible");
+      searchResults = { all: [], experiences: [], ideas: [], deals: [] };
       resultsGrid.innerHTML = "";
       suggestionsPanel.style.display = "block";
       updateResultCounts();
@@ -270,7 +314,10 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // Update result counts
   function updateResultCounts() {
-    document.getElementById("count-all").textContent = searchResults.all.length;
+    document.getElementById("count-all").textContent =
+      searchResults.experiences.length +
+      searchResults.ideas.length +
+      searchResults.deals.length;
     document.getElementById("count-experiences").textContent =
       searchResults.experiences.length;
     document.getElementById("count-ideas").textContent =
@@ -282,9 +329,14 @@ document.addEventListener("DOMContentLoaded", function () {
   // Display results
   function displayResults(tab) {
     resultsGrid.innerHTML = "";
-    const results = searchResults[tab] || [];
 
-    if (results.length === 0) {
+    // Check if there are any results
+    const totalResults =
+      searchResults.experiences.length +
+      searchResults.ideas.length +
+      searchResults.deals.length;
+
+    if (totalResults === 0) {
       resultsGrid.innerHTML = `
                 <div class="search-empty-state">
                     <h3>No results found</h3>
@@ -294,24 +346,113 @@ document.addEventListener("DOMContentLoaded", function () {
       return;
     }
 
-    results.forEach((item) => {
-      const card = document.createElement("div");
-      card.className = "search-result-card";
-      card.style.cursor = "pointer";
-      card.innerHTML = `
-                <img src="${item.image}" alt="${item.title}" class="search-result-image" onerror="this.src='/Nepal-Travel/images/placeholder.jpg'">
-                <div class="search-result-content">
-                    <div class="search-result-badge">${item.type}</div>
-                    <div class="search-result-title">${item.title}</div>
-                </div>
-            `;
-      card.addEventListener("click", function () {
-        if (item.link) {
-          window.location.href = item.link;
-        }
+    // Display EXPERIENCES section
+    if (searchResults.experiences.length > 0) {
+      const experienceSection = document.createElement("div");
+      experienceSection.className = "result-category";
+
+      const experienceTitle = document.createElement("div");
+      experienceTitle.className = "result-category-title";
+      experienceTitle.textContent = "COMMUNITY STORIES";
+      experienceSection.appendChild(experienceTitle);
+
+      const experienceScrollContainer = document.createElement("div");
+      experienceScrollContainer.className = "category-scroll-container";
+
+      searchResults.experiences.forEach((item) => {
+        const card = document.createElement("div");
+        card.className = "search-result-card search-result-card-horizontal";
+        card.style.cursor = "pointer";
+        card.innerHTML = `
+                  <img src="${item.image}" alt="${item.title}" class="search-result-image" onerror="this.src='/Nepal-Travel/images/placeholder.jpg'">
+                  <div class="search-result-content">
+                      <div class="search-result-badge">${item.type}</div>
+                      <div class="search-result-title">${item.title}</div>
+                  </div>
+              `;
+        card.addEventListener("click", function () {
+          if (item.link) {
+            window.location.href = item.link;
+          }
+        });
+        experienceScrollContainer.appendChild(card);
       });
-      resultsGrid.appendChild(card);
-    });
+
+      experienceSection.appendChild(experienceScrollContainer);
+      resultsGrid.appendChild(experienceSection);
+    }
+
+    // Display IDEAS section
+    if (searchResults.ideas.length > 0) {
+      const ideasSection = document.createElement("div");
+      ideasSection.className = "result-category";
+
+      const ideasTitle = document.createElement("div");
+      ideasTitle.className = "result-category-title";
+      ideasTitle.textContent = "TRAVEL IDEAS";
+      ideasSection.appendChild(ideasTitle);
+
+      const ideasContainer = document.createElement("div");
+      ideasContainer.className = "category-vertical-container";
+
+      searchResults.ideas.forEach((item) => {
+        const card = document.createElement("div");
+        card.className = "search-result-card search-result-card-vertical";
+        card.style.cursor = "pointer";
+        card.innerHTML = `
+                  <img src="${item.image}" alt="${item.title}" class="search-result-image" onerror="this.src='/Nepal-Travel/images/placeholder.jpg'">
+                  <div class="search-result-content">
+                      <div class="search-result-badge">${item.type}</div>
+                      <div class="search-result-title">${item.title}</div>
+                  </div>
+              `;
+        card.addEventListener("click", function () {
+          if (item.link) {
+            window.location.href = item.link;
+          }
+        });
+        ideasContainer.appendChild(card);
+      });
+
+      ideasSection.appendChild(ideasContainer);
+      resultsGrid.appendChild(ideasSection);
+    }
+
+    // Display DEALS section
+    if (searchResults.deals.length > 0) {
+      const dealsSection = document.createElement("div");
+      dealsSection.className = "result-category";
+
+      const dealsTitle = document.createElement("div");
+      dealsTitle.className = "result-category-title";
+      dealsTitle.textContent = "HOT DEALS";
+      dealsSection.appendChild(dealsTitle);
+
+      const dealsContainer = document.createElement("div");
+      dealsContainer.className = "category-vertical-container";
+
+      searchResults.deals.forEach((item) => {
+        const card = document.createElement("div");
+        card.className = "search-result-card search-result-card-vertical";
+        card.style.cursor = "pointer";
+        card.innerHTML = `
+                  <img src="${item.image}" alt="${item.title}" class="search-result-image" onerror="this.src='/Nepal-Travel/images/placeholder.jpg'">
+                  <div class="search-result-content">
+                      <div class="search-result-badge">${item.type}</div>
+                      <div class="search-result-title">${item.title}</div>
+                  </div>
+              `;
+        card.addEventListener("click", function () {
+          if (item.link) {
+            window.location.href = item.link;
+          }
+        });
+        dealsContainer.appendChild(card);
+      });
+
+      dealsSection.appendChild(dealsContainer);
+      resultsGrid.appendChild(dealsSection);
+    }
   }
 
   // Tab switching
@@ -322,7 +463,8 @@ document.addEventListener("DOMContentLoaded", function () {
       this.classList.add("active");
 
       currentTab = this.dataset.tab;
-      displayResults(currentTab);
+      // Always display all categories regardless of tab
+      displayResults("all");
     });
   });
 
