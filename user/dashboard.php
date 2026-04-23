@@ -30,7 +30,7 @@ $initials    = strtoupper(substr($user['full_name'], 0, 2));
 $memberSince = date('F Y', strtotime($user['created_at']));
 $activeTab   = $_GET['tab'] ?? 'overview';
 
-// ── COUNTS FOR HERO STATS ──────────────────────────────────────────────────
+// ── COUNTS FOR HERO STATS ─────────────────────────────────────────────────
 $stmt = $conn->prepare("SELECT COUNT(*) FROM bookings WHERE user_id = ?");
 $stmt->bind_param("i", $_SESSION['user_id']);
 $stmt->execute();
@@ -39,9 +39,17 @@ $stmt->fetch();
 $stmt->close();
 
 $savedCount = count($_SESSION['saved_deals'] ?? []);
-// ──────────────────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────
 
+// ── SETTINGS: name / password ─────────────────────────────────────────────
 $settings_message = ''; $settings_msg_type = '';
+
+// Carry delete error back from redirect
+if (isset($_GET['delete_error'])) {
+    $settings_message  = urldecode($_GET['delete_error']);
+    $settings_msg_type = 'error';
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && $activeTab === 'settings') {
     if (isset($_POST['update_name'])) {
         $new_name = trim($_POST['full_name'] ?? '');
@@ -75,6 +83,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $activeTab === 'settings') {
     }
 }
 
+// ── BOOKING ACTIONS ───────────────────────────────────────────────────────
 $booking_action_message = ''; $booking_action_type = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['booking_action'])) {
     $bid = (int)($_POST['booking_id'] ?? 0); $action = $_POST['booking_action'];
@@ -355,6 +364,44 @@ table.bkt tr:hover td{background:rgba(247,244,239,0.8)}
 .toast.success{border-left-color:var(--moss)}
 .toast.error{border-left-color:var(--flag-r)}
 
+/* DELETE MODAL */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(43,38,32,0.70);z-index:9000;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);}
+.modal-overlay.open{display:flex}
+.modal-box{background:var(--snow);border-radius:16px;max-width:440px;width:100%;overflow:hidden;box-shadow:0 28px 72px rgba(43,38,32,0.35);animation:modalIn 0.25s cubic-bezier(0.34,1.4,0.64,1);}
+@keyframes modalIn{from{transform:scale(0.90) translateY(16px);opacity:0}to{transform:scale(1) translateY(0);opacity:1}}
+.modal-head{padding:26px 28px 20px;border-bottom:1px solid var(--mist);background:linear-gradient(135deg,#fff8f7,var(--snow));}
+.modal-head-icon{width:48px;height:48px;border-radius:50%;background:rgba(192,57,43,0.10);border:2px solid rgba(192,57,43,0.20);display:flex;align-items:center;justify-content:center;margin-bottom:14px;}
+.modal-head-icon svg{width:22px;height:22px;fill:var(--flag-r)}
+.modal-head h2{font-family:var(--ff-serif);font-size:20px;color:var(--flag-r);margin-bottom:6px;}
+.modal-head p{font-size:13px;color:var(--soil);line-height:1.65;}
+.modal-warns{margin:0 28px;padding:14px 16px;background:#fff8f7;border:1px solid rgba(192,57,43,0.18);border-radius:8px;list-style:none;margin-top:20px;}
+.modal-warns li{font-size:12px;color:#7A1E1E;padding:4px 0;display:flex;align-items:center;gap:8px;}
+.modal-warns li::before{content:'✕';font-weight:700;color:var(--flag-r);flex-shrink:0;}
+.modal-body{padding:22px 28px;}
+.modal-footer{padding:0 28px 26px;display:flex;gap:12px;}
+.btn-cancel-modal{flex:1;background:var(--fog);color:var(--stone);border:1px solid var(--mist);border-radius:6px;padding:12px;font-size:13px;font-weight:600;cursor:pointer;transition:background 0.2s;}
+.btn-cancel-modal:hover{background:var(--mist)}
+.btn-delete-confirm{flex:1;background:var(--flag-r);color:#fff;border:none;border-radius:6px;padding:12px;font-size:13px;font-weight:600;cursor:pointer;transition:background 0.2s,opacity 0.2s;display:flex;align-items:center;justify-content:center;gap:8px;}
+.btn-delete-confirm:hover{background:#9B2D20}
+.btn-delete-confirm:disabled{opacity:0.6;cursor:not-allowed}
+.del-pw-wrap{position:relative;}
+.del-pw-wrap input{padding-right:44px;}
+.del-pw-toggle{position:absolute;right:14px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;padding:0;color:var(--soil);}
+.del-pw-toggle svg{width:18px;height:18px;fill:currentColor}
+.del-error{display:none;color:var(--flag-r);font-size:12px;margin-top:8px;font-weight:500;}
+.del-error.show{display:block}
+
+/* DANGER ZONE card */
+.danger-card{background:var(--snow);border:1.5px solid rgba(192,57,43,0.30);border-radius:12px;overflow:hidden;margin-bottom:22px;}
+.danger-hd{padding:18px 30px;border-bottom:1px solid rgba(192,57,43,0.15);background:linear-gradient(135deg,#fff8f7,var(--snow));}
+.danger-hd h3{font-family:var(--ff-serif);font-size:19px;font-weight:700;color:var(--flag-r)}
+.danger-hd p{font-size:12px;color:#7A3030;margin-top:3px;line-height:1.6;}
+.danger-body{padding:24px 30px;display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap;}
+.danger-body p{font-size:13px;color:var(--soil);max-width:480px;line-height:1.6;}
+.btn-open-delete{background:transparent;color:var(--flag-r);border:1.5px solid var(--flag-r);border-radius:6px;padding:11px 26px;font-size:13px;font-weight:600;cursor:pointer;letter-spacing:0.3px;transition:all 0.2s;white-space:nowrap;display:inline-flex;align-items:center;gap:8px;}
+.btn-open-delete:hover{background:var(--flag-r);color:#fff}
+.btn-open-delete svg{width:15px;height:15px;fill:currentColor}
+
 /* RESPONSIVE */
 @media(max-width:900px){
   .topbar,.hero,.content{padding-left:20px;padding-right:20px}
@@ -369,6 +416,7 @@ table.bkt tr:hover td{background:rgba(247,244,239,0.8)}
   table.bkt{font-size:12px}
   .tab{padding:12px 14px;font-size:12px}
   .tab-explore{display:none}
+  .danger-body{flex-direction:column;align-items:flex-start}
 }
 </style>
 </head>
@@ -631,7 +679,6 @@ table.bkt tr:hover td{background:rgba(247,244,239,0.8)}
     <div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:22px; margin-bottom:40px;">
       <?php foreach ($saved_deals as $deal): ?>
       <div style="background:var(--snow); border:1px solid var(--mist); border-radius:12px; overflow:hidden; display:flex; flex-direction:column; transition:transform 0.2s,box-shadow 0.2s;" onmouseover="this.style.transform='translateY(-4px)';this.style.boxShadow='0 12px 32px rgba(43,38,32,0.12)'" onmouseout="this.style.transform='';this.style.boxShadow=''">
-
         <a href="/Nepal-Travel/Public/deal-details.php?id=<?= (int)$deal['id'] ?>" style="display:block; position:relative;">
           <img src="<?= htmlspecialchars($deal['image_url']) ?>" alt="<?= htmlspecialchars($deal['title']) ?>" style="width:100%; height:200px; object-fit:cover; display:block;">
           <?php if (!empty($deal['category'])): ?>
@@ -640,18 +687,15 @@ table.bkt tr:hover td{background:rgba(247,244,239,0.8)}
           </span>
           <?php endif; ?>
         </a>
-
         <div style="padding:18px 20px; flex:1; display:flex; flex-direction:column; gap:8px;">
           <?php if (!empty($deal['location'])): ?>
           <span style="font-size:11px; font-weight:700; color:var(--ember); letter-spacing:0.5px; text-transform:uppercase;">
             📍 <?= htmlspecialchars($deal['location']) ?>
           </span>
           <?php endif; ?>
-
           <a href="/Nepal-Travel/pages/deal-details.php?id=<?= (int)$deal['id'] ?>" style="font-family:var(--ff-serif); font-size:17px; font-weight:700; color:var(--stone); text-decoration:none; line-height:1.3;">
             <?= htmlspecialchars($deal['title']) ?>
           </a>
-
           <div style="display:flex; gap:14px; font-size:12px; color:var(--soil); margin-top:2px;">
             <?php if (!empty($deal['days'])): ?>
             <span>📅 <?= (int)$deal['days'] ?> days</span>
@@ -660,7 +704,6 @@ table.bkt tr:hover td{background:rgba(247,244,239,0.8)}
             <span>⭐ <?= number_format((float)$deal['rating'], 1) ?></span>
             <?php endif; ?>
           </div>
-
           <div style="margin-top:auto; padding-top:14px; border-top:1px solid var(--mist); display:flex; justify-content:space-between; align-items:center;">
             <span style="font-family:var(--ff-serif); font-size:16px; font-weight:700; color:var(--stone);">
               NPR <?= number_format((float)$deal['price']) ?>
@@ -689,6 +732,7 @@ table.bkt tr:hover td{background:rgba(247,244,239,0.8)}
 
   <div class="sh" style="margin-top:0"><span class="sh-title">Account Settings</span><div class="sh-rule"></div></div>
 
+  <!-- UPDATE NAME -->
   <div class="stg-card">
     <div class="stg-hd"><h3>Update Name</h3><p>Change how your name appears across the site</p></div>
     <div class="stg-body">
@@ -699,6 +743,7 @@ table.bkt tr:hover td{background:rgba(247,244,239,0.8)}
     </div>
   </div>
 
+  <!-- CHANGE PASSWORD -->
   <div class="stg-card">
     <div class="stg-hd"><h3>Change Password</h3><p>Minimum 6 characters required</p></div>
     <div class="stg-body">
@@ -711,6 +756,7 @@ table.bkt tr:hover td{background:rgba(247,244,239,0.8)}
     </div>
   </div>
 
+  <!-- EMAIL (disabled) -->
   <div class="stg-card" style="opacity:0.6">
     <div class="stg-hd"><h3>Email Address</h3><p>Contact support if you need to change your email</p></div>
     <div class="stg-body">
@@ -718,14 +764,81 @@ table.bkt tr:hover td{background:rgba(247,244,239,0.8)}
     </div>
   </div>
 
+  <!-- ══ DANGER ZONE ══════════════════════════════════════════════════════ -->
+  <div class="danger-card">
+    <div class="danger-hd">
+      <h3>⚠ Danger Zone</h3>
+      <p>Irreversible and destructive actions. Please read carefully before proceeding.</p>
+    </div>
+    <div class="danger-body">
+      <p>Deleting your account will permanently remove your profile, all bookings, and your uploaded photo from our servers. <strong>This cannot be undone.</strong></p>
+      <button type="button" class="btn-open-delete" id="openDeleteModal">
+        <svg viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+        Delete My Account
+      </button>
+    </div>
+  </div>
+
 <?php endif; ?>
 
 </div><!-- /content -->
+
+<!-- ══ DELETE ACCOUNT MODAL ═══════════════════════════════════════════════ -->
+<div class="modal-overlay" id="deleteModal">
+  <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="delModalTitle">
+
+    <div class="modal-head">
+      <div class="modal-head-icon">
+        <svg viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+      </div>
+      <h2 id="delModalTitle">Delete Your Account</h2>
+      <p>You are about to permanently delete your account. This action is <strong>irreversible</strong> — once done, there is no recovery.</p>
+    </div>
+
+    <ul class="modal-warns">
+      <li>Your profile and personal information will be erased</li>
+      <li>All your bookings will be permanently deleted</li>
+      <li>Your uploaded profile photo will be removed</li>
+      <li>Your saved places will be lost</li>
+    </ul>
+
+    <form method="POST" action="/Nepal-Travel/user/delete_account.php" id="deleteAccountForm">
+      <div class="modal-body">
+        <label class="flbl" for="deletePasswordInput">Enter your password to confirm deletion</label>
+        <div class="del-pw-wrap">
+          <input
+            type="password"
+            name="delete_password"
+            id="deletePasswordInput"
+            class="fin"
+            placeholder="Your current password"
+            autocomplete="current-password"
+            style="border-color:rgba(192,57,43,0.35);"
+          >
+          <button type="button" class="del-pw-toggle" id="delPwToggle" title="Show/hide password">
+            <svg id="delEyeIcon" viewBox="0 0 24 24"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
+          </button>
+        </div>
+        <p class="del-error" id="delError">Please enter your password before proceeding.</p>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn-cancel-modal" id="closeDeleteModal">Keep My Account</button>
+        <button type="submit" class="btn-delete-confirm" id="delSubmitBtn">
+          <svg viewBox="0 0 24 24" fill="currentColor" style="width:15px;height:15px"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+          <span id="delBtnLabel">Yes, Delete Forever</span>
+        </button>
+      </div>
+    </form>
+
+  </div>
+</div>
 
 <div class="toast" id="toast"></div>
 
 <script>
 (function(){
+  /* ── PROFILE PHOTO UPLOAD ───────────────────────────────────────────── */
   const pfInput  = document.getElementById('pfInput');
   const tbAvatar = document.getElementById('tbAvatar');
   const tbImg    = document.getElementById('tbAvatarImg');
@@ -771,10 +884,79 @@ table.bkt tr:hover td{background:rgba(247,244,239,0.8)}
     this.value='';
   });
 
-  function showToast(msg,type){
+  /* ── DELETE MODAL ───────────────────────────────────────────────────── */
+  const modal        = document.getElementById('deleteModal');
+  const openBtn      = document.getElementById('openDeleteModal');
+  const closeBtn     = document.getElementById('closeDeleteModal');
+  const delForm      = document.getElementById('deleteAccountForm');
+  const delPwInput   = document.getElementById('deletePasswordInput');
+  const delSubmitBtn = document.getElementById('delSubmitBtn');
+  const delBtnLabel  = document.getElementById('delBtnLabel');
+  const delError     = document.getElementById('delError');
+  const delPwToggle  = document.getElementById('delPwToggle');
+  const delEyeIcon   = document.getElementById('delEyeIcon');
+
+  // Eye icon paths
+  const eyeOpen  = 'M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z';
+  const eyeClosed = 'M19.07 14.93A9.93 9.93 0 0 0 21 12C19.27 7.61 15 4.5 10 4.5c-1.31 0-2.56.24-3.72.67l1.53 1.53A7.5 7.5 0 0 1 10 6c3.86 0 7.13 2.33 8.66 5.7-.46 1.01-1.1 1.92-1.87 2.69l1.28 1.54zM14.54 9.47l-1.54-1.54A3 3 0 0 0 9.07 11.93l1.54 1.54A3 3 0 0 0 14.54 9.47zM3 4.27l1.45 1.45A9.96 9.96 0 0 0 1 12c1.73 4.39 6 7.5 11 7.5 1.68 0 3.28-.37 4.72-1.02L18.73 20.5 20 19.27 4.27 3 3 4.27zm7 7l1.26 1.26A1.5 1.5 0 0 1 10 13.5a1.5 1.5 0 0 1-1.5-1.5 1.5 1.5 0 0 1 .5-1.23zm4.14 4.14-.71-.7A3 3 0 0 1 10 15a3 3 0 0 1-3-3 3 3 0 0 1 .29-1.26l-.7-.71A4.5 4.5 0 0 0 10 16.5a4.5 4.5 0 0 0 3.14-1.09z';
+
+  function openModal(){
+    modal.classList.add('open');
+    delPwInput.value = '';
+    delError.classList.remove('show');
+    delSubmitBtn.disabled = false;
+    delBtnLabel.textContent = 'Yes, Delete Forever';
+    setTimeout(()=>delPwInput.focus(), 120);
+  }
+
+  function closeModal(){
+    modal.classList.remove('open');
+  }
+
+  if (openBtn)  openBtn.addEventListener('click', openModal);
+  if (closeBtn) closeBtn.addEventListener('click', closeModal);
+
+  // Close on backdrop click
+  modal.addEventListener('click', function(e){
+    if (e.target === modal) closeModal();
+  });
+
+  // Close on Escape
+  document.addEventListener('keydown', function(e){
+    if (e.key === 'Escape' && modal.classList.contains('open')) closeModal();
+  });
+
+  // Show/hide password toggle
+  delPwToggle.addEventListener('click', function(){
+    const isPass = delPwInput.type === 'password';
+    delPwInput.type = isPass ? 'text' : 'password';
+    delEyeIcon.querySelector('path').setAttribute('d', isPass ? eyeClosed : eyeOpen);
+    delPwInput.focus();
+  });
+
+  // Form submit guard
+  delForm.addEventListener('submit', function(e){
+    if (!delPwInput.value.trim()) {
+      e.preventDefault();
+      delError.classList.add('show');
+      delPwInput.focus();
+      return;
+    }
+    delError.classList.remove('show');
+    delSubmitBtn.disabled = true;
+    delBtnLabel.textContent = 'Deleting…';
+  });
+
+  // Clear error on typing
+  delPwInput.addEventListener('input', function(){
+    if (this.value.trim()) delError.classList.remove('show');
+  });
+
+  /* ── TOAST ──────────────────────────────────────────────────────────── */
+  function showToast(msg, type){
     toast.textContent = msg;
-    toast.className = 'toast '+type+' show';
-    setTimeout(()=>toast.classList.remove('show'),3500);
+    toast.className = 'toast ' + type + ' show';
+    setTimeout(()=>toast.classList.remove('show'), 3500);
   }
 })();
 </script>
