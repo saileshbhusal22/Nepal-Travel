@@ -9,6 +9,7 @@
 
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,400..900;1,400..900&family=Great+Vibes&family=Playfair+Display:wght@700;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="../assets/css/styles.css">
+    <link rel="stylesheet" href="../assets/css/chatbot.css">
 
     <style>
         /* ---- Header Profile Avatar ---- */
@@ -172,6 +173,20 @@
         </div>
     </div>
 </header>
+
+<!-- Markdown configuration -->
+<script>
+    marked.setOptions({
+        breaks: true,
+        gfm: true
+    });
+</script>
+
+<!-- Markdown library -->
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+<!-- Chatbot script -->
+<script src="../assets/js/chatbot.js"></script>
 
 <!-- Discovery Portal Modal -->
 <div class="discovery-portal-wrapper" id="discoveryPortal">

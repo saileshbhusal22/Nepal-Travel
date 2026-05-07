@@ -1,11 +1,17 @@
 <?php 
+/**
+ * EVENTS & HAPPENINGS PAGE
+ * Displays Nepal's cultural events, festivals, and happenings throughout 2026
+ * Features a split-panel hero section and filterable calendar of events
+ */
 $current_page = 'events.php';
 include __DIR__ . '/../includes/header.php'; 
 ?>
 
 <!-- Events Hero Section (Split Panel Design) -->
+<!-- HERO SECTION: Split Panel Design for Events Showcase -->
 <style>
-    /* Reset header for this page to have absolute transparent positioning */
+    /* Reset header styling for dark hero background */
     .site-header { position: absolute !important; top: 0; left: 0; width: 100%; z-index: 1000; background: transparent !important; border-bottom: none !important; }
     .main-nav-bar { background: transparent !important; }
     
@@ -13,6 +19,7 @@ include __DIR__ . '/../includes/header.php';
     .logo-wrapper span[style*="d32f2f"] { color: #f5a623 !important; } /* Make red text yellow for dark background */
 
     .events-hero-wrapper {
+        /* Split-screen layout: 55% images (left) + 45% content (right) */
         display: flex;
         height: 100vh;
         width: 100%;
@@ -20,13 +27,14 @@ include __DIR__ . '/../includes/header.php';
         position: relative;
     }
 
-    /* Left Panel (Vertical Split Slider) */
+    /* LEFT PANELS: Vertical image carousel with hover expansion */
     .eh-left-panels {
         display: flex;
         width: 55%;
         height: 100%;
     }
 
+    /* Individual image panel - expands on hover */
     .eh-panel {
         flex: 1;
         position: relative;
@@ -59,7 +67,7 @@ include __DIR__ . '/../includes/header.php';
         color: white;
     }
 
-    /* Right Panel (Text & Controls) */
+    /* RIGHT PANEL: Main content area with title and CTAs */
     .eh-right-panel {
         width: 45%;
         height: 100%;
@@ -80,19 +88,20 @@ include __DIR__ . '/../includes/header.php';
         align-items: center;
     }
 
-    /* Vibrant staggered title boxes matching reference exactly */
+    /* Staggered title design - three colored boxes with overlapping effect */
     .eh-title-row-1, .eh-title-row-2, .eh-title-row-3 {
         display: inline-block;
         padding: 8px 45px;
         border-radius: 60px;
         color: white;
         font-family: 'Playfair Display', serif;
-        margin-bottom: -15px; /* Overlap them like the reference */
+        margin-bottom: -15px; /* Create overlap effect */
         box-shadow: 0 10px 25px rgba(0,0,0,0.15);
         z-index: 5;
         position: relative;
     }
 
+    /* Row 1: Red background */
     .eh-title-row-1 { 
         background: #cc3333; 
         font-size: 72px; 
@@ -101,6 +110,7 @@ include __DIR__ . '/../includes/header.php';
         letter-spacing: -2px;
         z-index: 3;
     }
+    /* Row 2: Green background */
     .eh-title-row-2 { 
         background: #6bb33b; 
         font-size: 56px; 
@@ -109,6 +119,7 @@ include __DIR__ . '/../includes/header.php';
         letter-spacing: -1px;
         z-index: 4;
     }
+    /* Row 3: Purple background */
     .eh-title-row-3 { 
         background: #5a3ba1; 
         font-size: 42px; 
@@ -117,6 +128,7 @@ include __DIR__ . '/../includes/header.php';
         z-index: 5;
     }
 
+    /* Navigation buttons for carousel - absolute positioning */
     .eh-nav-btn {
         width: 50px;
         height: 50px;
@@ -131,7 +143,7 @@ include __DIR__ . '/../includes/header.php';
         top: 50%;
         transform: translateY(-50%);
         cursor: pointer;
-        z-index: 100; /* Needs to be above everything */
+        z-index: 100; /* Must be above everything */
         transition: all 0.3s ease;
         box-shadow: 0 5px 15px rgba(0,0,0,0.2);
     }

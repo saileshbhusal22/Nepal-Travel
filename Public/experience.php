@@ -1,6 +1,13 @@
-<?php include __DIR__ . '/../includes/header.php';  ?>
+<?php 
+/**
+ * EXPERIENCE PAGE
+ * Displays curated travel experiences with advanced filtering capabilities
+ * Users can filter by region, category, duration, and best time to visit
+ */
+include __DIR__ . '/../includes/header.php';  
+?>
 
-<!-- Hero Section -->
+<!-- Hero Section: Experience Landing -->
 <section class="hero-refined" style="background-image: linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.3)), url('../images/annapurna_trek.png');">
     <div class="hero-content">
         <h1 class="hero-title">
@@ -14,10 +21,12 @@
 <!-- Main Layout: Sidebar + Grid -->
 <section class="travel-ideas-section container">
     <div class="layout-grid">
-        <!-- Sidebar Filter -->
+        <!-- SIDEBAR FILTER PANEL -->
+        <!-- Allows users to refine experience results by multiple criteria -->
         <aside class="sidebar-filter">
             <h3 class="filter-title">Filter Experiences</h3>
             
+            <!-- REGION FILTER: Select experiences by geographic location -->
             <div class="filter-group">
                 <h4>State / Region</h4>
                 <select class="custom-select">
@@ -29,6 +38,7 @@
                 </select>
             </div>
             
+            <!-- CATEGORY FILTER: Filter by experience type (adventure, culture, wellness, etc.) -->
             <div class="filter-group">
                 <h4>Category</h4>
                 <label class="checkbox-label"><input type="checkbox"> <span>Heritage & Culture</span></label>
@@ -38,6 +48,7 @@
                 <label class="checkbox-label"><input type="checkbox"> <span>City Excitement</span></label>
             </div>
             
+            <!-- DURATION FILTER: Filter experiences by trip length (half day to 15+ days) -->
             <div class="filter-group">
                 <h4>Duration</h4>
                 <label class="checkbox-label"><input type="checkbox"> <span>Half Day</span></label>
@@ -47,6 +58,7 @@
                 <label class="checkbox-label"><input type="checkbox"> <span>15+ Days</span></label>
             </div>
             
+            <!-- SEASONAL FILTER: Choose optimal visiting months based on weather -->
             <div class="filter-group">
                 <h4>Best Time to Visit</h4>
                 <label class="checkbox-label"><input type="checkbox"> <span>January</span></label>
@@ -66,14 +78,15 @@
             <button class="btn btn-primary" style="width: 100%; border-radius: 8px; padding: 12px; margin-top: 10px;">Apply Filters</button>
         </aside>
 
-        <!-- Main Content -->
+        <!-- MAIN CONTENT AREA: Displays filtered experience cards -->
         <main class="content-grid">
             <div class="results-info">
                 <p>Showing <strong>3</strong> matching experiences</p>
             </div>
 
+            <!-- EXPERIENCE CARDS GRID: Shows individual travel experiences -->
             <div class="grid-container">
-                <!-- Card 1 -->
+                <!-- CARD 1: Wellness & Yoga Retreat -->
                 <div class="idea-card">
                     <div class="card-badge">7 DAYS 6 NIGHTS</div>
                     <img src="../images/pokhara_lake.png" alt="Pokhara" class="card-img">
@@ -83,7 +96,7 @@
                     </div>
                 </div>
 
-                <!-- Card 2 -->
+                <!-- CARD 2: Buddhist Cultural Experience -->
                 <div class="idea-card">
                     <div class="card-badge">5 DAYS 4 NIGHTS</div>
                     <img src="../images/bhaktapur_temple.png" alt="Heritage" class="card-img">
@@ -93,7 +106,7 @@
                     </div>
                 </div>
 
-                <!-- Card 3 -->
+                <!-- CARD 3: Nature & Forest Bathing Experience -->
                 <div class="idea-card">
                     <div class="card-badge">4 DAYS 3 NIGHTS</div>
                     <img src="../images/annapurna_trek.png" alt="Trek" class="card-img">
