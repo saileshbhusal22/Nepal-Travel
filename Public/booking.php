@@ -128,8 +128,7 @@ if ($is_logged_in && $_SERVER['REQUEST_METHOD'] === 'POST') {
 
 // ─────────────────────────────────────────────────────────────
 // Now it's safe to include header.php and output HTML
-// ─────────────────────────────────────────────────────────────
-include '../includes/header.php';
+
 
 // Pre-fill destination from deals table if ?id= is passed
 $destination = '';
