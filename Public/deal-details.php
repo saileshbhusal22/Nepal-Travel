@@ -13,7 +13,37 @@ $stmt->close();
 
 if (!$deal) { header("Location: deals-and-packages.php"); exit; }
 
-// Features array
+// Fetch reviews with user info
+$reviews = [];
+$rev_stmt = $conn->prepare("
+    SELECT r.id, r.rating, r.review_text, r.created_at,
+           u.id AS user_id, u.full_name, u.username, u.email
+    FROM deal_reviews r
+    LEFT JOIN users u ON r.user_id = u.id
+    WHERE r.deal_id = ?
+    ORDER BY r.created_at DESC
+");
+$rev_stmt->bind_param("i", $id);
+$rev_stmt->execute();
+$rev_result = $rev_stmt->get_result();
+while ($row = $rev_result->fetch_assoc()) {
+    $reviews[] = $row;
+}
+$rev_stmt->close();
+
+$total_reviews = count($reviews);
+$avg_rating    = $total_reviews > 0
+    ? array_sum(array_column($reviews, 'rating')) / $total_reviews
+    : ($deal['rating'] ?? 0);
+
+// Rating breakdown
+$breakdown = [5=>0,4=>0,3=>0,2=>0,1=>0];
+foreach ($reviews as $rv) {
+    $star = max(1, min(5, (int)$rv['rating']));
+    $breakdown[$star]++;
+}
+
+// Features
 $features = !empty($deal['features'])
     ? array_map('trim', explode(',', $deal['features']))
     : [];
@@ -24,15 +54,15 @@ if (!empty($deal['original_price']) && (float)$deal['original_price'] > (float)$
     $discount = round((((float)$deal['original_price'] - (float)$deal['price']) / (float)$deal['original_price']) * 100);
 }
 
-// Images — collect all non-empty gallery images
+// Images
 $allImages = [];
-foreach (['image_url', 'image_url_2', 'image_url_3', 'image_url_4'] as $col) {
+foreach (['image_url','image_url_2','image_url_3','image_url_4'] as $col) {
     if (!empty($deal[$col]) && strtoupper(trim($deal[$col])) !== 'NULL') {
         $allImages[] = $deal[$col];
     }
 }
 $heroImage   = $allImages[0] ?? null;
-$galleryImgs = array_slice($allImages, 1); // extra images for gallery strip
+$galleryImgs = array_slice($allImages, 1);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -56,25 +86,20 @@ $galleryImgs = array_slice($allImages, 1); // extra images for gallery strip
 
     /* ══ HERO ══ */
     .detail-hero { position: relative; width: 100%; height: 600px; overflow: hidden; }
-
     .hero-img {
       width: 100%; height: 100%; object-fit: cover; display: block;
       transform: scale(1.05); transition: transform 8s ease;
     }
     .hero-img.loaded { transform: scale(1); }
-
     .hero-fallback {
       width: 100%; height: 100%;
       background: linear-gradient(135deg, #1a1f35 0%, #0d1020 100%);
       display: flex; align-items: center; justify-content: center; font-size: 130px;
     }
-
     .hero-grad {
       position: absolute; inset: 0;
       background: linear-gradient(to bottom, rgba(0,0,0,0.05) 0%, rgba(0,0,0,0.45) 55%, rgba(0,0,0,0.88) 100%);
     }
-
-    /* top bar */
     .hero-top {
       position: absolute; top: 0; left: 0; right: 0; z-index: 4;
       display: flex; align-items: center; justify-content: space-between;
@@ -88,7 +113,6 @@ $galleryImgs = array_slice($allImages, 1); // extra images for gallery strip
       backdrop-filter: blur(8px); transition: background 0.2s;
     }
     .back-btn:hover { background: rgba(0,0,0,0.65); }
-
     .hero-badges { display: flex; gap: 8px; }
     .badge-cat {
       background: rgba(92,63,204,0.92); backdrop-filter: blur(6px);
@@ -96,12 +120,7 @@ $galleryImgs = array_slice($allImages, 1); // extra images for gallery strip
       padding: 6px 15px; border-radius: 20px;
       text-transform: uppercase; letter-spacing: 0.08em;
     }
-    .badge-disc {
-      background: #e84393; color: #fff;
-      font-size: 11px; font-weight: 700; padding: 6px 13px; border-radius: 8px;
-    }
-
-    /* hero bottom */
+    .badge-disc { background: #e84393; color: #fff; font-size: 11px; font-weight: 700; padding: 6px 13px; border-radius: 8px; }
     .hero-bottom {
       position: absolute; bottom: 0; left: 0; right: 0; z-index: 3;
       padding: 0 2.5rem 2.8rem; max-width: 900px;
@@ -119,7 +138,29 @@ $galleryImgs = array_slice($allImages, 1); // extra images for gallery strip
     .hero-meta-item { display: flex; align-items: center; gap: 5px; }
     .star-gold { color: #f4b942; }
 
-    /* ══ PHOTO GALLERY STRIP ══ */
+    /* clickable rating badge */
+    .rating-clickable {
+      cursor: pointer;
+      background: rgba(244,185,66,0.15);
+      border: 1px solid rgba(244,185,66,0.30);
+      border-radius: 20px; padding: 4px 12px;
+      transition: background 0.2s, border-color 0.2s;
+      display: flex; align-items: center; gap: 5px;
+    }
+    .rating-clickable:hover {
+      background: rgba(244,185,66,0.28);
+      border-color: rgba(244,185,66,0.60);
+    }
+    .rating-clickable .pulse-dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: #f4b942; animation: pulse 1.8s infinite;
+    }
+    @keyframes pulse {
+      0%,100% { opacity: 1; transform: scale(1); }
+      50%      { opacity: 0.4; transform: scale(1.5); }
+    }
+
+    /* ══ GALLERY STRIP ══ */
     .gallery-strip {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
@@ -161,7 +202,6 @@ $galleryImgs = array_slice($allImages, 1); // extra images for gallery strip
       display: grid; grid-template-columns: 1fr 360px;
       gap: 3rem; align-items: start;
     }
-
     @media (max-width: 880px) {
       .detail-layout { grid-template-columns: 1fr; padding: 1.5rem 1rem; }
       .detail-hero   { height: 380px; }
@@ -174,7 +214,6 @@ $galleryImgs = array_slice($allImages, 1); // extra images for gallery strip
       border: 1px solid rgba(255,255,255,0.07);
       border-radius: 18px; padding: 1.8rem; margin-bottom: 1.4rem;
     }
-
     .sec-label {
       font-size: 10px; font-weight: 700; letter-spacing: 0.18em;
       text-transform: uppercase; color: rgba(255,255,255,0.30); margin-bottom: 1rem;
@@ -190,24 +229,27 @@ $galleryImgs = array_slice($allImages, 1); // extra images for gallery strip
     .stat-val  { font-size: 1.15rem; font-weight: 600; color: #fff; line-height: 1.2; }
     .stat-lbl  { font-size: 10px; color: rgba(255,255,255,0.32); margin-top: 3px; text-transform: uppercase; letter-spacing: 0.06em; }
 
-    /* rating */
     .rating-row { display: flex; align-items: center; gap: 10px; margin-top: 1.3rem; }
     .stars-disp { color: #f4b942; font-size: 17px; letter-spacing: 2px; }
     .rating-num { font-size: 1.4rem; font-weight: 600; color: #fff; }
     .review-cnt { font-size: 13px; color: rgba(255,255,255,0.35); }
 
-    /* description */
-    .desc-text { font-size: 15px; line-height: 1.80; color: rgba(255,255,255,0.68); }
+    /* clickable review link in rating row */
+    .see-reviews-link {
+      font-size: 12px; color: #60a5fa; cursor: pointer;
+      text-decoration: underline; text-underline-offset: 2px;
+      background: none; border: none; font-family: inherit;
+      padding: 0; transition: color 0.2s;
+    }
+    .see-reviews-link:hover { color: #93c5fd; }
 
-    /* features */
+    .desc-text { font-size: 15px; line-height: 1.80; color: rgba(255,255,255,0.68); }
     .feat-wrap { display: flex; flex-wrap: wrap; gap: 8px; }
     .feat-tag {
       background: rgba(37,99,235,0.18); color: #a8c4f8;
       border: 1px solid rgba(100,150,255,0.18);
       font-size: 12px; padding: 6px 14px; border-radius: 6px;
     }
-
-    /* info table */
     .info-tbl { width: 100%; border-collapse: collapse; }
     .info-tbl tr { border-bottom: 1px solid rgba(255,255,255,0.05); }
     .info-tbl tr:last-child { border-bottom: none; }
@@ -221,7 +263,6 @@ $galleryImgs = array_slice($allImages, 1); // extra images for gallery strip
       background: #12151f; border: 1px solid rgba(255,255,255,0.08);
       border-radius: 20px; overflow: hidden; margin-bottom: 1rem;
     }
-
     .price-head {
       background: linear-gradient(135deg, #1a1f35 0%, #0d1020 100%);
       border-bottom: 1px solid rgba(255,255,255,0.07); padding: 1.6rem 1.5rem;
@@ -235,7 +276,6 @@ $galleryImgs = array_slice($allImages, 1); // extra images for gallery strip
     .price-orig { font-size: 1rem; color: rgba(255,255,255,0.27); text-decoration: line-through; }
     .disc-pill  { background: #e84393; color: #fff; font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 6px; }
     .price-pp   { font-size: 11px; color: rgba(255,255,255,0.28); margin-top: 5px; }
-
     .s-body { padding: 1.4rem 1.5rem; }
     .s-row {
       display: flex; justify-content: space-between; align-items: center;
@@ -244,7 +284,6 @@ $galleryImgs = array_slice($allImages, 1); // extra images for gallery strip
     .s-row:last-of-type { border-bottom: none; }
     .s-row .lbl { color: rgba(255,255,255,0.35); }
     .s-row .val { color: #fff; font-weight: 500; }
-
     .book-btn {
       display: block; width: 100%; margin-top: 1.2rem;
       background: #2563eb; color: #fff;
@@ -255,7 +294,6 @@ $galleryImgs = array_slice($allImages, 1); // extra images for gallery strip
     }
     .book-btn:hover  { background: #1d4ed8; }
     .book-btn:active { transform: scale(0.98); }
-
     .wish-btn {
       display: flex; align-items: center; justify-content: center;
       gap: 7px; width: 100%; margin-top: 10px;
@@ -265,7 +303,6 @@ $galleryImgs = array_slice($allImages, 1); // extra images for gallery strip
       cursor: pointer; transition: border-color 0.2s, color 0.2s;
     }
     .wish-btn:hover { border-color: #e84393; color: #e84393; }
-
     .share-row { display: flex; gap: 8px; margin-top: 10px; }
     .share-btn {
       flex: 1; display: flex; align-items: center; justify-content: center; gap: 5px;
@@ -275,6 +312,118 @@ $galleryImgs = array_slice($allImages, 1); // extra images for gallery strip
       cursor: pointer; transition: background 0.15s, color 0.15s;
     }
     .share-btn:hover { background: rgba(255,255,255,0.10); color: #fff; }
+
+    /* ══ REVIEWS MODAL ══ */
+    .reviews-modal-overlay {
+      display: none; position: fixed; inset: 0; z-index: 1000;
+      background: rgba(0,0,0,0.75); backdrop-filter: blur(6px);
+      align-items: center; justify-content: center; padding: 1rem;
+    }
+    .reviews-modal-overlay.open { display: flex; }
+
+    .reviews-modal {
+      background: #0e1120;
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 24px; width: 100%; max-width: 680px;
+      max-height: 88vh; display: flex; flex-direction: column;
+      overflow: hidden;
+      box-shadow: 0 40px 100px rgba(0,0,0,0.6);
+      animation: modalIn 0.3s cubic-bezier(0.34,1.56,0.64,1);
+    }
+    @keyframes modalIn {
+      from { opacity: 0; transform: translateY(30px) scale(0.96); }
+      to   { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    .rm-header {
+      padding: 1.6rem 1.8rem 1.2rem;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      display: flex; align-items: flex-start; justify-content: space-between; flex-shrink: 0;
+    }
+    .rm-title-grp {}
+    .rm-title {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.4rem; font-weight: 700; color: #fff; margin-bottom: 4px;
+    }
+    .rm-subtitle { font-size: 13px; color: rgba(255,255,255,0.35); }
+
+    .rm-close {
+      background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.12);
+      color: #fff; width: 36px; height: 36px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; font-size: 18px; flex-shrink: 0;
+      transition: background 0.2s;
+    }
+    .rm-close:hover { background: rgba(255,255,255,0.16); }
+
+    /* summary strip */
+    .rm-summary {
+      padding: 1.2rem 1.8rem;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      display: flex; gap: 2rem; align-items: center; flex-shrink: 0;
+      background: rgba(255,255,255,0.02);
+    }
+    .rm-big-rating { text-align: center; }
+    .rm-big-num { font-size: 3rem; font-weight: 700; color: #fff; line-height: 1; }
+    .rm-big-stars { color: #f4b942; font-size: 18px; letter-spacing: 2px; margin: 4px 0; }
+    .rm-big-cnt  { font-size: 11px; color: rgba(255,255,255,0.30); }
+    .rm-bars { flex: 1; }
+    .rm-bar-row {
+      display: flex; align-items: center; gap: 10px;
+      font-size: 12px; color: rgba(255,255,255,0.40); margin-bottom: 6px;
+    }
+    .rm-bar-row:last-child { margin-bottom: 0; }
+    .rm-bar-row .star-n { width: 12px; text-align: right; }
+    .rm-bar-track { flex: 1; height: 5px; background: rgba(255,255,255,0.08); border-radius: 99px; overflow: hidden; }
+    .rm-bar-fill  { height: 100%; background: linear-gradient(90deg, #f4b942, #f97316); border-radius: 99px; transition: width 0.6s ease; }
+    .rm-bar-cnt   { width: 22px; }
+
+    /* reviews list */
+    .rm-list { overflow-y: auto; padding: 1.2rem 1.8rem; flex: 1; }
+    .rm-list::-webkit-scrollbar { width: 5px; }
+    .rm-list::-webkit-scrollbar-track { background: transparent; }
+    .rm-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 99px; }
+
+    .review-card {
+      display: flex; gap: 14px;
+      padding: 1.2rem 0; border-bottom: 1px solid rgba(255,255,255,0.05);
+      animation: fadeUp 0.35s ease both;
+    }
+    .review-card:last-child { border-bottom: none; }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(12px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .reviewer-avatar {
+      width: 46px; height: 46px; border-radius: 50%; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 17px; font-weight: 700; color: #fff;
+      background: linear-gradient(135deg, #2563eb 0%, #7c3aed 100%);
+      border: 2px solid rgba(255,255,255,0.10);
+      overflow: hidden;
+    }
+    .reviewer-avatar img { width: 100%; height: 100%; object-fit: cover; }
+
+    .review-body { flex: 1; min-width: 0; }
+    .review-meta-top {
+      display: flex; align-items: center; justify-content: space-between;
+      flex-wrap: wrap; gap: 6px; margin-bottom: 6px;
+    }
+    .reviewer-name { font-size: 14px; font-weight: 600; color: #fff; }
+    .reviewer-handle { font-size: 11px; color: rgba(255,255,255,0.30); margin-top: 1px; }
+    .review-stars { color: #f4b942; font-size: 13px; letter-spacing: 1px; }
+    .review-date { font-size: 11px; color: rgba(255,255,255,0.24); }
+    .review-text-body {
+      font-size: 14px; line-height: 1.70; color: rgba(255,255,255,0.60);
+      word-break: break-word;
+    }
+
+    .rm-empty {
+      text-align: center; padding: 3rem 1rem;
+      color: rgba(255,255,255,0.25); font-size: 14px;
+    }
+    .rm-empty .empty-icon { font-size: 40px; margin-bottom: 12px; }
   </style>
 </head>
 <body>
@@ -315,20 +464,23 @@ $galleryImgs = array_slice($allImages, 1); // extra images for gallery strip
         <?php if (!empty($deal['season'])): ?>
           <span class="hero-meta-item">🗓 <?= htmlspecialchars($deal['season']) ?></span>
         <?php endif; ?>
-        <?php if (!empty($deal['rating'])): ?>
+        <?php if ($avg_rating > 0): ?>
           <span class="hero-meta-item">
-            <span class="star-gold">★</span>
-            <?= number_format((float)$deal['rating'], 1) ?>
-            <?php if (!empty($deal['reviews_count'])): ?>
-              <span style="color:rgba(255,255,255,0.30)">(<?= number_format((int)$deal['reviews_count']) ?>)</span>
-            <?php endif; ?>
+            <span class="rating-clickable" onclick="openReviews()" title="See all reviews">
+              <span class="star-gold">★</span>
+              <?= number_format($avg_rating, 1) ?>
+              <?php if ($total_reviews > 0): ?>
+                <span style="color:rgba(255,255,255,0.40); font-size:11px">(<?= $total_reviews ?> reviews)</span>
+              <?php endif; ?>
+              <span class="pulse-dot"></span>
+            </span>
           </span>
         <?php endif; ?>
       </div>
     </div>
   </div>
 
-  <!-- ══ GALLERY STRIP (extra images from DB) ══ -->
+  <!-- ══ GALLERY STRIP ══ -->
   <?php if (!empty($galleryImgs)): ?>
   <div class="gallery-strip" id="galleryStrip">
     <?php foreach ($allImages as $i => $img): ?>
@@ -336,7 +488,6 @@ $galleryImgs = array_slice($allImages, 1); // extra images for gallery strip
     <?php endforeach; ?>
   </div>
   <?php elseif ($heroImage): ?>
-  <!-- Single image — show it as a clickable strip -->
   <div class="gallery-strip" id="galleryStrip" style="max-height:120px">
     <img src="<?= htmlspecialchars($heroImage) ?>" alt="<?= htmlspecialchars($deal['title']) ?>" onclick="openLightbox(0)">
   </div>
@@ -351,6 +502,108 @@ $galleryImgs = array_slice($allImages, 1); // extra images for gallery strip
     <button class="lb-next"  onclick="lbNav(1)">&#8250;</button>
   </div>
   <?php endif; ?>
+
+  <!-- ══ REVIEWS MODAL ══ -->
+  <div class="reviews-modal-overlay" id="reviewsModal" onclick="handleModalClick(event)">
+    <div class="reviews-modal">
+
+      <div class="rm-header">
+        <div class="rm-title-grp">
+          <h2 class="rm-title">Guest Reviews</h2>
+          <p class="rm-subtitle"><?= htmlspecialchars($deal['title']) ?></p>
+        </div>
+        <button class="rm-close" onclick="closeReviews()">&#215;</button>
+      </div>
+
+      <!-- Summary -->
+      <?php if ($total_reviews > 0): ?>
+      <div class="rm-summary">
+        <div class="rm-big-rating">
+          <div class="rm-big-num"><?= number_format($avg_rating, 1) ?></div>
+          <div class="rm-big-stars">
+            <?php $r = round($avg_rating); echo str_repeat('★', $r) . str_repeat('☆', 5-$r); ?>
+          </div>
+          <div class="rm-big-cnt"><?= $total_reviews ?> review<?= $total_reviews !== 1 ? 's' : '' ?></div>
+        </div>
+        <div class="rm-bars">
+          <?php for ($s = 5; $s >= 1; $s--): ?>
+            <?php $pct = $total_reviews > 0 ? round(($breakdown[$s]/$total_reviews)*100) : 0; ?>
+            <div class="rm-bar-row">
+              <span class="star-n"><?= $s ?></span>
+              <span style="color:#f4b942;font-size:10px">★</span>
+              <div class="rm-bar-track">
+                <div class="rm-bar-fill" style="width:<?= $pct ?>%"></div>
+              </div>
+              <span class="rm-bar-cnt"><?= $breakdown[$s] ?></span>
+            </div>
+          <?php endfor; ?>
+        </div>
+      </div>
+      <?php endif; ?>
+
+      <!-- Reviews list -->
+      <div class="rm-list">
+        <?php if (empty($reviews)): ?>
+          <div class="rm-empty">
+            <div class="empty-icon">💬</div>
+            <p>No reviews yet for this deal.</p>
+            <p style="margin-top:6px;font-size:12px;color:rgba(255,255,255,0.18)">Be the first to share your experience!</p>
+          </div>
+        <?php else: ?>
+          <?php foreach ($reviews as $idx => $rv): ?>
+            <?php
+              $initials = '?';
+              $name     = !empty($rv['full_name']) ? $rv['full_name'] : ($rv['username'] ?? 'Anonymous');
+              if ($name && $name !== 'Anonymous') {
+                  $parts    = explode(' ', trim($name));
+                  $initials = strtoupper(substr($parts[0],0,1));
+                  if (isset($parts[1])) $initials .= strtoupper(substr($parts[1],0,1));
+              }
+              $stars    = max(1, min(5, (int)$rv['rating']));
+              $gradients = [
+                'linear-gradient(135deg,#2563eb,#7c3aed)',
+                'linear-gradient(135deg,#059669,#0891b2)',
+                'linear-gradient(135deg,#dc2626,#e84393)',
+                'linear-gradient(135deg,#d97706,#65a30d)',
+                'linear-gradient(135deg,#7c3aed,#e84393)',
+              ];
+              $grad = $gradients[$idx % count($gradients)];
+              $date_str = !empty($rv['created_at']) ? date('M j, Y', strtotime($rv['created_at'])) : '';
+            ?>
+            <div class="review-card" style="animation-delay:<?= $idx * 0.07 ?>s">
+              <div class="reviewer-avatar" style="background:<?= $grad ?>">
+                <?= htmlspecialchars($initials) ?>
+              </div>
+              <div class="review-body">
+                <div class="review-meta-top">
+                  <div>
+                    <div class="reviewer-name"><?= htmlspecialchars($name) ?></div>
+                    <?php if (!empty($rv['username'])): ?>
+                      <div class="reviewer-handle">@<?= htmlspecialchars($rv['username']) ?></div>
+                    <?php endif; ?>
+                  </div>
+                  <div style="text-align:right">
+                    <div class="review-stars">
+                      <?= str_repeat('★', $stars) . str_repeat('☆', 5-$stars) ?>
+                    </div>
+                    <?php if ($date_str): ?>
+                      <div class="review-date"><?= $date_str ?></div>
+                    <?php endif; ?>
+                  </div>
+                </div>
+                <?php if (!empty($rv['review_text'])): ?>
+                  <p class="review-text-body"><?= nl2br(htmlspecialchars($rv['review_text'])) ?></p>
+                <?php else: ?>
+                  <p class="review-text-body" style="color:rgba(255,255,255,0.20);font-style:italic">No written review provided.</p>
+                <?php endif; ?>
+              </div>
+            </div>
+          <?php endforeach; ?>
+        <?php endif; ?>
+      </div>
+
+    </div>
+  </div>
 
   <!-- ══ MAIN LAYOUT ══ -->
   <div class="detail-layout">
@@ -369,17 +622,17 @@ $galleryImgs = array_slice($allImages, 1); // extra images for gallery strip
             <div class="stat-lbl">Days</div>
           </div>
           <?php endif; ?>
-          <?php if (!empty($deal['rating'])): ?>
-          <div class="stat-card">
+          <?php if ($avg_rating > 0): ?>
+          <div class="stat-card" style="cursor:pointer" onclick="openReviews()" title="View reviews">
             <div class="stat-icon">⭐</div>
-            <div class="stat-val"><?= number_format((float)$deal['rating'], 1) ?></div>
+            <div class="stat-val"><?= number_format($avg_rating, 1) ?></div>
             <div class="stat-lbl">Rating</div>
           </div>
           <?php endif; ?>
-          <?php if (!empty($deal['reviews_count'])): ?>
-          <div class="stat-card">
+          <?php if ($total_reviews > 0): ?>
+          <div class="stat-card" style="cursor:pointer" onclick="openReviews()" title="View reviews">
             <div class="stat-icon">💬</div>
-            <div class="stat-val"><?= number_format((int)$deal['reviews_count']) ?></div>
+            <div class="stat-val"><?= $total_reviews ?></div>
             <div class="stat-lbl">Reviews</div>
           </div>
           <?php endif; ?>
@@ -391,19 +644,20 @@ $galleryImgs = array_slice($allImages, 1); // extra images for gallery strip
           </div>
           <?php endif; ?>
         </div>
-        <?php if (!empty($deal['rating'])): ?>
+        <?php if ($avg_rating > 0): ?>
         <div class="rating-row">
-          <?php $r = round((float)$deal['rating']); ?>
-          <span class="stars-disp"><?= str_repeat('★', $r) . str_repeat('☆', 5 - $r) ?></span>
-          <span class="rating-num"><?= number_format((float)$deal['rating'], 1) ?></span>
-          <?php if (!empty($deal['reviews_count'])): ?>
-            <span class="review-cnt">(<?= number_format((int)$deal['reviews_count']) ?> reviews)</span>
+          <?php $r = round($avg_rating); ?>
+          <span class="stars-disp"><?= str_repeat('★',$r) . str_repeat('☆', 5-$r) ?></span>
+          <span class="rating-num"><?= number_format($avg_rating, 1) ?></span>
+          <?php if ($total_reviews > 0): ?>
+            <span class="review-cnt">(<?= $total_reviews ?> reviews)</span>
+            <button class="see-reviews-link" onclick="openReviews()">See all reviews →</button>
           <?php endif; ?>
         </div>
         <?php endif; ?>
       </div>
 
-      <!-- Description — stored in DB -->
+      <!-- Description -->
       <?php if (!empty($deal['description'])): ?>
       <div class="glass-card">
         <p class="sec-label">About This Deal</p>
@@ -411,7 +665,7 @@ $galleryImgs = array_slice($allImages, 1); // extra images for gallery strip
       </div>
       <?php endif; ?>
 
-      <!-- Highlights / Features -->
+      <!-- Highlights -->
       <?php if (!empty($features)): ?>
       <div class="glass-card">
         <p class="sec-label">Highlights</p>
@@ -423,7 +677,7 @@ $galleryImgs = array_slice($allImages, 1); // extra images for gallery strip
       </div>
       <?php endif; ?>
 
-      <!-- Trip details table -->
+      <!-- Trip details -->
       <div class="glass-card">
         <p class="sec-label">Trip Details</p>
         <table class="info-tbl">
@@ -439,8 +693,8 @@ $galleryImgs = array_slice($allImages, 1); // extra images for gallery strip
           <?php if (!empty($deal['season'])): ?>
           <tr><td class="lbl">Best Season</td><td class="val"><?= htmlspecialchars($deal['season']) ?></td></tr>
           <?php endif; ?>
-          <?php if (!empty($deal['rating'])): ?>
-          <tr><td class="lbl">Rating</td><td class="val">⭐ <?= number_format((float)$deal['rating'], 1) ?> / 5</td></tr>
+          <?php if ($avg_rating > 0): ?>
+          <tr><td class="lbl">Rating</td><td class="val">⭐ <?= number_format($avg_rating, 1) ?> / 5 <button class="see-reviews-link" onclick="openReviews()" style="margin-left:6px">(<?= $total_reviews ?> reviews)</button></td></tr>
           <?php endif; ?>
           <?php if (!empty($deal['created_at'])): ?>
           <tr><td class="lbl">Listed On</td><td class="val"><?= date('F j, Y', strtotime($deal['created_at'])) ?></td></tr>
@@ -477,14 +731,15 @@ $galleryImgs = array_slice($allImages, 1); // extra images for gallery strip
           <?php if (!empty($deal['category'])): ?>
           <div class="s-row"><span class="lbl">Category</span><span class="val"><?= htmlspecialchars($deal['category']) ?></span></div>
           <?php endif; ?>
-          <?php if (!empty($deal['rating'])): ?>
-          <div class="s-row"><span class="lbl">Rating</span><span class="val">⭐ <?= number_format((float)$deal['rating'], 1) ?> / 5</span></div>
+          <?php if ($avg_rating > 0): ?>
+          <div class="s-row">
+            <span class="lbl">Rating</span>
+            <span class="val" style="cursor:pointer" onclick="openReviews()">⭐ <?= number_format($avg_rating,1) ?> / 5</span>
+          </div>
           <?php endif; ?>
 
           <a href="booking.php?id=<?= (int)$deal['id'] ?>" class="book-btn">Book Now</a>
-          <a href="save_deal.php?id=<?= (int)$deal['id'] ?>&action=add" class="wish-btn">
-  ♡ &nbsp; Save to Wishlist
-</a>
+          <a href="save_deal.php?id=<?= (int)$deal['id'] ?>&action=add" class="wish-btn">♡ &nbsp; Save to Wishlist</a>
           <div class="share-row">
             <button class="share-btn" onclick="navigator.clipboard.writeText(window.location.href).then(()=>this.textContent='✓ Copied!')">🔗 Copy Link</button>
             <button class="share-btn" onclick="window.open('https://wa.me/?text='+encodeURIComponent(document.title+' — '+window.location.href))">💬 WhatsApp</button>
@@ -493,11 +748,11 @@ $galleryImgs = array_slice($allImages, 1); // extra images for gallery strip
       </div>
     </div>
 
-  </div><!-- /layout -->
+  </div>
 </div><!-- /overlay -->
 
 <script>
-  // Ken Burns on hero
+  // Ken Burns
   const heroImg = document.getElementById('heroImg');
   if (heroImg) {
     if (heroImg.complete) heroImg.classList.add('loaded');
@@ -513,24 +768,36 @@ $galleryImgs = array_slice($allImages, 1); // extra images for gallery strip
     document.getElementById('lbImg').src = lbImages[lbCurrent];
     document.getElementById('lightbox').classList.add('open');
   }
-
   function closeLightbox() {
     document.getElementById('lightbox').classList.remove('open');
   }
-
   function lbNav(dir) {
     lbCurrent = (lbCurrent + dir + lbImages.length) % lbImages.length;
     document.getElementById('lbImg').src = lbImages[lbCurrent];
   }
-
-  // Close lightbox on backdrop click
   document.getElementById('lightbox')?.addEventListener('click', function(e) {
     if (e.target === this) closeLightbox();
   });
 
+  // Reviews modal
+  function openReviews() {
+    document.getElementById('reviewsModal').classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+  function closeReviews() {
+    document.getElementById('reviewsModal').classList.remove('open');
+    document.body.style.overflow = '';
+  }
+  function handleModalClick(e) {
+    if (e.target === document.getElementById('reviewsModal')) closeReviews();
+  }
+
   // Keyboard nav
   document.addEventListener('keydown', e => {
-    if (!document.getElementById('lightbox')?.classList.contains('open')) return;
+    const lb = document.getElementById('lightbox');
+    const rm = document.getElementById('reviewsModal');
+    if (rm?.classList.contains('open') && e.key === 'Escape') { closeReviews(); return; }
+    if (!lb?.classList.contains('open')) return;
     if (e.key === 'ArrowRight') lbNav(1);
     if (e.key === 'ArrowLeft')  lbNav(-1);
     if (e.key === 'Escape')     closeLightbox();

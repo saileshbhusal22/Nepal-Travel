@@ -139,35 +139,32 @@ form input[type="email"]::placeholder,
 form input[type="password"]::placeholder {
   color: #555;
 }
-
-/* TERMS CHECKBOX — fixed alignment */
 .terms {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 5px;
+  flex-wrap: wrap;
   font-size: 13px;
-  margin-bottom: 15px;
-  color: #333;
-  cursor: pointer;
+  color: #333; /* or whatever your current text color is */
+  margin: 0.5rem 0;
   line-height: 1.4;
+}
+
+.terms a {
+  color: #7c3aed; /* purple to match your existing link style */
+  text-decoration: underline;
+  white-space: nowrap;
+}
+
+.terms a:hover {
+  color: #5b21b6;
 }
 
 .terms input[type="checkbox"] {
+  flex-shrink: 0;
   width: 16px;
   height: 16px;
-  min-width: 16px;
-  min-height: 16px;
-  margin: 0;
-  padding: 0;
-  flex-shrink: 0;
   cursor: pointer;
-  accent-color: #0e4d1d;
-  border-radius: 3px;
-  box-sizing: border-box;
-}
-
-.terms span {
-  line-height: 1.4;
 }
 
 /* BUTTON */

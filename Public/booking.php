@@ -1,20 +1,13 @@
 <?php
 session_start();
 
-// ─────────────────────────────────────────────────────────────
-// Include PHPMailer and mail config (must be before any output)
-// ─────────────────────────────────────────────────────────────
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
 
 require_once __DIR__ . '/../vendor/autoload.php';
 require_once __DIR__ . '/../config/mail_config.php';
 
-// ─────────────────────────────────────────────────────────────
-// Function to send booking confirmation email
-// ─────────────────────────────────────────────────────────────
-function sendBookingEmail($email, $fullname, $bookingDetails)
-{
+function sendBookingEmail($email, $fullname, $bookingDetails) {
     $mail = new PHPMailer(true);
     try {
         $mail->isSMTP();
@@ -30,11 +23,11 @@ function sendBookingEmail($email, $fullname, $bookingDetails)
         $mail->isHTML(true);
         $mail->Subject = 'Your Booking Confirmation – ' . APP_NAME;
 
-        $ticketLink = "http://localhost/Nepal-Travel/Public/ticket.php?id=" . $bookingDetails['id'];
+        $ticketLink  = "http://localhost/Nepal-Travel/Public/ticket.php?id=" . $bookingDetails['id'];
         $destination = htmlspecialchars($bookingDetails['destination']);
-        $date = date('F j, Y', strtotime($bookingDetails['date']));
-        $guests = $bookingDetails['guests'];
-        $bookingId = str_pad($bookingDetails['id'], 6, '0', STR_PAD_LEFT);
+        $date        = date('F j, Y', strtotime($bookingDetails['date']));
+        $guests      = $bookingDetails['guests'];
+        $bookingId   = str_pad($bookingDetails['id'], 6, '0', STR_PAD_LEFT);
 
         $mail->Body = "
         <html>
@@ -49,17 +42,14 @@ function sendBookingEmail($email, $fullname, $bookingDetails)
                     <tr><td style='padding:8px 0;'><strong>Destination:</strong></td><td>$destination</td></tr>
                     <tr><td style='padding:8px 0;'><strong>Travel Date:</strong></td><td>$date</td></tr>
                     <tr><td style='padding:8px 0;'><strong>Guests:</strong></td><td>$guests</td></tr>
-                    <tr><td style='padding:8px 0;'><strong>Status:</strong></td><td>Pending</td></tr>
+                    <tr><td style='padding:8px 0;'><strong>Status:</strong></td><td>Active</td></tr>
                 </table>
-                <p>You can view and print your full ticket here:</p>
                 <p><a href='$ticketLink' style='display:inline-block;background:#1b3a5a;color:white;padding:10px 20px;border-radius:30px;text-decoration:none;'>View Your Ticket →</a></p>
-                <p>Or copy this link:<br>$ticketLink</p>
                 <hr>
-                <p style='font-size:12px;color:#777;'>Thank you for choosing " . APP_NAME . ". Need help? Contact us at " . SMTP_USER . "</p>
+                <p style='font-size:12px;color:#777;'>Thank you for choosing " . APP_NAME . ".</p>
             </div>
         </body>
-        </html>
-        ";
+        </html>";
 
         $mail->send();
         return true;
@@ -69,15 +59,9 @@ function sendBookingEmail($email, $fullname, $bookingDetails)
     }
 }
 
-// ─────────────────────────────────────────────────────────────
-// Database connection (needed for POST handling)
-// ─────────────────────────────────────────────────────────────
 require_once __DIR__ . '/../config/db.php';
 
-// ─────────────────────────────────────────────────────────────
-// Handle POST submission (BEFORE any output)
-// ─────────────────────────────────────────────────────────────
-$error = '';
+$error        = '';
 $is_logged_in = isset($_SESSION['user_id']);
 
 if ($is_logged_in && $_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -85,21 +69,25 @@ if ($is_logged_in && $_SERVER['REQUEST_METHOD'] === 'POST') {
     $destination = trim($_POST['destination'] ?? '');
     $date        = trim($_POST['date']        ?? '');
     $guests      = (int)($_POST['guests']     ?? 1);
-    $user_id     = $_SESSION['user_id'];
+    $user_id     = (int)$_SESSION['user_id'];
+    $deal_id     = (int)($_POST['deal_id']    ?? 0); // ← get deal_id from hidden field
 
     if (!$name || !$destination || !$date || $guests < 1) {
         $error = 'Please fill in all fields.';
     } else {
+
+        // ✅ INSERT now includes deal_id
         $stmt = $conn->prepare(
-            "INSERT INTO bookings (user_id, name, destination, date, guests, status, created_at)
-             VALUES (?, ?, ?, ?, ?, 'active', NOW())"
+            "INSERT INTO bookings (user_id, name, destination, date, guests, deal_id, status, created_at)
+             VALUES (?, ?, ?, ?, ?, ?, 'active', NOW())"
         );
-        $stmt->bind_param("isssi", $user_id, $name, $destination, $date, $guests);
+        $stmt->bind_param("isssii", $user_id, $name, $destination, $date, $guests, $deal_id);
+
         if ($stmt->execute()) {
             $booking_id = $stmt->insert_id;
             $stmt->close();
 
-            // Fetch user's email
+            // Send confirmation email
             $emailStmt = $conn->prepare("SELECT email, full_name FROM users WHERE id = ?");
             $emailStmt->bind_param("i", $user_id);
             $emailStmt->execute();
@@ -116,21 +104,18 @@ if ($is_logged_in && $_SERVER['REQUEST_METHOD'] === 'POST') {
                 sendBookingEmail($userData['email'], $userData['full_name'], $bookingDetails);
             }
 
-            // ✅ Redirect – no output has been sent yet, so safe
-            header("Location:ticket.php?id=" . $booking_id);
+            // ✅ Redirect to review page
+            header("Location: review.php?booking_id=" . $booking_id);
             exit;
+
         } else {
             $error = 'Something went wrong. Please try again.';
+            $stmt->close();
         }
-        $stmt->close();
     }
 }
 
-// ─────────────────────────────────────────────────────────────
-// Now it's safe to include header.php and output HTML
-
-
-// Pre-fill destination from deals table if ?id= is passed
+// Pre-fill destination from deals table if ?id= passed
 $destination = '';
 $deal_id     = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 if ($deal_id > 0) {
@@ -142,6 +127,8 @@ if ($deal_id > 0) {
     $stmt->close();
     $destination = $title ?? '';
 }
+
+include '../includes/header.php';
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -150,7 +137,6 @@ if ($deal_id > 0) {
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Book Your Trip | Nepal Tours</title>
   <style>
-    /* ========== YOUR EXISTING STYLES (keep as they were) ========== */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       font-family: 'Segoe UI', sans-serif;
@@ -192,122 +178,60 @@ if ($deal_id > 0) {
       width: 100%;
       max-width: 520px;
     }
-    .card-top {
-      text-align: center;
-      margin-bottom: 1.8rem;
-    }
+    .card-top { text-align: center; margin-bottom: 1.8rem; }
     .card-top .icon { font-size: 42px; margin-bottom: 0.5rem; }
-    .card-top h1 {
-      font-size: 1.5rem;
-      font-weight: 700;
-      color: #fff;
-    }
-    .card-top p {
-      font-size: 13px;
-      color: rgba(255,255,255,0.45);
-      margin-top: 4px;
-    }
+    .card-top h1 { font-size: 1.5rem; font-weight: 700; color: #fff; }
+    .card-top p { font-size: 13px; color: rgba(255,255,255,0.45); margin-top: 4px; }
     .destination-pill {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      background: rgba(37,99,235,0.35);
-      color: #a8c4f8;
+      display: inline-flex; align-items: center; gap: 6px;
+      background: rgba(37,99,235,0.35); color: #a8c4f8;
       border: 1px solid rgba(100,150,255,0.25);
-      border-radius: 30px;
-      font-size: 13px;
-      padding: 5px 14px;
-      margin-top: 10px;
+      border-radius: 30px; font-size: 13px; padding: 5px 14px; margin-top: 10px;
     }
-    .form-group {
-      margin-bottom: 1.1rem;
-    }
+    .form-group { margin-bottom: 1.1rem; }
     label {
-      display: block;
-      font-size: 12px;
-      font-weight: 600;
-      color: rgba(255,255,255,0.55);
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
-      margin-bottom: 6px;
+      display: block; font-size: 12px; font-weight: 600;
+      color: rgba(255,255,255,0.55); text-transform: uppercase;
+      letter-spacing: 0.06em; margin-bottom: 6px;
     }
     input, select {
-      width: 100%;
-      padding: 11px 14px;
+      width: 100%; padding: 11px 14px;
       background: rgba(255,255,255,0.06);
       border: 1px solid rgba(255,255,255,0.12);
-      border-radius: 10px;
-      color: #fff;
-      font-size: 14px;
-      font-family: inherit;
-      outline: none;
+      border-radius: 10px; color: #fff; font-size: 14px;
+      font-family: inherit; outline: none;
       transition: border-color 0.15s, background 0.15s;
     }
     input::placeholder { color: rgba(255,255,255,0.25); }
-    input:focus, select:focus {
-      border-color: #2563eb;
-      background: rgba(37,99,235,0.08);
-    }
+    input:focus, select:focus { border-color: #2563eb; background: rgba(37,99,235,0.08); }
     select option { background: #1a1f35; color: #fff; }
-    .guests-row {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 1rem;
-    }
+    .guests-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
     .submit-btn {
-      display: block;
-      width: 100%;
-      padding: 13px;
-      background: #2563eb;
-      color: #fff;
-      font-size: 15px;
-      font-weight: 600;
-      border: none;
-      border-radius: 10px;
-      cursor: pointer;
-      margin-top: 1.4rem;
+      display: block; width: 100%; padding: 13px;
+      background: #2563eb; color: #fff; font-size: 15px; font-weight: 600;
+      border: none; border-radius: 10px; cursor: pointer; margin-top: 1.4rem;
       transition: background 0.15s, transform 0.1s;
     }
     .submit-btn:hover  { background: #1d4ed8; }
     .submit-btn:active { transform: scale(0.98); }
     .alert {
-      padding: 12px 16px;
-      border-radius: 10px;
-      font-size: 13px;
-      margin-bottom: 1.2rem;
-      display: flex;
-      align-items: center;
-      gap: 8px;
+      padding: 12px 16px; border-radius: 10px; font-size: 13px;
+      margin-bottom: 1.2rem; display: flex; align-items: center; gap: 8px;
     }
     .alert-error {
-      background: rgba(239, 68, 68, 0.15);
-      border: 1px solid rgba(239, 68, 68, 0.3);
-      color: #fca5a5;
+      background: rgba(239,68,68,0.15); border: 1px solid rgba(239,68,68,0.3); color: #fca5a5;
     }
     .alert-info {
-      background: rgba(59, 130, 246, 0.15);
-      border: 1px solid rgba(59, 130, 246, 0.3);
-      color: #93c5fd;
+      background: rgba(59,130,246,0.15); border: 1px solid rgba(59,130,246,0.3); color: #93c5fd;
     }
-    .login-links {
-      margin-top: 1rem;
-      display: flex;
-      gap: 1rem;
-      justify-content: center;
-    }
+    .login-links { margin-top: 1rem; display: flex; gap: 1rem; justify-content: center; }
     .login-links a {
-      color: #93c5fd;
-      text-decoration: none;
-      font-weight: 500;
+      color: #93c5fd; text-decoration: none; font-weight: 500;
       border-bottom: 1px dashed rgba(147,197,253,0.5);
     }
-    .login-links a:hover {
-      color: white;
-      border-bottom-color: white;
-    }
+    .login-links a:hover { color: white; border-bottom-color: white; }
     input[type="date"]::-webkit-calendar-picker-indicator {
-      filter: invert(1) opacity(0.4);
-      cursor: pointer;
+      filter: invert(1) opacity(0.4); cursor: pointer;
     }
   </style>
 </head>
@@ -338,6 +262,9 @@ if ($deal_id > 0) {
       <?php endif; ?>
 
       <form method="POST" action="">
+        <!-- ✅ Hidden field passes deal_id into POST -->
+        <input type="hidden" name="deal_id" value="<?= (int)$deal_id ?>">
+
         <div class="form-group">
           <label for="name">Full Name</label>
           <input type="text" id="name" name="name" placeholder="e.g. Ram Bahadur"
