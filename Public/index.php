@@ -1,639 +1,507 @@
 <?php 
-require_once __DIR__ . '/../config/db.php';
-include '../includes/header.php'; 
+include 'includes/header.php'; 
+require_once 'user/db.php';
 
-// Fetch 3 random deals for the ad widget
-$deals_query = $conn->query("
-    SELECT id, title, price, original_price, image_url, category, location
-    FROM deals 
-    WHERE image_url IS NOT NULL AND image_url != 'NULL'
-    ORDER BY RAND() 
-    LIMIT 3
-");
-$ad_deals = $deals_query ? $deals_query->fetch_all(MYSQLI_ASSOC) : [];
+// Fetch the 8 latest community posts for the home page feed
+$community_posts_query = "
+    SELECT p.id, p.image_path, p.caption, u.username 
+    FROM posts p 
+    LEFT JOIN users u ON p.user_id = u.id 
+    ORDER BY p.created_at DESC 
+    LIMIT 8
+";
+$community_posts_res = $conn->query($community_posts_query);
+$community_posts = [];
+if ($community_posts_res) {
+    while ($row = $community_posts_res->fetch_assoc()) {
+        $community_posts[] = $row;
+    }
+}
 ?>
 
-<!-- Sanskar Part -->
-<!-- Travel Style Hero Section -->
-<section class="nepal-hero">
-    <div class="mh-bg" style="background-image: url('../images/pokhara_lake.png');"></div>
-    <div class="mh-overlay"></div>
-    
-    <!-- Left/Right Nav Arrows -->
-    <button class="mh-arrow mh-left">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 19l-7-7 7-7"/></svg>
-    </button>
-    <button class="mh-arrow mh-right">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5l7 7-7 7"/></svg>
-    </button>
-
-    <div class="mh-content">
-        <div class="mh-subtitle">WELCOME TO</div>
-        <h1 class="mh-title">NEPAL</h1>
-        <a href="#deals" class="btn mh-btn">LEARN MORE</a>
+<!-- Modern Hero Section -->
+<section class="malaysia-hero" style="height: 100vh; position: relative; margin-bottom: 0;">
+    <div class="mh-slideshow">
+        <div class="mh-bg active" style="background-image: url('images/pokhara_lake.png');"></div>
+        <div class="mh-bg" style="background-image: url('images/everest_trek.png');"></div>
+        <div class="mh-bg" style="background-image: url('images/chitwan_rhino.png');"></div>
+        <div class="mh-bg" style="background-image: url('images/kathmandu_night_hero.png');"></div>
     </div>
-
-    <!-- Bottom Category Bar -->
-    <div class="mh-bottom-nav">
-        <div class="container" style="padding: 0;">
-            <ul class="mh-cat-list">
-                <li class="mh-cat-item active">
-                    <a href="#nature" class="mh-cat-link">NATURE & ADVENTURE</a>
-                </li>
-                <li class="mh-cat-item"><a href="#culture" class="mh-cat-link">CULTURE & HERITAGE</a></li>
-                <li class="mh-cat-item"><a href="#food" class="mh-cat-link">FOOD & DRINKS</a></li>
-                <li class="mh-cat-item"><a href="#city" class="mh-cat-link">CITY EXCITEMENT</a></li>
-                <li class="mh-cat-item"><a href="#family" class="mh-cat-link">FAMILY FUN</a></li>
-                <li class="mh-cat-item"><a href="#mountains" class="mh-cat-link">MOUNTAINS & TREKS</a></li>
-                <li class="mh-cat-item"><a href="#deals" class="mh-cat-link">DEALS & PACKAGES</a></li>
-            </ul>
+    <div class="mh-overlay" style="background: linear-gradient(to bottom, rgba(0,0,0,0.4), rgba(0,0,0,0.1) 60%, rgba(255,255,255,1));"></div>
+    
+    <style>
+        .mh-slideshow { position: absolute; inset: 0; z-index: 1; }
+        .mh-bg { position: absolute; inset: 0; background-size: cover; background-position: center; opacity: 0; transition: opacity 1.5s ease-in-out; }
+        .mh-bg.active { opacity: 1; }
+    </style>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const slides = document.querySelectorAll('.mh-bg');
+            let current = 0;
+            setInterval(() => {
+                slides[current].classList.remove('active');
+                current = (current + 1) % slides.length;
+                slides[current].classList.add('active');
+            }, 5000);
+        });
+    </script>
+    
+    <div class="mh-content" style="padding-top: 100px;">
+        <div class="mh-subtitle" style="text-shadow: 0 2px 4px rgba(0,0,0,0.5);">DISCOVER</div>
+        <h1 class="mh-title" style="text-shadow: 0 4px 10px rgba(0,0,0,0.4); font-size: 130px;">NEPAL</h1>
+        
+        <!-- Glassmorphism floating search/nav -->
+        <form id="heroAjaxForm" action="deals-and-packages.php" method="GET" class="box-glass" style="margin-top: 40px; padding: 20px 40px; border-radius: 50px; display: flex; gap: 30px; align-items: center;">
+            <div style="text-align: left;">
+                <div style="font-size: 10px; font-weight: 800; letter-spacing: 2px; color: var(--primary-yellow); margin-bottom: 5px;">WHERE TO?</div>
+                <input type="text" name="q" placeholder="Search destinations..." style="background: transparent; border: none; font-size: 16px; color: white; width: 200px; outline: none; font-family: inherit;">
+            </div>
+            <div style="width: 1px; height: 30px; background: rgba(255,255,255,0.3);"></div>
+            <div style="text-align: left;">
+                <div style="font-size: 10px; font-weight: 800; letter-spacing: 2px; color: var(--primary-yellow); margin-bottom: 5px;">EXPLORE</div>
+                <select name="category" style="background: transparent; border: none; font-size: 16px; color: white; outline: none; font-family: inherit; appearance: none; cursor: pointer;">
+                    <option value="" style="color: black;">All Experiences</option>
+                    <option value="Trekking" style="color: black;">Trekking & Adventure</option>
+                    <option value="Culture" style="color: black;">Culture & Heritage</option>
+                </select>
+            </div>
+            <button type="submit" class="btn btn-primary" style="padding: 12px 30px; border-radius: 30px; border: none;">DISCOVER</button>
+        </form>
+        
+        <!-- Best Time to Visit Quick Hint -->
+        <div style="margin-top: 20px; display: flex; align-items: center; justify-content: center; gap: 10px; color: rgba(255,255,255,0.9); font-size: 13px; font-weight: 600; text-shadow: 0 2px 4px rgba(0,0,0,0.5);">
+            <svg style="width: 18px; height: 18px; fill: var(--primary-yellow);" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
+            <span>Best Time to Visit: <span style="color: var(--primary-yellow);">Sept - Nov</span> & <span style="color: var(--primary-yellow);">Mar - May</span></span>
         </div>
     </div>
 </section>
 
-<!-- Deals Ad Widget -->
-<div id="dealsAdWidget" class="deals-ad-widget">
-    <button class="deals-ad-close" onclick="closeDealsAd()" aria-label="Close">&times;</button>
-    <div class="deals-ad-header">
-        <span class="deals-ad-badge">🔥 Hot Deals</span>
-        <div class="deals-ad-timer" id="dealsAdTimer">
-            <span id="timerSeconds">5</span>s
-        </div>
-    </div>
-    <div class="deals-ad-carousel" id="dealsAdCarousel">
-        <?php foreach ($ad_deals as $index => $deal): 
-            $discount = 0;
-            if (!empty($deal['original_price']) && (float)$deal['original_price'] > 0) {
-                $discount = round((((float)$deal['original_price'] - (float)$deal['price']) / (float)$deal['original_price']) * 100);
-            }
-        ?>
-        <div class="deal-ad-slide <?= $index === 0 ? 'active' : '' ?>">
-            <div class="deal-ad-image" style="background-image: url('<?= htmlspecialchars($deal['image_url']) ?>')">
-                <?php if ($discount > 0): ?>
-                    <span class="deal-ad-discount">-<?= $discount ?>%</span>
-                <?php endif; ?>
+<?php
+$all_facts = [
+    ['val' => '8848m', 'label' => 'Highest Peak'],
+    ['val' => '125+', 'label' => 'Ethnic Groups'],
+    ['val' => '10', 'label' => 'UNESCO Sites'],
+    ['val' => '7000+', 'label' => 'Himalayan Peaks'],
+    ['val' => '123', 'label' => 'Languages'],
+    ['val' => '860+', 'label' => 'Bird Species'],
+    ['val' => '6000+', 'label' => 'Rivers & Rivulets'],
+    ['val' => '20%', 'label' => 'Protected Land'],
+    ['val' => '1st', 'label' => 'Birthplace of Buddha'],
+    ['val' => 'No #1', 'label' => 'Non-Rectangular Flag']
+];
+shuffle($all_facts);
+$display_facts = array_slice($all_facts, 0, 4);
+?>
+
+<!-- Quick Facts Strip -->
+<div class="facts-strip" style="background: var(--primary-blue); color: white; padding: 40px 0; position: relative; z-index: 10;">
+    <div class="container" style="display: flex; justify-content: space-between; align-items: center; gap: 20px; flex-wrap: wrap;">
+        <?php foreach($display_facts as $index => $fact): ?>
+            <div style="text-align: center; flex: 1; min-width: 150px;">
+                <div style="font-size: 32px; font-weight: 800; color: var(--primary-yellow);"><?php echo $fact['val']; ?></div>
+                <div style="font-size: 11px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; margin-top: 5px;"><?php echo $fact['label']; ?></div>
             </div>
-            <div class="deal-ad-info">
-                <span class="deal-ad-category"><?= htmlspecialchars($deal['category'] ?? '') ?></span>
-                <h4 class="deal-ad-title"><?= htmlspecialchars($deal['title']) ?></h4>
-                <?php if (!empty($deal['location'])): ?>
-                    <p class="deal-ad-location">📍 <?= htmlspecialchars($deal['location']) ?></p>
-                <?php endif; ?>
-                <div class="deal-ad-price">
-                    <?php if ($discount > 0): ?>
-                        <span class="deal-ad-original">NPR <?= number_format((float)$deal['original_price']) ?></span>
-                    <?php endif; ?>
-                    <span class="deal-ad-current">NPR <?= number_format((float)$deal['price']) ?></span>
-                </div>
-                <a href="deals.php#deal-<?= $deal['id'] ?>" class="deal-ad-link">View Deal →</a>
-            </div>
-        </div>
+            <?php if($index < 3): ?>
+                <div style="width: 1px; height: 40px; background: rgba(255,255,255,0.2);" class="fact-divider"></div>
+            <?php endif; ?>
         <?php endforeach; ?>
     </div>
-    <?php if (count($ad_deals) > 1): ?>
-    <div class="deal-ad-dots">
-        <?php foreach ($ad_deals as $index => $deal): ?>
-            <span class="deal-ad-dot <?= $index === 0 ? 'active' : '' ?>" onclick="goToDealSlide(<?= $index ?>)"></span>
-        <?php endforeach; ?>
-    </div>
-    <?php endif; ?>
 </div>
 
-<!-- Category Sections -->
-
-<!-- Bijay Part -->
-<!-- 1. Nature & Adventure -->
-<section id="nature" class="container" style="padding-top: 60px;">
-    <h2 class="section-title" style="margin-bottom: 30px;">Nature & <span class="script-font" style="font-size:40px; color:var(--primary-yellow);">Adventure</span></h2>
-    <div class="grid-container">
-        <!-- Card 1 -->
-        <div class="idea-card">
-            <div class="card-badge">3 DAYS 2 NIGHTS</div>
-            <img src="../images/chitwan_rhino.png" alt="Chitwan" class="card-img">
-            <div class="card-overlay"><span class="card-region">Terai Plains</span><h3 class="card-title">Chitwan National Park Jungle Safari</h3></div>
-        </div>
-        <!-- Card 2 -->
-        <div class="idea-card">
-            <div class="card-badge">1 DAY</div>
-            <img src="../images/pokhara_lake.png" alt="Pokhara Lake" class="card-img">
-            <div class="card-overlay"><span class="card-region">Gandaki Zone</span><h3 class="card-title">Phewa Lake Boating River Rafting</h3></div>
-        </div>
-    </div>
-</section>
-
-<!-- 2. Culture & Heritage -->
-<section id="culture" class="container" style="padding-top: 60px;">
-    <h2 class="section-title" style="margin-bottom: 30px;">Culture & <span class="script-font" style="font-size:40px; color:var(--primary-yellow);">Heritage</span></h2>
-    <div class="grid-container">
-        <div class="idea-card">
-            <div class="card-badge">HALF DAY</div>
-            <img src="../images/bhaktapur_temple.png" alt="Bhaktapur" class="card-img">
-            <div class="card-overlay"><span class="card-region">Kathmandu Valley</span><h3 class="card-title">Bhaktapur Durbar Square Heritage Walk</h3></div>
-        </div>
-        <div class="idea-card">
-            <div class="card-badge">2 DAYS 1 NIGHT</div>
-            <img src="../images/lumbini_temple.png" alt="Lumbini" class="card-img">
-            <div class="card-overlay"><span class="card-region">Lumbini Province</span><h3 class="card-title">Birthplace of Buddha Spiritual Tour</h3></div>
-        </div>
-    </div>
-</section>
-
-<!-- 3. Food & Drinks -->
-<section id="food" class="container" style="padding-top: 60px;">
-    <h2 class="section-title" style="margin-bottom: 30px;">Food & <span class="script-font" style="font-size:40px; color:var(--primary-yellow);">Drinks</span></h2>
-    <div class="grid-container">
-        <div class="idea-card">
-            <div class="card-badge">1 DAY</div>
-            <img src="../images/food_drinks_nepal.png" alt="Food" class="card-img">
-            <div class="card-overlay"><span class="card-region">Kathmandu</span><h3 class="card-title">Authentic Newari Cuisine Tasting</h3></div>
-        </div>
-    </div>
-</section>
-
-<!-- Ramal Part -->
-<!-- 4. City Excitement -->
-<section id="city" class="container" style="padding-top: 60px;">
-    <h2 class="section-title" style="margin-bottom: 30px;">City <span class="script-font" style="font-size:40px; color:var(--primary-yellow);">Excitement</span></h2>
-    <div class="grid-container">
-        <div class="idea-card">
-            <div class="card-badge">1 DAY</div>
-            <img src="../images/city_excitement_nepal.png" alt="City" class="card-img">
-            <div class="card-overlay"><span class="card-region">Thamel</span><h3 class="card-title">Thamel Night Market & Live Music</h3></div>
-        </div>
-    </div>
-</section>
-
-<!-- 5. Family Fun -->
-<section id="family" class="container" style="padding-top: 60px;">
-    <h2 class="section-title" style="margin-bottom: 30px;">Family <span class="script-font" style="font-size:40px; color:var(--primary-yellow);">Fun</span></h2>
-    <div class="grid-container">
-        <div class="idea-card">
-            <div class="card-badge">4 DAYS 3 NIGHTS</div>
-            <img src="../images/family_fun_nepal.png" alt="Family" class="card-img">
-            <div class="card-overlay"><span class="card-region">Chitwan</span><h3 class="card-title">Elephant Breeding Center & Village Walk</h3></div>
-        </div>
-    </div>
-</section>
-
-<!-- 6. Mountains & Treks -->
-<section id="mountains" class="container" style="padding-top: 60px;">
-    <h2 class="section-title" style="margin-bottom: 30px;">Mountains & <span class="script-font" style="font-size:40px; color:var(--primary-yellow);">Treks</span></h2>
-    <div class="grid-container">
-        <div class="idea-card">
-            <div class="card-badge">14 DAYS 13 NIGHTS</div>
-            <img src="../images/annapurna_trek.png" alt="Annapurna" class="card-img">
-            <div class="card-overlay"><span class="card-region">Annapurna Region</span><h3 class="card-title">Annapurna Circuit Expedition</h3></div>
-        </div>
-        <div class="idea-card">
-            <div class="card-badge">12 DAYS 11 NIGHTS</div>
-            <img src="../images/everest_trek.png" alt="Everest" class="card-img">
-            <div class="card-overlay"><span class="card-region">Sagarmatha Zone</span><h3 class="card-title">Everest Base Camp Trekking</h3></div>
-        </div>
-    </div>
-</section>
-
 <style>
-/* ═══════════════════════════════════════════════════════════
-   DEALS AD WIDGET STYLES
-═══════════════════════════════════════════════════════════ */
-.deals-ad-widget {
-    position: fixed;
-    right: 20px;
-    top: 50%;
-    transform: translateY(-50%) translateX(0);
-    width: 320px;
-    background: linear-gradient(135deg, #1a1f35 0%, #0d1020 100%);
-    border: 2px solid rgba(201, 162, 39, 0.3);
-    border-radius: 16px;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6), 
-                0 0 0 1px rgba(255, 255, 255, 0.05) inset;
-    z-index: 9999;
-    overflow: hidden;
-    animation: slideInRight 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-    transition: transform 0.3s ease, opacity 0.3s ease;
-}
-
-.deals-ad-widget.closing {
-    animation: slideOutRight 0.4s ease forwards;
-}
-
-@keyframes slideInRight {
-    from {
-        transform: translateY(-50%) translateX(400px);
-        opacity: 0;
+    @media (max-width: 768px) {
+        .fact-divider { display: none; }
     }
-    to {
-        transform: translateY(-50%) translateX(0);
-        opacity: 1;
-    }
-}
-
-@keyframes slideOutRight {
-    to {
-        transform: translateY(-50%) translateX(400px);
-        opacity: 0;
-    }
-}
-
-.deals-ad-close {
-    position: absolute;
-    top: 12px;
-    right: 12px;
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    background: rgba(0, 0, 0, 0.6);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    color: #fff;
-    font-size: 20px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 10;
-    transition: all 0.2s ease;
-    line-height: 1;
-}
-
-.deals-ad-close:hover {
-    background: rgba(255, 80, 80, 0.8);
-    border-color: rgba(255, 80, 80, 0.3);
-    transform: rotate(90deg);
-}
-
-.deals-ad-header {
-    background: linear-gradient(135deg, rgba(201, 162, 39, 0.2) 0%, rgba(37, 99, 235, 0.15) 100%);
-    padding: 16px 20px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.deals-ad-badge {
-    font-size: 13px;
-    font-weight: 700;
-    color: #fff;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-}
-
-.deals-ad-timer {
-    background: rgba(232, 67, 147, 0.2);
-    border: 1px solid rgba(232, 67, 147, 0.4);
-    padding: 4px 10px;
-    border-radius: 20px;
-    font-size: 12px;
-    font-weight: 700;
-    color: #ff6b9d;
-    font-family: 'DM Sans', monospace;
-}
-
-.deals-ad-carousel {
-    position: relative;
-    height: 380px;
-}
-
-.deal-ad-slide {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    opacity: 0;
-    transition: opacity 0.5s ease;
-    pointer-events: none;
-}
-
-.deal-ad-slide.active {
-    opacity: 1;
-    pointer-events: auto;
-}
-
-.deal-ad-image {
-    width: 100%;
-    height: 180px;
-    background-size: cover;
-    background-position: center;
-    position: relative;
-}
-
-.deal-ad-discount {
-    position: absolute;
-    top: 12px;
-    right: 12px;
-    background: #e84393;
-    color: #fff;
-    font-size: 13px;
-    font-weight: 700;
-    padding: 6px 12px;
-    border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(232, 67, 147, 0.4);
-}
-
-.deal-ad-info {
-    padding: 20px;
-}
-
-.deal-ad-category {
-    display: inline-block;
-    background: rgba(92, 63, 204, 0.2);
-    border: 1px solid rgba(92, 63, 204, 0.4);
-    color: #a78bfa;
-    font-size: 10px;
-    font-weight: 700;
-    padding: 4px 12px;
-    border-radius: 20px;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    margin-bottom: 10px;
-}
-
-.deal-ad-title {
-    font-family: 'Playfair Display', serif;
-    font-size: 16px;
-    font-weight: 700;
-    color: #fff;
-    line-height: 1.3;
-    margin-bottom: 8px;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-}
-
-.deal-ad-location {
-    font-size: 12px;
-    color: rgba(255, 255, 255, 0.5);
-    margin-bottom: 12px;
-}
-
-.deal-ad-price {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-bottom: 14px;
-}
-
-.deal-ad-original {
-    font-size: 13px;
-    color: rgba(255, 255, 255, 0.3);
-    text-decoration: line-through;
-}
-
-.deal-ad-current {
-    font-size: 20px;
-    font-weight: 700;
-    color: #c9a227;
-}
-
-.deal-ad-link {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    background: #2563eb;
-    color: #fff;
-    font-size: 13px;
-    font-weight: 600;
-    padding: 10px 20px;
-    border-radius: 8px;
-    text-decoration: none;
-    transition: all 0.2s ease;
-}
-
-.deal-ad-link:hover {
-    background: #1d4ed8;
-    transform: translateX(4px);
-}
-
-.deal-ad-dots {
-    position: absolute;
-    bottom: 10px;
-    left: 50%;
-    transform: translateX(-50%);
-    display: flex;
-    gap: 6px;
-    z-index: 5;
-}
-
-.deal-ad-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: rgba(255, 255, 255, 0.3);
-    cursor: pointer;
-    transition: all 0.2s ease;
-}
-
-.deal-ad-dot.active {
-    background: #c9a227;
-    transform: scale(1.3);
-}
-
-/* Mobile responsiveness */
-@media (max-width: 768px) {
-    .deals-ad-widget {
-        right: 10px;
-        left: 10px;
-        width: auto;
-        max-width: 340px;
-        margin: 0 auto;
-    }
-}
-
-@media (max-width: 480px) {
-    .deals-ad-widget {
-        width: calc(100% - 20px);
-        right: 10px;
-        left: 10px;
-        top: auto;
-        bottom: 20px;
-        transform: none;
-    }
-    
-    @keyframes slideInRight {
-        from {
-            transform: translateY(400px);
-            opacity: 0;
-        }
-        to {
-            transform: translateY(0);
-            opacity: 1;
-        }
-    }
-    
-    @keyframes slideOutRight {
-        to {
-            transform: translateY(400px);
-            opacity: 0;
-        }
-    }
-}
 </style>
 
-<script>
-/* ═══════════════════════════════════════════════════════════
-   DEALS AD WIDGET FUNCTIONALITY - APPEARS EVERY 20 SECONDS
-═══════════════════════════════════════════════════════════ */
-(function() {
-    const widget = document.getElementById('dealsAdWidget');
-    if (!widget) return;
-
-    let autoCloseTimer = null;
-    let countdownInterval = null;
-    let reappearTimer = null;
-    let currentSlide = 0;
-    const slides = document.querySelectorAll('.deal-ad-slide');
-    const dots = document.querySelectorAll('.deal-ad-dot');
-    const AUTO_CLOSE_SECONDS = 5;
-    const REAPPEAR_SECONDS = 20; // Show again after 20 seconds
-    const SLIDE_INTERVAL = 3000; // 3 seconds per slide
-    let slideInterval = null;
-
-    // Start countdown timer
-    function startCountdown() {
-        let secondsLeft = AUTO_CLOSE_SECONDS;
-        const timerEl = document.getElementById('timerSeconds');
+<!-- Bento Box Category Section -->
+<section class="bento-section" id="discover">
+    <div class="container">
+        <div class="section-header" style="text-align: center; margin-bottom: 50px;">
+            <span style="font-family: 'Montserrat', sans-serif; font-size: 14px; letter-spacing: 3px; font-weight: 800; color: var(--primary-yellow); text-transform: uppercase;">WONDERS</span>
+            <h2 class="section-title" style="margin-top: 10px;">Discover Your <span class="script-font" style="font-size:48px;">Journey</span></h2>
+        </div>
         
-        countdownInterval = setInterval(() => {
-            secondsLeft--;
-            if (timerEl) {
-                timerEl.textContent = secondsLeft;
-            }
+        <div class="bento-grid">
+            <!-- Large Card -->
+            <a href="travel-ideas.php" class="bento-item large">
+                <img src="images/annapurna_trek.png" alt="Annapurna">
+                <div class="bento-overlay">
+                    <span class="bento-category">Mountains</span>
+                    <h3 class="bento-title">Annapurna Circuit Expedition</h3>
+                </div>
+            </a>
             
-            if (secondsLeft <= 0) {
-                clearInterval(countdownInterval);
-            }
-        }, 1000);
-    }
+            <!-- Standard Cards -->
+            <a href="travel-ideas.php" class="bento-item">
+                <img src="images/bhaktapur_temple.png" alt="Bhaktapur">
+                <div class="bento-overlay">
+                    <span class="bento-category">Culture</span>
+                    <h3 class="bento-title">Bhaktapur Heritage Walk</h3>
+                </div>
+            </a>
+            
+            <a href="travel-ideas.php" class="bento-item">
+                <img src="images/food_drinks_nepal.png" alt="Food">
+                <div class="bento-overlay">
+                    <span class="bento-category">Cuisine</span>
+                    <h3 class="bento-title">Authentic Newari Taste</h3>
+                </div>
+            </a>
+            
+            <!-- Wide Card -->
+            <a href="travel-ideas.php" class="bento-item wide">
+                <img src="images/chitwan_rhino.png" alt="Chitwan">
+                <div class="bento-overlay">
+                    <span class="bento-category">Adventure</span>
+                    <h3 class="bento-title">Chitwan National Park Safari</h3>
+                </div>
+            </a>
+            
+            <!-- Standard Cards -->
+            <a href="travel-ideas.php" class="bento-item">
+                <img src="images/lumbini_temple.png" alt="Lumbini">
+                <div class="bento-overlay">
+                    <span class="bento-category">Heritage</span>
+                    <h3 class="bento-title">Birthplace of Buddha</h3>
+                </div>
+            </a>
+            
+            <a href="travel-ideas.php" class="bento-item">
+                <img src="images/city_excitement_nepal.png" alt="City">
+                <div class="bento-overlay">
+                    <span class="bento-category">City Life</span>
+                    <h3 class="bento-title">Thamel Night Market</h3>
+                </div>
+            </a>
 
-    // Reset countdown display
-    function resetCountdown() {
-        const timerEl = document.getElementById('timerSeconds');
-        if (timerEl) {
-            timerEl.textContent = AUTO_CLOSE_SECONDS;
-        }
-    }
+            <!-- Added cards to fill grid -->
+            <a href="travel-ideas.php" class="bento-item">
+                <img src="images/sarangkot_sunrise.png" alt="Sunrise">
+                <div class="bento-overlay">
+                    <span class="bento-category">Nature</span>
+                    <h3 class="bento-title">Sarangkot Sunrise View</h3>
+                </div>
+            </a>
 
-    // Auto-close after 5 seconds
-    function startAutoClose() {
-        autoCloseTimer = setTimeout(() => {
-            closeDealsAdTemporary();
-        }, AUTO_CLOSE_SECONDS * 1000);
-    }
+            <a href="travel-ideas.php" class="bento-item">
+                <img src="images/pashupatinath_aarti.png" alt="Aarti">
+                <div class="bento-overlay">
+                    <span class="bento-category">Spirituality</span>
+                    <h3 class="bento-title">Pashupatinath Evening Aarti</h3>
+                </div>
+            </a>
+        </div>
+    </div>
+</section>
 
-    // Show the widget
-    function showWidget() {
-        widget.classList.remove('closing');
-        widget.style.display = 'block';
+<!-- Nepal by Season Section -->
+<section class="seasons-section" style="padding: 100px 0; background: #f9f9f9;">
+    <div class="container">
+        <div class="section-header" style="text-align: center; margin-bottom: 60px;">
+            <span style="font-family: 'Montserrat', sans-serif; font-size: 14px; letter-spacing: 3px; font-weight: 800; color: var(--primary-blue); text-transform: uppercase;">EXPERIENCE</span>
+            <h2 class="section-title" style="margin-top: 10px;">Nepal by <span class="script-font" style="font-size:48px;">Seasons</span></h2>
+            <p style="max-width: 600px; margin: 20px auto 0; color: #666;">Every season tells a different story in the Himalayas. Choose your perfect time to explore.</p>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 30px;">
+            <!-- Spring -->
+            <div class="season-card" style="background: white; border-radius: 20px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.05); transition: transform 0.3s;">
+                <div style="height: 200px; background: url('images/annapurna_trek.png') center/cover;"></div>
+                <div style="padding: 25px;">
+                    <span style="color: #4caf50; font-weight: 800; font-size: 11px; letter-spacing: 1px; text-transform: uppercase;">MAR - MAY</span>
+                    <h4 style="margin: 10px 0; font-size: 20px; font-weight: 800; color: var(--primary-blue);">Spring Bloom</h4>
+                    <p style="font-size: 14px; color: #777;">Wild rhododendrons and perfect trekking weather.</p>
+                </div>
+            </div>
+            <!-- Summer -->
+            <div class="season-card" style="background: white; border-radius: 20px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.05); transition: transform 0.3s;">
+                <div style="height: 200px; background: url('images/chitwan_rhino.png') center/cover;"></div>
+                <div style="padding: 25px;">
+                    <span style="color: #2196f3; font-weight: 800; font-size: 11px; letter-spacing: 1px; text-transform: uppercase;">JUN - AUG</span>
+                    <h4 style="margin: 10px 0; font-size: 20px; font-weight: 800; color: var(--primary-blue);">Lush Monsoon</h4>
+                    <p style="font-size: 14px; color: #777;">Green valleys, waterfalls and cultural festivals.</p>
+                </div>
+            </div>
+            <!-- Autumn -->
+            <div class="season-card" style="background: white; border-radius: 20px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.05); transition: transform 0.3s;">
+                <div style="height: 200px; background: url('images/everest_trek.png') center/cover;"></div>
+                <div style="padding: 25px;">
+                    <span style="color: #ff9800; font-weight: 800; font-size: 11px; letter-spacing: 1px; text-transform: uppercase;">SEP - NOV</span>
+                    <h4 style="margin: 10px 0; font-size: 20px; font-weight: 800; color: var(--primary-blue);">Golden Autumn</h4>
+                    <p style="font-size: 14px; color: #777;">Crisp clear skies and peak trekking season.</p>
+                </div>
+            </div>
+            <!-- Winter -->
+            <div class="season-card" style="background: white; border-radius: 20px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.05); transition: transform 0.3s;">
+                <div style="height: 200px; background: url('images/kathmandu_night_hero.png') center/cover;"></div>
+                <div style="padding: 25px;">
+                    <span style="color: #9c27b0; font-weight: 800; font-size: 11px; letter-spacing: 1px; text-transform: uppercase;">DEC - FEB</span>
+                    <h4 style="margin: 10px 0; font-size: 20px; font-weight: 800; color: var(--primary-blue);">Quiet Winter</h4>
+                    <p style="font-size: 14px; color: #777;">Lower altitude tours and amazing snow views.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Deals & Packages Snippet -->
+<section class="booking-section" id="deals" style="padding: 80px 0; background: #ffffff; margin-top: 60px;">
+    <div class="container" style="max-width: 1200px;">
+        <!-- Header -->
+        <div style="text-align: left; margin-bottom: 40px; border-bottom: 3px solid #eee; padding-bottom: 30px;">
+            <span style="font-family: 'Montserrat', sans-serif; font-size: 14px; letter-spacing: 3px; font-weight: 800; color: var(--primary-blue); text-transform: uppercase;">DISCOVER</span>
+            <h2 style="font-size: 52px; color: var(--primary-blue); font-weight: 800; margin: 10px 0 10px; line-height: 1;">New Deals & <span class="script-font" style="color: var(--primary-yellow); font-size: 64px; margin-left: -5px;">Packages</span></h2>
+            <p style="color: var(--text-gray); font-size: 16px; font-weight: 500;">Freshly added offers for your next trip.</p>
+        </div>
         
-        // Reset to first slide
-        currentSlide = 0;
-        slides.forEach((slide, index) => {
-            slide.classList.toggle('active', index === 0);
+        <!-- Search Bar -->
+        <form id="dealsAjaxForm" action="deals-and-packages.php" method="GET" style="display: flex; gap: 15px; margin-bottom: 50px; flex-wrap: wrap;">
+            <div style="flex: 1; min-width: 200px;">
+                <label style="display: block; font-size: 11px; font-weight: 800; color: var(--primary-blue); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px;">CATEGORY</label>
+                <select name="category" style="width: 100%; padding: 14px; border: 1px solid var(--primary-blue); border-radius: 0; font-family: inherit; font-weight: 700; color: var(--primary-blue); appearance: none; background: url('data:image/svg+xml;utf8,<svg fill=\"%231B3A5A\" viewBox=\"0 0 24 24\" xmlns=\"http://www.w3.org/2000/svg\"><path d=\"M7 10l5 5 5-5z\"/></svg>') no-repeat right 10px center; background-size: 24px;">
+                    <option value="">ALL</option>
+                    <option value="TREKKING">TREKKING</option>
+                    <option value="LEISURE">LEISURE</option>
+                    <option value="CULTURE">CULTURE</option>
+                </select>
+            </div>
+            <div style="flex: 2; min-width: 300px; display: flex; align-items: flex-end;">
+                <input type="text" name="q" placeholder="Search Your Deals Here" style="flex: 1; padding: 14px; border: 1px solid #ccc; border-radius: 0; font-family: inherit; font-size: 15px; outline: none;">
+                <button type="submit" style="padding: 14px 40px; background: #285da1; color: white; border: none; font-weight: 800; font-family: inherit; letter-spacing: 1px; cursor: pointer;">SEARCH</button>
+            </div>
+            <div style="display: flex; align-items: flex-end;">
+                <a href="index.php#deals" style="display: inline-block; padding: 14px 40px; background: #eee; color: var(--primary-blue); text-decoration: none; border: none; font-weight: 800; font-family: inherit; letter-spacing: 1px; cursor: pointer;">CLEAR</a>
+            </div>
+        </form>
+
+        <?php include 'includes/deals-data.php'; ?>
+        
+        <!-- Grid -->
+        <div id="dealsGridContainer" class="deals-options-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 30px; margin-bottom: 60px;">
+            <?php foreach($deals as $deal): ?>
+            <a href="deal.php?id=<?php echo htmlspecialchars($deal['id']); ?>" style="display: flex; flex-direction: column; background: white; text-decoration: none; position: relative; border: 1px solid #eee; transition: all 0.3s ease; border-radius: 12px; overflow: hidden; box-shadow: 0 5px 15px rgba(0,0,0,0.05);">
+                
+                <div style="position: relative;">
+                    <img src="<?php echo htmlspecialchars($deal['image']); ?>" style="width: 100%; height: 260px; object-fit: cover; display: block;">
+                    <div style="position: absolute; top: 15px; right: 15px; display: flex; flex-direction: column; gap: 5px; align-items: flex-end;">
+                        <span style="background: <?php echo htmlspecialchars($deal['badge_color']); ?>; color: white; padding: 6px 14px; font-size: 11px; font-weight: 800; letter-spacing: 1px; border-radius: 4px; text-transform: uppercase; box-shadow: 0 4px 10px rgba(0,0,0,0.2);"><?php echo htmlspecialchars($deal['category_badge']); ?></span>
+                        <span style="background: white; color: #333; padding: 4px 10px; font-size: 10px; font-weight: 800; border-radius: 4px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);"><?php echo htmlspecialchars($deal['duration']); ?></span>
+                    </div>
+                </div>
+
+                <div style="padding: 25px 20px 20px; flex: 1; display: flex; flex-direction: column;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                        <span style="color: var(--primary-yellow); font-weight: 800; font-size: 12px; letter-spacing: 1px; text-transform: uppercase;"><?php echo htmlspecialchars($deal['region']); ?></span>
+                        <div style="display: flex; color: #f5a623; font-size: 12px;">
+                            <?php 
+                            $rating = $deal['rating'] ?? 5;
+                            for($i=0; $i<5; $i++) echo $i < $rating ? '★' : '☆'; 
+                            ?>
+                        </div>
+                    </div>
+                    <h3 style="color: #333; font-size: 20px; font-weight: 800; line-height: 1.3; margin: 0 0 25px 0;"><?php echo htmlspecialchars($deal['title']); ?></h3>
+                    
+                    <div style="margin-top: auto; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #f0f0f0; pt: 15px; padding-top: 15px;">
+                        <span style="font-weight: 800; font-size: 16px; color: #285da1;"><?php echo htmlspecialchars($deal['price']); ?></span>
+                        <span style="display: inline-block; padding: 10px 20px; background: #285da1; color: white; font-size: 11px; font-weight: 800; border-radius: 30px; letter-spacing: 1px;">VIEW DETAILS</span>
+                    </div>
+                </div>
+            </a>
+            <?php endforeach; ?>
+        </div>
+
+
+    </div>
+</section>
+
+<!-- Instagram Social Feed Section -->
+<section class="instagram-feed-section" style="padding: 100px 0; background: #fafafa; border-top: 1px solid #eee;">
+    <div class="container">
+        <div style="margin-bottom: 50px;">
+            <span style="font-family: 'Montserrat', sans-serif; font-size: 14px; font-weight: 800; color: #285da1; letter-spacing: 2px; text-transform: uppercase;">COMMUNITY</span>
+            <h2 style="font-family: 'Playfair Display', serif; font-size: 48px; color: #285da1; font-weight: 900; margin: 5px 0 0 0; display: flex; align-items: center; gap: 15px;">
+                Truly Authentic <span class="script-font" style="color: #f5a623; font-size: 60px;">Stories</span>
+                <span style="background: rgba(245, 166, 35, 0.1); color: #f5a623; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 800; letter-spacing: 1.5px; display: inline-flex; align-items: center; margin-left: 10px; height: 24px;">
+                    <span class="live-indicator"></span> LIVE
+                </span>
+            </h2>
+            <p style="color: #666; font-size: 16px; margin-top: 10px;">Real moments shared by travelers like you.</p>
+        </div>
+
+        <div id="homeCommunityGrid" class="community-feed-grid" style="margin-bottom: 60px;">
+            <?php if (empty($community_posts)): ?>
+                <!-- Fallback content if no posts exist -->
+                <?php 
+                $fallback_images = [
+                    ['src' => 'images/annapurna_trek.png', 'title' => 'Annapurna Trek', 'user' => 'travelnepal'],
+                    ['src' => 'images/chitwan_rhino.png', 'title' => 'Chitwan Rhino', 'user' => 'wildlife_tm'],
+                    ['src' => 'images/pokhara_lake.png', 'title' => 'Pokhara Lake', 'user' => 'nepal_diaries'],
+                    ['src' => 'images/bhaktapur_temple.png', 'title' => 'Bhaktapur', 'user' => 'heritage_lover']
+                ];
+                foreach($fallback_images as $img): ?>
+                <a href="experience.php" class="community-item">
+                    <img src="<?php echo $img['src']; ?>" alt="<?php echo $img['title']; ?>">
+                    <div class="insta-overlay" style="position: absolute; inset: 0; background: linear-gradient(to bottom, transparent, rgba(27, 58, 90, 0.8)); opacity: 0; transition: opacity 0.3s; display: flex; flex-direction: column; justify-content: flex-end; padding: 20px; color: white;">
+                        <span style="font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: #f5a623; font-weight: 800;">@<?php echo $img['user']; ?></span>
+                        <h4 style="font-size: 14px; margin: 5px 0 0; line-height: 1.3;"><?php echo $img['title']; ?></h4>
+                    </div>
+                </a>
+                <?php endforeach; ?>
+            <?php else: ?>
+                <?php foreach($community_posts as $post): 
+                    $img_path = htmlspecialchars($post['image_path']);
+                    // Fix consistency: replace any path that looks like a logo or placeholder with a fallback
+                    if (strpos(strtolower($img_path), 'logo') !== false || empty($img_path)) {
+                        $img_path = 'images/sarangkot_sunrise.png';
+                    }
+                ?>
+                <a href="experience.php" class="community-item">
+                    <img src="<?php echo $img_path; ?>" alt="Experience">
+                    <div class="insta-overlay" style="position: absolute; inset: 0; background: linear-gradient(to bottom, transparent, rgba(27, 58, 90, 0.8)); opacity: 0; transition: opacity 0.3s; display: flex; flex-direction: column; justify-content: flex-end; padding: 20px; color: white;">
+                        <span style="font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: #f5a623; font-weight: 800;">@<?php echo htmlspecialchars($post['username']); ?></span>
+                        <h4 style="font-size: 14px; margin: 5px 0 0; line-height: 1.3;"><?php echo mb_strimwidth(htmlspecialchars($post['caption']), 0, 50, "..."); ?></h4>
+                    </div>
+                </a>
+                <?php endforeach; ?>
+            <?php endif; ?>
+        </div>
+
+        <div style="text-align: center; display: flex; gap: 15px; justify-content: center; margin-top: 30px;">
+            <button type="button" id="loadMoreCommunityBtn" style="padding: 14px 40px; font-weight: 800; cursor: pointer; border-radius: 30px; border: 2px solid #285da1; background: transparent; color: #285da1; font-family: inherit; font-size: 14px; letter-spacing: 1px;">LOAD MORE STORIES</button>
+            <a href="experience.php" style="padding: 14px 40px; font-weight: 800; cursor: pointer; border-radius: 30px; background: #285da1; color: white; text-decoration: none; font-family: inherit; font-size: 14px; letter-spacing: 1px;">EXPLORE COMMUNITY</a>
+        </div>
+    </div>
+</section>
+
+<!-- Testimonials Section -->
+<section class="testimonials-section" style="padding: 100px 0; background: white;">
+    <div class="container">
+        <div class="section-header" style="text-align: center; margin-bottom: 60px;">
+            <span style="font-family: 'Montserrat', sans-serif; font-size: 14px; letter-spacing: 3px; font-weight: 800; color: var(--primary-yellow); text-transform: uppercase;">VOICES</span>
+            <h2 class="section-title" style="margin-top: 10px;">Traveler <span class="script-font" style="font-size:48px;">Stories</span></h2>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 40px;">
+            <div style="padding: 40px; background: #fcfcfc; border-radius: 20px; border: 1px solid #eee; position: relative;">
+                <div style="font-size: 60px; color: var(--primary-yellow); opacity: 0.2; position: absolute; top: 20px; left: 20px; line-height: 1;">“</div>
+                <p style="color: #555; font-style: italic; margin-bottom: 30px; position: relative; z-index: 2;">Nepal exceeded every expectation. The Sherpa people's hospitality is as high as the mountains they live in. EBC was life-changing!</p>
+                <div style="display: flex; align-items: center; gap: 15px;">
+                    <div style="width: 50px; height: 50px; border-radius: 50%; background: url('images/annapurna_trek.png') center/cover;"></div>
+                    <div>
+                        <h5 style="margin: 0; font-weight: 800; color: var(--primary-blue);">Sarah Jenkins</h5>
+                        <span style="font-size: 12px; color: #999;">Australia</span>
+                    </div>
+                </div>
+            </div>
+            <div style="padding: 40px; background: #fcfcfc; border-radius: 20px; border: 1px solid #eee; position: relative;">
+                <div style="font-size: 60px; color: var(--primary-yellow); opacity: 0.2; position: absolute; top: 20px; left: 20px; line-height: 1;">“</div>
+                <p style="color: #555; font-style: italic; margin-bottom: 30px; position: relative; z-index: 2;">The food in Kathmandu and the peace in Pokhara — Nepal is a perfect blend of chaos and serenity. Can't wait to go back!</p>
+                <div style="display: flex; align-items: center; gap: 15px;">
+                    <div style="width: 50px; height: 50px; border-radius: 50%; background: url('images/pokhara_lake.png') center/cover;"></div>
+                    <div>
+                        <h5 style="margin: 0; font-weight: 800; color: var(--primary-blue);">Marco Rossi</h5>
+                        <span style="font-size: 12px; color: #999;">Italy</span>
+                    </div>
+                </div>
+            </div>
+            <div style="padding: 40px; background: #fcfcfc; border-radius: 20px; border: 1px solid #eee; position: relative;">
+                <div style="font-size: 60px; color: var(--primary-yellow); opacity: 0.2; position: absolute; top: 20px; left: 20px; line-height: 1;">“</div>
+                <p style="color: #555; font-style: italic; margin-bottom: 30px; position: relative; z-index: 2;">Seeing a tiger in Chitwan was the highlight of my year. Nepal is truly a wildlife lover's paradise.</p>
+                <div style="display: flex; align-items: center; gap: 15px;">
+                    <div style="width: 50px; height: 50px; border-radius: 50%; background: url('images/chitwan_rhino.png') center/cover;"></div>
+                    <div>
+                        <h5 style="margin: 0; font-weight: 800; color: var(--primary-blue);">Liam O'Connell</h5>
+                        <span style="font-size: 12px; color: #999;">Ireland</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Interactive Map Section -->
+<section class="interactive-map-section" id="map-section" style="margin-top: 40px; padding-top: 60px; padding-bottom: 60px;">
+    <div class="container section-header" style="text-align: center;">
+        <h2 class="section-title">Interactive <span class="script-font" style="font-size:40px;">Map of Nepal</span></h2>
+    </div>
+
+    <style>
+        #nepal-svg-container svg {
+            filter: drop-shadow(0 15px 30px rgba(0,0,0,0.12));
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+        #nepal-svg-container .district {
+            fill: #dce8f0;
+            stroke: #6b9ab8;
+            stroke-width: 0.5;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        #nepal-svg-container .district:hover {
+            fill: #f0a500 !important;
+            stroke: #cc8400;
+            stroke-width: 1;
+        }
+    </style>
+    <div class="container map-layout">
+        <div class="map-visual" id="nepal-svg-container">
+            <?php include 'includes/map.php'; ?>
+        </div>
+        <div class="map-details">
+            <div class="province-card">
+                <h3 id="province-title" class="province-name">Select a District</h3>
+                <p id="province-desc" class="province-description">Experience the beautiful district of Nepal, a pristine destination waiting to be discovered.</p>
+                <a href="travel-ideas.php" class="btn btn-outline" style="padding: 12px 30px; font-size: 12px; margin-top: 20px; display:inline-block;">Explore Region</a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Interactive Map Enhancement Script -->
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const districtPaths = document.querySelectorAll('.district');
+        const titleEl = document.getElementById('province-title');
+        const descEl = document.getElementById('province-desc');
+        
+        const districtData = {
+            'HUMLA': { attractions: 'Limy Valley, Hilsa, Rara Lake Link' },
+            'MUGU': { attractions: 'Rara Lake (Deepest Lake), Gamgadhi' },
+            'DOLPA': { attractions: 'Shey Phoksundo Lake, Upper Dolpo Trek' },
+            'MUSTANG': { attractions: 'Lo Manthang, Muktinath Temple, Jomsom' },
+            'KATHMANDU': { attractions: 'Pashupatinath, Boudhanath, Swayambhunath' },
+            'POKHARA': { attractions: 'Phewa Lake, Sarangkot, World Peace Pagoda' },
+            'CHITWAN': { attractions: 'Chitwan National Park, Elephant Breeding Center' },
+            'LUMBINI': { attractions: 'Maya Devi Temple, Monastic Zone' },
+            'SOLUKHUMBU': { attractions: 'Everest Base Camp, Namche Bazaar' },
+            'KASKI': { attractions: 'Pokhara Valley, Annapurna Range Views' }
+        };
+
+        districtPaths.forEach(path => {
+            path.addEventListener('mouseenter', (e) => {
+                const id = e.target.getAttribute('id');
+                const name = e.target.getAttribute('data-name') || id;
+                
+                // Highlight
+                path.style.fill = 'var(--primary-yellow)';
+                
+                // Update side panel
+                titleEl.innerText = name;
+                if (districtData[id]) {
+                    descEl.innerHTML = `<strong>Top Attractions:</strong><br>${districtData[id].attractions}`;
+                } else {
+                    descEl.innerText = `Experience the beautiful district of ${name}, a pristine destination waiting to be discovered.`;
+                }
+            });
+
+            path.addEventListener('mouseleave', (e) => {
+                path.style.fill = ''; // Restore default
+            });
         });
-        dots.forEach((dot, index) => {
-            dot.classList.toggle('active', index === 0);
-        });
-        
-        // Restart timers
-        resetCountdown();
-        startCountdown();
-        startAutoClose();
-        startSlideShow();
-    }
-
-    // Schedule next appearance
-    function scheduleNextAppearance() {
-        reappearTimer = setTimeout(() => {
-            showWidget();
-        }, REAPPEAR_SECONDS * 1000);
-    }
-
-    // Slide carousel functionality
-    function goToDealSlide(index) {
-        if (!slides.length) return;
-        
-        slides[currentSlide].classList.remove('active');
-        if (dots[currentSlide]) dots[currentSlide].classList.remove('active');
-        
-        currentSlide = index;
-        
-        slides[currentSlide].classList.add('active');
-        if (dots[currentSlide]) dots[currentSlide].classList.add('active');
-    }
-
-    function nextSlide() {
-        const nextIndex = (currentSlide + 1) % slides.length;
-        goToDealSlide(nextIndex);
-    }
-
-    function startSlideShow() {
-        if (slideInterval) {
-            clearInterval(slideInterval);
-        }
-        if (slides.length > 1) {
-            slideInterval = setInterval(nextSlide, SLIDE_INTERVAL);
-        }
-    }
-
-    function stopSlideShow() {
-        if (slideInterval) {
-            clearInterval(slideInterval);
-        }
-    }
-
-    // Pause auto-close and slideshow on hover
-    widget.addEventListener('mouseenter', () => {
-        if (autoCloseTimer) {
-            clearTimeout(autoCloseTimer);
-        }
-        if (countdownInterval) {
-            clearInterval(countdownInterval);
-        }
-        stopSlideShow();
     });
-
-    // Resume on mouse leave
-    widget.addEventListener('mouseleave', () => {
-        startAutoClose();
-        startCountdown();
-        startSlideShow();
-    });
-
-    // Initialize - show on page load
-    startCountdown();
-    startAutoClose();
-    startSlideShow();
-
-    // Close temporarily (will reappear)
-    window.closeDealsAdTemporary = function() {
-        if (autoCloseTimer) clearTimeout(autoCloseTimer);
-        if (countdownInterval) clearInterval(countdownInterval);
-        stopSlideShow();
-        
-        widget.classList.add('closing');
-        setTimeout(() => {
-            widget.style.display = 'none';
-            scheduleNextAppearance();
-        }, 400);
-    };
-
-    // Make goToDealSlide global for dot clicks
-    window.goToDealSlide = goToDealSlide;
-})();
-
-// Close function for the X button
-function closeDealsAd() {
-    closeDealsAdTemporary();
-}
 </script>
 
-<link rel="stylesheet" href="assets/css/styles.css"> 
-</body>
-</html>
-
-<?php include '../includes/footer.php'; ?>
+<?php include 'includes/footer.php'; ?>
