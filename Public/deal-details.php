@@ -2,6 +2,7 @@
 require_once __DIR__ . '/../config/db.php';
 include '../includes/header.php';
 
+// ── Admin deals only — user deals go to Ud_deal_details.php ──
 $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 if ($id <= 0) { header("Location: deals.php"); exit; }
 
@@ -11,7 +12,26 @@ $stmt->execute();
 $deal = $stmt->get_result()->fetch_assoc();
 $stmt->close();
 
-if (!$deal) { header("Location: deals-and-packages.php"); exit; }
+if (!$deal) { header("Location: deals.php"); exit; }
+
+// ── Check if the logged-in user already booked this deal ────
+$already_booked    = false;
+$existing_book_id  = null;
+
+if (isset($_SESSION['user_id'])) {
+    $uid = (int)$_SESSION['user_id'];
+    $bchk = $conn->prepare(
+        "SELECT id FROM bookings
+         WHERE user_id = ? AND deal_id = ? AND status = 'active'
+         LIMIT 1"
+    );
+    $bchk->bind_param("ii", $uid, $id);
+    $bchk->execute();
+    $bchk->bind_result($existing_book_id);
+    $bchk->fetch();
+    $bchk->close();
+    $already_booked = !empty($existing_book_id);
+}
 
 // Fetch reviews with user info
 $reviews = [];
@@ -138,7 +158,6 @@ $galleryImgs = array_slice($allImages, 1);
     .hero-meta-item { display: flex; align-items: center; gap: 5px; }
     .star-gold { color: #f4b942; }
 
-    /* clickable rating badge */
     .rating-clickable {
       cursor: pointer;
       background: rgba(244,185,66,0.15);
@@ -147,10 +166,7 @@ $galleryImgs = array_slice($allImages, 1);
       transition: background 0.2s, border-color 0.2s;
       display: flex; align-items: center; gap: 5px;
     }
-    .rating-clickable:hover {
-      background: rgba(244,185,66,0.28);
-      border-color: rgba(244,185,66,0.60);
-    }
+    .rating-clickable:hover { background: rgba(244,185,66,0.28); border-color: rgba(244,185,66,0.60); }
     .rating-clickable .pulse-dot {
       width: 6px; height: 6px; border-radius: 50%;
       background: #f4b942; animation: pulse 1.8s infinite;
@@ -162,8 +178,7 @@ $galleryImgs = array_slice($allImages, 1);
 
     /* ══ GALLERY STRIP ══ */
     .gallery-strip {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
       gap: 4px; max-height: 200px; overflow: hidden;
     }
     .gallery-strip img {
@@ -219,7 +234,6 @@ $galleryImgs = array_slice($allImages, 1);
       text-transform: uppercase; color: rgba(255,255,255,0.30); margin-bottom: 1rem;
     }
 
-    /* stat grid */
     .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(105px, 1fr)); gap: 10px; }
     .stat-card {
       background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.07);
@@ -233,8 +247,6 @@ $galleryImgs = array_slice($allImages, 1);
     .stars-disp { color: #f4b942; font-size: 17px; letter-spacing: 2px; }
     .rating-num { font-size: 1.4rem; font-weight: 600; color: #fff; }
     .review-cnt { font-size: 13px; color: rgba(255,255,255,0.35); }
-
-    /* clickable review link in rating row */
     .see-reviews-link {
       font-size: 12px; color: #60a5fa; cursor: pointer;
       text-decoration: underline; text-underline-offset: 2px;
@@ -284,6 +296,8 @@ $galleryImgs = array_slice($allImages, 1);
     .s-row:last-of-type { border-bottom: none; }
     .s-row .lbl { color: rgba(255,255,255,0.35); }
     .s-row .val { color: #fff; font-weight: 500; }
+
+    /* Book Now button */
     .book-btn {
       display: block; width: 100%; margin-top: 1.2rem;
       background: #2563eb; color: #fff;
@@ -294,6 +308,35 @@ $galleryImgs = array_slice($allImages, 1);
     }
     .book-btn:hover  { background: #1d4ed8; }
     .book-btn:active { transform: scale(0.98); }
+
+    /* Already booked state — replaces Book Now */
+    .booked-badge {
+      display: flex; align-items: center; justify-content: center;
+      gap: 8px; width: 100%; margin-top: 1.2rem;
+      background: rgba(234,179,8,0.12);
+      border: 1px solid rgba(234,179,8,0.35);
+      border-radius: 12px; padding: 13px 15px;
+      font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 600;
+      color: #fde68a; text-decoration: none; text-align: center;
+      transition: background 0.15s;
+    }
+    .booked-badge:hover { background: rgba(234,179,8,0.20); }
+    .booked-badge .bb-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: #f4b942; flex-shrink: 0;
+      box-shadow: 0 0 0 3px rgba(244,185,66,0.25);
+      animation: pulse 1.8s infinite;
+    }
+    @keyframes pulse {
+      0%,100% { opacity: 1; transform: scale(1); }
+      50%      { opacity: 0.5; transform: scale(1.5); }
+    }
+    .booked-sub {
+      display: block; text-align: center;
+      font-size: 11px; color: rgba(255,255,255,0.25);
+      margin-top: 6px; font-weight: 400;
+    }
+
     .wish-btn {
       display: flex; align-items: center; justify-content: center;
       gap: 7px; width: 100%; margin-top: 10px;
@@ -320,46 +363,33 @@ $galleryImgs = array_slice($allImages, 1);
       align-items: center; justify-content: center; padding: 1rem;
     }
     .reviews-modal-overlay.open { display: flex; }
-
     .reviews-modal {
-      background: #0e1120;
-      border: 1px solid rgba(255,255,255,0.08);
+      background: #0e1120; border: 1px solid rgba(255,255,255,0.08);
       border-radius: 24px; width: 100%; max-width: 680px;
       max-height: 88vh; display: flex; flex-direction: column;
-      overflow: hidden;
-      box-shadow: 0 40px 100px rgba(0,0,0,0.6);
+      overflow: hidden; box-shadow: 0 40px 100px rgba(0,0,0,0.6);
       animation: modalIn 0.3s cubic-bezier(0.34,1.56,0.64,1);
     }
     @keyframes modalIn {
       from { opacity: 0; transform: translateY(30px) scale(0.96); }
       to   { opacity: 1; transform: translateY(0) scale(1); }
     }
-
     .rm-header {
       padding: 1.6rem 1.8rem 1.2rem;
       border-bottom: 1px solid rgba(255,255,255,0.06);
       display: flex; align-items: flex-start; justify-content: space-between; flex-shrink: 0;
     }
-    .rm-title-grp {}
-    .rm-title {
-      font-family: 'Playfair Display', serif;
-      font-size: 1.4rem; font-weight: 700; color: #fff; margin-bottom: 4px;
-    }
+    .rm-title { font-family: 'Playfair Display', serif; font-size: 1.4rem; font-weight: 700; color: #fff; margin-bottom: 4px; }
     .rm-subtitle { font-size: 13px; color: rgba(255,255,255,0.35); }
-
     .rm-close {
       background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.12);
       color: #fff; width: 36px; height: 36px; border-radius: 50%;
       display: flex; align-items: center; justify-content: center;
-      cursor: pointer; font-size: 18px; flex-shrink: 0;
-      transition: background 0.2s;
+      cursor: pointer; font-size: 18px; flex-shrink: 0; transition: background 0.2s;
     }
     .rm-close:hover { background: rgba(255,255,255,0.16); }
-
-    /* summary strip */
     .rm-summary {
-      padding: 1.2rem 1.8rem;
-      border-bottom: 1px solid rgba(255,255,255,0.06);
+      padding: 1.2rem 1.8rem; border-bottom: 1px solid rgba(255,255,255,0.06);
       display: flex; gap: 2rem; align-items: center; flex-shrink: 0;
       background: rgba(255,255,255,0.02);
     }
@@ -368,61 +398,34 @@ $galleryImgs = array_slice($allImages, 1);
     .rm-big-stars { color: #f4b942; font-size: 18px; letter-spacing: 2px; margin: 4px 0; }
     .rm-big-cnt  { font-size: 11px; color: rgba(255,255,255,0.30); }
     .rm-bars { flex: 1; }
-    .rm-bar-row {
-      display: flex; align-items: center; gap: 10px;
-      font-size: 12px; color: rgba(255,255,255,0.40); margin-bottom: 6px;
-    }
+    .rm-bar-row { display: flex; align-items: center; gap: 10px; font-size: 12px; color: rgba(255,255,255,0.40); margin-bottom: 6px; }
     .rm-bar-row:last-child { margin-bottom: 0; }
     .rm-bar-row .star-n { width: 12px; text-align: right; }
     .rm-bar-track { flex: 1; height: 5px; background: rgba(255,255,255,0.08); border-radius: 99px; overflow: hidden; }
     .rm-bar-fill  { height: 100%; background: linear-gradient(90deg, #f4b942, #f97316); border-radius: 99px; transition: width 0.6s ease; }
     .rm-bar-cnt   { width: 22px; }
-
-    /* reviews list */
     .rm-list { overflow-y: auto; padding: 1.2rem 1.8rem; flex: 1; }
     .rm-list::-webkit-scrollbar { width: 5px; }
     .rm-list::-webkit-scrollbar-track { background: transparent; }
     .rm-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 99px; }
-
-    .review-card {
-      display: flex; gap: 14px;
-      padding: 1.2rem 0; border-bottom: 1px solid rgba(255,255,255,0.05);
-      animation: fadeUp 0.35s ease both;
-    }
+    .review-card { display: flex; gap: 14px; padding: 1.2rem 0; border-bottom: 1px solid rgba(255,255,255,0.05); animation: fadeUp 0.35s ease both; }
     .review-card:last-child { border-bottom: none; }
-    @keyframes fadeUp {
-      from { opacity: 0; transform: translateY(12px); }
-      to   { opacity: 1; transform: translateY(0); }
-    }
-
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
     .reviewer-avatar {
       width: 46px; height: 46px; border-radius: 50%; flex-shrink: 0;
       display: flex; align-items: center; justify-content: center;
       font-size: 17px; font-weight: 700; color: #fff;
       background: linear-gradient(135deg, #2563eb 0%, #7c3aed 100%);
-      border: 2px solid rgba(255,255,255,0.10);
-      overflow: hidden;
+      border: 2px solid rgba(255,255,255,0.10); overflow: hidden;
     }
-    .reviewer-avatar img { width: 100%; height: 100%; object-fit: cover; }
-
     .review-body { flex: 1; min-width: 0; }
-    .review-meta-top {
-      display: flex; align-items: center; justify-content: space-between;
-      flex-wrap: wrap; gap: 6px; margin-bottom: 6px;
-    }
+    .review-meta-top { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 6px; margin-bottom: 6px; }
     .reviewer-name { font-size: 14px; font-weight: 600; color: #fff; }
     .reviewer-handle { font-size: 11px; color: rgba(255,255,255,0.30); margin-top: 1px; }
     .review-stars { color: #f4b942; font-size: 13px; letter-spacing: 1px; }
     .review-date { font-size: 11px; color: rgba(255,255,255,0.24); }
-    .review-text-body {
-      font-size: 14px; line-height: 1.70; color: rgba(255,255,255,0.60);
-      word-break: break-word;
-    }
-
-    .rm-empty {
-      text-align: center; padding: 3rem 1rem;
-      color: rgba(255,255,255,0.25); font-size: 14px;
-    }
+    .review-text-body { font-size: 14px; line-height: 1.70; color: rgba(255,255,255,0.60); word-break: break-word; }
+    .rm-empty { text-align: center; padding: 3rem 1rem; color: rgba(255,255,255,0.25); font-size: 14px; }
     .rm-empty .empty-icon { font-size: 40px; margin-bottom: 12px; }
   </style>
 </head>
@@ -436,9 +439,7 @@ $galleryImgs = array_slice($allImages, 1);
     <?php else: ?>
       <div class="hero-fallback"><?= !empty($deal['emoji']) ? $deal['emoji'] : '🏔️' ?></div>
     <?php endif; ?>
-
     <div class="hero-grad"></div>
-
     <div class="hero-top">
       <a href="deals.php" class="back-btn">&#8592;&nbsp; All Deals</a>
       <div class="hero-badges">
@@ -448,9 +449,13 @@ $galleryImgs = array_slice($allImages, 1);
         <?php if ($discount > 0): ?>
           <span class="badge-disc">-<?= $discount ?>% OFF</span>
         <?php endif; ?>
+        <?php if ($already_booked): ?>
+          <span style="background:rgba(234,179,8,0.85);color:#1a1200;font-size:10px;font-weight:700;padding:6px 13px;border-radius:8px;backdrop-filter:blur(6px);">
+            🎫 BOOKED
+          </span>
+        <?php endif; ?>
       </div>
     </div>
-
     <div class="hero-bottom">
       <p class="hero-eyebrow">Deals &amp; Packages</p>
       <h1 class="hero-title"><?= htmlspecialchars($deal['title']) ?></h1>
@@ -506,16 +511,13 @@ $galleryImgs = array_slice($allImages, 1);
   <!-- ══ REVIEWS MODAL ══ -->
   <div class="reviews-modal-overlay" id="reviewsModal" onclick="handleModalClick(event)">
     <div class="reviews-modal">
-
       <div class="rm-header">
-        <div class="rm-title-grp">
+        <div>
           <h2 class="rm-title">Guest Reviews</h2>
           <p class="rm-subtitle"><?= htmlspecialchars($deal['title']) ?></p>
         </div>
         <button class="rm-close" onclick="closeReviews()">&#215;</button>
       </div>
-
-      <!-- Summary -->
       <?php if ($total_reviews > 0): ?>
       <div class="rm-summary">
         <div class="rm-big-rating">
@@ -531,17 +533,13 @@ $galleryImgs = array_slice($allImages, 1);
             <div class="rm-bar-row">
               <span class="star-n"><?= $s ?></span>
               <span style="color:#f4b942;font-size:10px">★</span>
-              <div class="rm-bar-track">
-                <div class="rm-bar-fill" style="width:<?= $pct ?>%"></div>
-              </div>
+              <div class="rm-bar-track"><div class="rm-bar-fill" style="width:<?= $pct ?>%"></div></div>
               <span class="rm-bar-cnt"><?= $breakdown[$s] ?></span>
             </div>
           <?php endfor; ?>
         </div>
       </div>
       <?php endif; ?>
-
-      <!-- Reviews list -->
       <div class="rm-list">
         <?php if (empty($reviews)): ?>
           <div class="rm-empty">
@@ -552,43 +550,25 @@ $galleryImgs = array_slice($allImages, 1);
         <?php else: ?>
           <?php foreach ($reviews as $idx => $rv): ?>
             <?php
-              $initials = '?';
               $name     = !empty($rv['full_name']) ? $rv['full_name'] : ($rv['username'] ?? 'Anonymous');
-              if ($name && $name !== 'Anonymous') {
-                  $parts    = explode(' ', trim($name));
-                  $initials = strtoupper(substr($parts[0],0,1));
-                  if (isset($parts[1])) $initials .= strtoupper(substr($parts[1],0,1));
-              }
+              $parts    = explode(' ', trim($name));
+              $initials = strtoupper(substr($parts[0],0,1)) . (isset($parts[1]) ? strtoupper(substr($parts[1],0,1)) : '');
               $stars    = max(1, min(5, (int)$rv['rating']));
-              $gradients = [
-                'linear-gradient(135deg,#2563eb,#7c3aed)',
-                'linear-gradient(135deg,#059669,#0891b2)',
-                'linear-gradient(135deg,#dc2626,#e84393)',
-                'linear-gradient(135deg,#d97706,#65a30d)',
-                'linear-gradient(135deg,#7c3aed,#e84393)',
-              ];
-              $grad = $gradients[$idx % count($gradients)];
+              $gradients = ['linear-gradient(135deg,#2563eb,#7c3aed)','linear-gradient(135deg,#059669,#0891b2)','linear-gradient(135deg,#dc2626,#e84393)','linear-gradient(135deg,#d97706,#65a30d)','linear-gradient(135deg,#7c3aed,#e84393)'];
+              $grad     = $gradients[$idx % count($gradients)];
               $date_str = !empty($rv['created_at']) ? date('M j, Y', strtotime($rv['created_at'])) : '';
             ?>
             <div class="review-card" style="animation-delay:<?= $idx * 0.07 ?>s">
-              <div class="reviewer-avatar" style="background:<?= $grad ?>">
-                <?= htmlspecialchars($initials) ?>
-              </div>
+              <div class="reviewer-avatar" style="background:<?= $grad ?>"><?= htmlspecialchars($initials) ?></div>
               <div class="review-body">
                 <div class="review-meta-top">
                   <div>
                     <div class="reviewer-name"><?= htmlspecialchars($name) ?></div>
-                    <?php if (!empty($rv['username'])): ?>
-                      <div class="reviewer-handle">@<?= htmlspecialchars($rv['username']) ?></div>
-                    <?php endif; ?>
+                    <?php if (!empty($rv['username'])): ?><div class="reviewer-handle">@<?= htmlspecialchars($rv['username']) ?></div><?php endif; ?>
                   </div>
                   <div style="text-align:right">
-                    <div class="review-stars">
-                      <?= str_repeat('★', $stars) . str_repeat('☆', 5-$stars) ?>
-                    </div>
-                    <?php if ($date_str): ?>
-                      <div class="review-date"><?= $date_str ?></div>
-                    <?php endif; ?>
+                    <div class="review-stars"><?= str_repeat('★', $stars) . str_repeat('☆', 5-$stars) ?></div>
+                    <?php if ($date_str): ?><div class="review-date"><?= $date_str ?></div><?php endif; ?>
                   </div>
                 </div>
                 <?php if (!empty($rv['review_text'])): ?>
@@ -601,17 +581,12 @@ $galleryImgs = array_slice($allImages, 1);
           <?php endforeach; ?>
         <?php endif; ?>
       </div>
-
     </div>
   </div>
 
   <!-- ══ MAIN LAYOUT ══ -->
   <div class="detail-layout">
-
-    <!-- LEFT -->
     <div>
-
-      <!-- Stats + rating -->
       <div class="glass-card">
         <p class="sec-label">Overview</p>
         <div class="stat-grid">
@@ -623,14 +598,14 @@ $galleryImgs = array_slice($allImages, 1);
           </div>
           <?php endif; ?>
           <?php if ($avg_rating > 0): ?>
-          <div class="stat-card" style="cursor:pointer" onclick="openReviews()" title="View reviews">
+          <div class="stat-card" style="cursor:pointer" onclick="openReviews()">
             <div class="stat-icon">⭐</div>
             <div class="stat-val"><?= number_format($avg_rating, 1) ?></div>
             <div class="stat-lbl">Rating</div>
           </div>
           <?php endif; ?>
           <?php if ($total_reviews > 0): ?>
-          <div class="stat-card" style="cursor:pointer" onclick="openReviews()" title="View reviews">
+          <div class="stat-card" style="cursor:pointer" onclick="openReviews()">
             <div class="stat-icon">💬</div>
             <div class="stat-val"><?= $total_reviews ?></div>
             <div class="stat-lbl">Reviews</div>
@@ -657,7 +632,6 @@ $galleryImgs = array_slice($allImages, 1);
         <?php endif; ?>
       </div>
 
-      <!-- Description -->
       <?php if (!empty($deal['description'])): ?>
       <div class="glass-card">
         <p class="sec-label">About This Deal</p>
@@ -665,7 +639,6 @@ $galleryImgs = array_slice($allImages, 1);
       </div>
       <?php endif; ?>
 
-      <!-- Highlights -->
       <?php if (!empty($features)): ?>
       <div class="glass-card">
         <p class="sec-label">Highlights</p>
@@ -677,34 +650,20 @@ $galleryImgs = array_slice($allImages, 1);
       </div>
       <?php endif; ?>
 
-      <!-- Trip details -->
       <div class="glass-card">
         <p class="sec-label">Trip Details</p>
         <table class="info-tbl">
-          <?php if (!empty($deal['category'])): ?>
-          <tr><td class="lbl">Category</td><td class="val"><?= htmlspecialchars($deal['category']) ?></td></tr>
-          <?php endif; ?>
-          <?php if (!empty($deal['location'])): ?>
-          <tr><td class="lbl">Location</td><td class="val"><?= htmlspecialchars($deal['location']) ?></td></tr>
-          <?php endif; ?>
-          <?php if (!empty($deal['days'])): ?>
-          <tr><td class="lbl">Duration</td><td class="val"><?= (int)$deal['days'] ?> days</td></tr>
-          <?php endif; ?>
-          <?php if (!empty($deal['season'])): ?>
-          <tr><td class="lbl">Best Season</td><td class="val"><?= htmlspecialchars($deal['season']) ?></td></tr>
-          <?php endif; ?>
-          <?php if ($avg_rating > 0): ?>
-          <tr><td class="lbl">Rating</td><td class="val">⭐ <?= number_format($avg_rating, 1) ?> / 5 <button class="see-reviews-link" onclick="openReviews()" style="margin-left:6px">(<?= $total_reviews ?> reviews)</button></td></tr>
-          <?php endif; ?>
-          <?php if (!empty($deal['created_at'])): ?>
-          <tr><td class="lbl">Listed On</td><td class="val"><?= date('F j, Y', strtotime($deal['created_at'])) ?></td></tr>
-          <?php endif; ?>
+          <?php if (!empty($deal['category'])): ?><tr><td class="lbl">Category</td><td class="val"><?= htmlspecialchars($deal['category']) ?></td></tr><?php endif; ?>
+          <?php if (!empty($deal['location'])): ?><tr><td class="lbl">Location</td><td class="val"><?= htmlspecialchars($deal['location']) ?></td></tr><?php endif; ?>
+          <?php if (!empty($deal['days'])): ?><tr><td class="lbl">Duration</td><td class="val"><?= (int)$deal['days'] ?> days</td></tr><?php endif; ?>
+          <?php if (!empty($deal['season'])): ?><tr><td class="lbl">Best Season</td><td class="val"><?= htmlspecialchars($deal['season']) ?></td></tr><?php endif; ?>
+          <?php if ($avg_rating > 0): ?><tr><td class="lbl">Rating</td><td class="val">⭐ <?= number_format($avg_rating, 1) ?> / 5 <button class="see-reviews-link" onclick="openReviews()" style="margin-left:6px">(<?= $total_reviews ?> reviews)</button></td></tr><?php endif; ?>
+          <?php if (!empty($deal['created_at'])): ?><tr><td class="lbl">Listed On</td><td class="val"><?= date('F j, Y', strtotime($deal['created_at'])) ?></td></tr><?php endif; ?>
         </table>
       </div>
+    </div>
 
-    </div><!-- /left -->
-
-    <!-- SIDEBAR -->
+    <!-- ══ SIDEBAR ══ -->
     <div class="sidebar-wrap">
       <div class="sidebar-card">
         <div class="price-head">
@@ -719,18 +678,10 @@ $galleryImgs = array_slice($allImages, 1);
           <p class="price-pp">per person</p>
         </div>
         <div class="s-body">
-          <?php if (!empty($deal['days'])): ?>
-          <div class="s-row"><span class="lbl">Duration</span><span class="val"><?= (int)$deal['days'] ?> days</span></div>
-          <?php endif; ?>
-          <?php if (!empty($deal['location'])): ?>
-          <div class="s-row"><span class="lbl">Location</span><span class="val"><?= htmlspecialchars($deal['location']) ?></span></div>
-          <?php endif; ?>
-          <?php if (!empty($deal['season'])): ?>
-          <div class="s-row"><span class="lbl">Season</span><span class="val"><?= htmlspecialchars($deal['season']) ?></span></div>
-          <?php endif; ?>
-          <?php if (!empty($deal['category'])): ?>
-          <div class="s-row"><span class="lbl">Category</span><span class="val"><?= htmlspecialchars($deal['category']) ?></span></div>
-          <?php endif; ?>
+          <?php if (!empty($deal['days'])): ?><div class="s-row"><span class="lbl">Duration</span><span class="val"><?= (int)$deal['days'] ?> days</span></div><?php endif; ?>
+          <?php if (!empty($deal['location'])): ?><div class="s-row"><span class="lbl">Location</span><span class="val"><?= htmlspecialchars($deal['location']) ?></span></div><?php endif; ?>
+          <?php if (!empty($deal['season'])): ?><div class="s-row"><span class="lbl">Season</span><span class="val"><?= htmlspecialchars($deal['season']) ?></span></div><?php endif; ?>
+          <?php if (!empty($deal['category'])): ?><div class="s-row"><span class="lbl">Category</span><span class="val"><?= htmlspecialchars($deal['category']) ?></span></div><?php endif; ?>
           <?php if ($avg_rating > 0): ?>
           <div class="s-row">
             <span class="lbl">Rating</span>
@@ -738,7 +689,18 @@ $galleryImgs = array_slice($allImages, 1);
           </div>
           <?php endif; ?>
 
-          <a href="booking.php?id=<?= (int)$deal['id'] ?>" class="book-btn">Book Now</a>
+          <?php if ($already_booked): ?>
+            <!-- ── Already booked: show ticket link + sub-text ── -->
+            <a href="ticket.php?id=<?= $existing_book_id ?>" class="booked-badge">
+              <span class="bb-dot"></span>
+              🎫 &nbsp; View My Booking
+            </a>
+            <span class="booked-sub">You already have an active booking for this deal</span>
+          <?php else: ?>
+            <!-- ── Normal: show Book Now ── -->
+            <a href="booking.php?id=<?= (int)$deal['id'] ?>" class="book-btn">Book Now</a>
+          <?php endif; ?>
+
           <a href="save_deal.php?id=<?= (int)$deal['id'] ?>&action=add" class="wish-btn">♡ &nbsp; Save to Wishlist</a>
           <div class="share-row">
             <button class="share-btn" onclick="navigator.clipboard.writeText(window.location.href).then(()=>this.textContent='✓ Copied!')">🔗 Copy Link</button>
@@ -747,19 +709,16 @@ $galleryImgs = array_slice($allImages, 1);
         </div>
       </div>
     </div>
-
   </div>
-</div><!-- /overlay -->
+</div>
 
 <script>
-  // Ken Burns
   const heroImg = document.getElementById('heroImg');
   if (heroImg) {
     if (heroImg.complete) heroImg.classList.add('loaded');
     else heroImg.addEventListener('load', () => heroImg.classList.add('loaded'));
   }
 
-  // Lightbox
   const lbImages = <?= json_encode($allImages) ?>;
   let lbCurrent  = 0;
 
@@ -768,31 +727,17 @@ $galleryImgs = array_slice($allImages, 1);
     document.getElementById('lbImg').src = lbImages[lbCurrent];
     document.getElementById('lightbox').classList.add('open');
   }
-  function closeLightbox() {
-    document.getElementById('lightbox').classList.remove('open');
-  }
+  function closeLightbox() { document.getElementById('lightbox').classList.remove('open'); }
   function lbNav(dir) {
     lbCurrent = (lbCurrent + dir + lbImages.length) % lbImages.length;
     document.getElementById('lbImg').src = lbImages[lbCurrent];
   }
-  document.getElementById('lightbox')?.addEventListener('click', function(e) {
-    if (e.target === this) closeLightbox();
-  });
+  document.getElementById('lightbox')?.addEventListener('click', function(e) { if (e.target === this) closeLightbox(); });
 
-  // Reviews modal
-  function openReviews() {
-    document.getElementById('reviewsModal').classList.add('open');
-    document.body.style.overflow = 'hidden';
-  }
-  function closeReviews() {
-    document.getElementById('reviewsModal').classList.remove('open');
-    document.body.style.overflow = '';
-  }
-  function handleModalClick(e) {
-    if (e.target === document.getElementById('reviewsModal')) closeReviews();
-  }
+  function openReviews() { document.getElementById('reviewsModal').classList.add('open'); document.body.style.overflow = 'hidden'; }
+  function closeReviews() { document.getElementById('reviewsModal').classList.remove('open'); document.body.style.overflow = ''; }
+  function handleModalClick(e) { if (e.target === document.getElementById('reviewsModal')) closeReviews(); }
 
-  // Keyboard nav
   document.addEventListener('keydown', e => {
     const lb = document.getElementById('lightbox');
     const rm = document.getElementById('reviewsModal');

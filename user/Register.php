@@ -8,39 +8,59 @@ require_once __DIR__ . '/../config/db.php';
 $message = "";
 $message_type = "";
 
+// Restore flash message
 if (isset($_SESSION['message'])) {
     $message = $_SESSION['message'];
     $message_type = $_SESSION['message_type'] ?? "error";
-
     unset($_SESSION['message'], $_SESSION['message_type']);
 }
 
+// Restore previously entered field values (so they survive redirect)
+$old = [
+    'fullname'         => $_SESSION['old_fullname']         ?? '',
+    'username'         => $_SESSION['old_username']         ?? '',
+    'email'            => $_SESSION['old_email']            ?? '',
+    'phone'            => $_SESSION['old_phone']            ?? '',
+    'password'         => $_SESSION['old_password']         ?? '',
+    'confirm_password' => $_SESSION['old_confirm_password'] ?? '',
+];
+// Clear old values from session after reading
+foreach (['old_fullname','old_username','old_email','old_phone','old_password','old_confirm_password'] as $key) {
+    unset($_SESSION[$key]);
+}
+
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
-    $fullname = trim($_POST['fullname'] ?? '');
-    $username = trim($_POST['username'] ?? '');
-    $email = trim($_POST['email'] ?? '');
-    $phone = trim($_POST['phone'] ?? '');
-    $password = $_POST['password'] ?? '';
-    $confirm_password = $_POST['confirm_password'] ?? '';
+    $fullname         = trim($_POST['fullname']         ?? '');
+    $username         = trim($_POST['username']         ?? '');
+    $email            = trim($_POST['email']            ?? '');
+    $phone            = trim($_POST['phone']            ?? '');
+    $password         = $_POST['password']              ?? '';
+    $confirm_password = $_POST['confirm_password']      ?? '';
+
+    // Helper: save values & redirect with error
+    $fail = function(string $msg) use ($fullname, $username, $email, $phone, $password, $confirm_password) {
+        $_SESSION['message']              = $msg;
+        $_SESSION['message_type']         = "error";
+        $_SESSION['old_fullname']         = $fullname;
+        $_SESSION['old_username']         = $username;
+        $_SESSION['old_email']            = $email;
+        $_SESSION['old_phone']            = $phone;
+        $_SESSION['old_password']         = $password;
+        $_SESSION['old_confirm_password'] = $confirm_password;
+        header("Location: Register.php");
+        exit;
+    };
 
     if ($password !== $confirm_password) {
-        $_SESSION['message'] = "Passwords do not match";
-        $_SESSION['message_type'] = "error";
-        header("Location: Register.php");
-        exit;
+        $fail("Passwords do not match");
     }
+
     if (!isset($_POST['terms'])) {
-        $_SESSION['message'] = "You must agree to Terms & Privacy Policy";
-        $_SESSION['message_type'] = "error";
-        header("Location: Register.php");
-        exit;
+        $fail("You must agree to Terms & Privacy Policy");
     }
 
     if (!preg_match('/^[0-9]{10}$/', $phone)) {
-        $_SESSION['message'] = "Phone number must be exactly 10 digits and numeric only";
-        $_SESSION['message_type'] = "error";
-        header("Location: Register.php");
-        exit;
+        $fail("Phone number must be exactly 10 digits and numeric only");
     }
 
     $check = $conn->prepare("SELECT id FROM users WHERE email = ? OR username = ? OR phone = ?");
@@ -49,31 +69,28 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $check->store_result();
 
     if ($check->num_rows > 0) {
-        $_SESSION['message'] = "Email, Username or Phone already exists";
-        $_SESSION['message_type'] = "error";
         $check->close();
         $conn->close();
-        header("Location: Register.php");
-        exit;
+        $fail("Email, Username or Phone already exists");
     }
     $check->close();
 
     $hashed_password = password_hash($password, PASSWORD_DEFAULT);
-    $email_token = bin2hex(random_bytes(32));
+    $email_token     = bin2hex(random_bytes(32));
 
     $stmt = $conn->prepare("INSERT INTO users (full_name, username, email, phone, password, email_token) VALUES (?, ?, ?, ?, ?, ?)");
     $stmt->bind_param("ssssss", $fullname, $username, $email, $phone, $hashed_password, $email_token);
 
     if ($stmt->execute()) {
         if (sendVerificationEmail($email, $fullname, $email_token)) {
-            $_SESSION['message'] = "Registration successful! Please check your inbox and verify your email";
+            $_SESSION['message']      = "Registration successful! Please check your inbox and verify your email";
             $_SESSION['message_type'] = "success";
         } else {
-            $_SESSION['message'] = "Registered successfully, but email sending failed.";
+            $_SESSION['message']      = "Registered successfully, but email sending failed.";
             $_SESSION['message_type'] = "error";
         }
     } else {
-        $_SESSION['message'] = "Registration failed. Please try again.";
+        $_SESSION['message']      = "Registration failed. Please try again.";
         $_SESSION['message_type'] = "error";
     }
 
@@ -82,6 +99,11 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
     header("Location: Register.php");
     exit;
+}
+
+// Helper: safely output old value into HTML attribute
+function old(string $key, array $old): string {
+    return htmlspecialchars($old[$key] ?? '', ENT_QUOTES);
 }
 ?>
 <!DOCTYPE html>
@@ -121,48 +143,77 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             <div class="divider">or</div>
 
             <?php if (!empty($message)) : ?>
-                <p style="margin-bottom: 10px; color: <?php echo ($message_type === 'success') ? 'green' : 'red'; ?>;">
+                <p class="flash-message <?php echo ($message_type === 'success') ? 'flash-success' : 'flash-error'; ?>">
                     <?php echo htmlspecialchars($message); ?>
                 </p>
             <?php endif; ?>
 
             <form action="" method="POST" novalidate>
-                <input type="text" name="fullname" placeholder="Full Name" required>
 
-                <input type="text" name="username" id="username" placeholder="Username" required>
+                <input
+                    type="text"
+                    name="fullname"
+                    placeholder="Full Name"
+                    value="<?php echo old('fullname', $old); ?>"
+                    required>
+
+                <input
+                    type="text"
+                    name="username"
+                    id="username"
+                    placeholder="Username"
+                    value="<?php echo old('username', $old); ?>"
+                    required>
                 <small id="usernameMsg"></small>
 
-                <input type="email" name="email" id="email" placeholder="Email" required>
+                <input
+                    type="email"
+                    name="email"
+                    id="email"
+                    placeholder="Email"
+                    value="<?php echo old('email', $old); ?>"
+                    required>
                 <small id="emailMsg"></small>
 
-                <input type="text" name="phone" id="phone" placeholder="Phone Number" maxlength="10" required>
+                <input
+                    type="text"
+                    name="phone"
+                    id="phone"
+                    placeholder="Phone Number"
+                    maxlength="10"
+                    value="<?php echo old('phone', $old); ?>"
+                    required>
                 <small id="phoneMsg"></small>
 
-                <input type="password" name="password" placeholder="Password" required>
-                <input type="password" name="confirm_password" placeholder="Confirm Password" required>
+                <input type="password" name="password" placeholder="Password"
+                    value="<?php echo old('password', $old); ?>" required>
+                <input type="password" name="confirm_password" placeholder="Confirm Password"
+                    value="<?php echo old('confirm_password', $old); ?>" required>
 
-                <label class="terms">
                 <label class="terms" style="display:flex; align-items:center; gap:6px; flex-wrap:wrap; font-size:13px;">
-    <input type="checkbox" name="terms" style="flex-shrink:0;">
-    I agree to the
-    <a href="terms.php" target="_blank">Terms &amp; Conditions</a>
-    and
-    <a href="privacy.php" target="_blank">Privacy Policy</a>
-</label>
+                    <input type="checkbox" name="terms" style="flex-shrink:0;">
+                    I agree to the
+                    <a href="terms.php" target="_blank">Terms &amp; Conditions</a>
+                    and
+                    <a href="privacy.php" target="_blank">Privacy Policy</a>
+                </label>
 
                 <button type="submit" id="createBtn" class="create-btn">Create Account</button>
 
                 <div id="spinnerBox" class="spinner-box" style="display: none;">
                     <div class="spinner"></div>
                 </div>
+
             </form>
 
         </div>
     </div>
 
-    <div class="overlay-text">
-        <span class="small-text">LET'S EXPLORE</span>
-        <span class="big-text">NEPAL</span>
+    <div class="right-panel">
+        <div class="overlay-text">
+            <span class="small-text">LET'S EXPLORE</span>
+            <span class="big-text">NEPAL</span>
+        </div>
     </div>
 </div>
 
@@ -198,18 +249,50 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 <script src="https://accounts.google.com/gsi/client?hl=en" async defer></script>
 
 <script>
-    // Google response handler
+    // Re-enable the button immediately if the page loaded with an error message.
+    // This counteracts register.js disabling the button after a submit attempt.
+    (function () {
+        var hasError = <?php echo (!empty($message)) ? 'true' : 'false'; ?>;
+        if (hasError) {
+            // Run after DOM + register.js have both finished
+            window.addEventListener('load', function () {
+                var btn     = document.getElementById('createBtn');
+                var spinner = document.getElementById('spinnerBox');
+                if (btn)     { btn.disabled = false; btn.style.opacity = ''; btn.style.cursor = ''; }
+                if (spinner) { spinner.style.display = 'none'; }
+            });
+        }
+    })();
+
+    // Also guard the form itself: if register.js attaches a submit listener that
+    // disables the button, this ensures it gets re-enabled if validation fails.
+    document.addEventListener('DOMContentLoaded', function () {
+        var form = document.querySelector('form');
+        var btn  = document.getElementById('createBtn');
+
+        if (!form || !btn) return;
+
+        form.addEventListener('submit', function () {
+            // Give register.js time to run its own handler first (it may cancel),
+            // then check after a tick whether the form is actually submitting.
+            setTimeout(function () {
+                // If the page is NOT navigating away, re-enable the button.
+                // (A real submit will navigate; only client-side cancellation stays.)
+                btn.disabled = false;
+                btn.style.opacity = '';
+            }, 800);
+        });
+    });
+</script>
+
+<script>
     function handleGoogleResponse(response) {
         const idToken = response.credential;
-
         const xhr = new XMLHttpRequest();
-        // ✅ absolute path so it always resolves correctly
         xhr.open("POST", "/Nepal-Travel/user/google_login.php", true);
         xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
-
         xhr.onload = function () {
             const result = xhr.responseText.trim();
-
             if (xhr.status === 200 && result === "ok") {
                 window.location.href = "/Nepal-Travel/Public/index.php";
             } else if (xhr.status === 200 && result === "set_password") {
@@ -218,47 +301,36 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                 alert("Google login failed: " + xhr.responseText);
             }
         };
-
         xhr.send("id_token=" + encodeURIComponent(idToken));
     }
 
-    // Render Google button
     window.onload = function () {
         const googleContainer = document.getElementById("googleButtonContainer");
-
         google.accounts.id.initialize({
             client_id: "1045079519630-reec2mcusabp0hg13bufjrmnpvm2a0jb.apps.googleusercontent.com",
             callback: handleGoogleResponse
         });
-
-        google.accounts.id.renderButton(
-            googleContainer,
-            {
-                type: "standard",
-                theme: "outline",
-                size: "large",
-                text: "continue_with",
-                shape: "rectangular",
-                logo_alignment: "left",
-                width: 300,
-                locale: "en"
-            }
-        );
+        google.accounts.id.renderButton(googleContainer, {
+            type: "standard",
+            theme: "outline",
+            size: "large",
+            text: "continue_with",
+            shape: "rectangular",
+            logo_alignment: "left",
+            width: 300,
+            locale: "en"
+        });
     };
 
-    // Show modal
     function showSetPasswordModal() {
-        const modal = document.getElementById('setPasswordModal');
-        modal.style.display = 'flex';
+        document.getElementById('setPasswordModal').style.display = 'flex';
     }
 
-    // Skip — go to dashboard without setting password
     function skipSetPassword() {
         document.getElementById('setPasswordModal').style.display = 'none';
         window.location.href = "/Nepal-Travel/Public/index.php";
     }
 
-    // Submit new password
     async function submitSetPassword() {
         const password = document.getElementById('spPassword').value;
         const confirm  = document.getElementById('spConfirm').value;
@@ -270,7 +342,6 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             errorEl.style.display = 'block';
             return;
         }
-
         if (password !== confirm) {
             errorEl.textContent = 'Passwords do not match.';
             errorEl.style.display = 'block';
@@ -282,9 +353,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ password, confirm })
         });
-
         const text = await res.text();
-
         if (res.ok) {
             document.getElementById('setPasswordModal').style.display = 'none';
             window.location.href = "/Nepal-Travel/Public/index.php";
@@ -314,11 +383,9 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         FB.login(function(response) {
             if (response.authResponse) {
                 const accessToken = response.authResponse.accessToken;
-
                 const xhr = new XMLHttpRequest();
                 xhr.open("POST", "/Nepal-Travel/user/facebook_callback.php", true);
                 xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
-
                 xhr.onload = function () {
                     if (xhr.status === 200 && xhr.responseText.trim() === "ok") {
                         window.location.href = "/Nepal-Travel/Public/index.php";
@@ -326,7 +393,6 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                         alert("Facebook login failed: " + xhr.responseText);
                     }
                 };
-
                 xhr.send("access_token=" + encodeURIComponent(accessToken));
             } else {
                 alert("Facebook login cancelled or failed");
