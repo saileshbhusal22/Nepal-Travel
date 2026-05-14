@@ -1,441 +1,827 @@
+/**
+ * Sherpa AI Chatbot — Auth-gated, DB-persisted, multi-conversation
+ * Requires: marked.min.js, PHP session with user_id
+ */
 (function () {
-  const CHATBOT_API = "/Nepal-Travel/user/chatbot_api.php";
-  const STORAGE_KEY = "sherpa_chat_history";
+  "use strict";
+
+  // ── Config ──────────────────────────────────────────────────────────────
+  const API_URL = "/Nepal-Travel/user/chatbot_api.php";
+  const HISTORY_URL = "/Nepal-Travel/user/chatbot_history_api.php";
+  const RECOMMENDATIONS_URL =
+    "/Nepal-Travel/user/chatbot_recommendations_api.php";
   const SUGGESTIONS = [
-    { title: "Everest Base Camp", prompt: "Can you give me a detailed 12-day itinerary for the Everest Base Camp trek including costs? 🏔️", icon: "🏔️" },
-    { title: "Pokhara Getaway", prompt: "What are the top things to do in Pokhara for a 3-day relaxed trip? 🌄", icon: "🌄" },
-    { title: "Jungle Safari", prompt: "Plan a 2-night 3-day Chitwan National Park jungle safari with costs. 🐘", icon: "🐘" },
-    { title: "Budget Nepal", prompt: "How can I travel Nepal on a budget of $30 per day? 💰", icon: "💰" }
+    { icon: "🏔️", text: "Plan a 7-day Everest Base Camp trek" },
+    { icon: "🏙️", text: "Best places to visit in Kathmandu" },
+    { icon: "🦏", text: "Chitwan National Park safari guide" },
+    { icon: "🌊", text: "Pokhara lakeside 3-day itinerary" },
+    { icon: "💰", text: "Budget trip to Nepal under $500" },
+    { icon: "🎒", text: "What to pack for Annapurna circuit" },
+    { icon: "📅", text: "Best time to visit Nepal" },
+    { icon: "🍛", text: "Must-try Nepali foods and restaurants" },
   ];
 
-  let chatHistory = [];
-  let isSending = false;
+  // ── State ────────────────────────────────────────────────────────────────
+  let isLoggedIn = false;
+  let currentUserId = null;
+  let currentUserName = "Traveller";
   let conversationId = null;
+  let messages = []; // [{role,content}] for API context
+  let isStreaming = false;
+  let isOpen = false;
+  let historyOpen = false;
+  let language = "english";
+  let suggestionsCollapsed = false;
 
-  // ==================== INITIALIZATION ====================
+  // ── DOM refs ─────────────────────────────────────────────────────────────
+  let container,
+    toggle,
+    chatWindow,
+    messagesEl,
+    inputEl,
+    sendBtn,
+    closeBtn,
+    clearBtn,
+    langSelect,
+    historyBtn,
+    historyPanel,
+    historyList,
+    newChatBtn,
+    loginBanner;
 
-  function init() {
-    createChatbotWidget();
-    attachEvents();
-    loadChatHistory();
-    loadCDN(); // Load marked.js for markdown rendering
+  // ═══════════════════════════════════════════════════════════════════════
+  // 1. BUILD HTML
+  // ═══════════════════════════════════════════════════════════════════════
+  function buildHTML() {
+    const html = `
+<div id="sherpa-chatbot-container">
+  <!-- Toggle -->
+  <button class="sherpa-toggle" id="sherpa-toggle" aria-label="Open Sherpa AI">
+    <span class="sherpa-toggle-icon">🏔️</span>
+  </button>
+
+  <!-- Chat Window -->
+  <div class="sherpa-chatbot sherpa-hidden" id="sherpa-window" role="dialog" aria-label="Sherpa AI Travel Assistant">
+
+    <!-- Header -->
+    <div class="sherpa-header">
+      <div class="sherpa-header-title">
+        <span class="sherpa-icon">🏔️</span>
+        <div>
+          <h3>Sherpa AI</h3>
+          <span class="sherpa-header-sub">Nepal Travel Assistant</span>
+        </div>
+      </div>
+      <div class="sherpa-header-actions">
+        <button class="sherpa-hdr-btn" id="sherpa-history-btn" title="Chat History">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M13 3a9 9 0 0 0-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42A8.954 8.954 0 0 0 13 21a9 9 0 0 0 0-18zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/></svg>
+        </button>
+        <button class="sherpa-hdr-btn" id="sherpa-new-chat-btn" title="New Chat">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
+        </button>
+        <button class="sherpa-hdr-btn" id="sherpa-lang-btn" title="Language"></button>
+        <button class="sherpa-hdr-btn sherpa-close-btn" id="sherpa-close" title="Close">✕</button>
+      </div>
+    </div>
+
+    <!-- Login Banner (shown when not logged in) -->
+    <div class="sherpa-login-banner" id="sherpa-login-banner" style="display:none">
+      <div class="sherpa-login-inner">
+        <div class="slb-icon">🔒</div>
+        <h4>Login Required</h4>
+        <p>Sign in to chat with Sherpa and save your travel plans forever.</p>
+        <a href="/Nepal-Travel/user/login.php" class="slb-btn">Login to Continue</a>
+        <a href="/Nepal-Travel/user/Register.php" class="slb-signup">Don't have an account? Sign Up →</a>
+      </div>
+    </div>
+
+    <!-- History Panel (sidebar) -->
+    <div class="sherpa-history-panel" id="sherpa-history-panel">
+      <div class="shp-header">
+        <span>Your Chats</span>
+        <button class="sherpa-hdr-btn" id="sherpa-history-close">✕</button>
+      </div>
+      <div class="shp-new-btn" id="sherpa-shp-new">
+        <svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14"><path d="M19 13H13v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+        New Chat
+      </div>
+      <div class="shp-list" id="sherpa-history-list">
+        <div class="shp-loading">Loading history…</div>
+      </div>
+    </div>
+
+    <!-- Messages -->
+    <div class="sherpa-messages" id="sherpa-messages"></div>
+
+    <!-- Suggestions -->
+    <div class="sherpa-suggestions" id="sherpa-suggestions">
+      <div class="sherpa-suggestions-header">
+        <span class="sherpa-sugg-title">✨ Popular Ideas</span>
+        <button class="sherpa-sugg-toggle-btn" id="sherpa-sugg-toggle" title="Toggle">▼</button>
+      </div>
+      <div class="sherpa-suggestions-scroll" id="sherpa-sugg-scroll"></div>
+    </div>
+
+    <!-- Input -->
+    <div class="sherpa-input-area">
+      <textarea id="chatbot-input" placeholder="Ask about Nepal travel…" rows="1" autocomplete="off"></textarea>
+      <button class="sherpa-send-btn" id="sherpa-send">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+      </button>
+    </div>
+
+  </div>
+</div>`;
+
+    const wrap = document.createElement("div");
+    wrap.innerHTML = html;
+    document.body.appendChild(wrap.firstElementChild);
+
+    container = document.getElementById("sherpa-chatbot-container");
+    toggle = document.getElementById("sherpa-toggle");
+    chatWindow = document.getElementById("sherpa-window");
+    messagesEl = document.getElementById("sherpa-messages");
+    inputEl = document.getElementById("chatbot-input");
+    sendBtn = document.getElementById("sherpa-send");
+    closeBtn = document.getElementById("sherpa-close");
+    historyBtn = document.getElementById("sherpa-history-btn");
+    historyPanel = document.getElementById("sherpa-history-panel");
+    historyList = document.getElementById("sherpa-history-list");
+    newChatBtn = document.getElementById("sherpa-new-chat-btn");
+    loginBanner = document.getElementById("sherpa-login-banner");
+
+    // Language button label
+    const lb = document.getElementById("sherpa-lang-btn");
+    lb.textContent = "EN";
+    lb.addEventListener("click", cycleLanguage);
+
+    buildSuggestions();
   }
 
-  function loadCDN() {
-    const script = document.createElement("script");
-    script.src = "https://cdn.jsdelivr.net/npm/marked/marked.min.js";
-    document.head.appendChild(script);
+  function buildSuggestions() {
+    const scroll = document.getElementById("sherpa-sugg-scroll");
+    SUGGESTIONS.forEach((s) => {
+      const btn = document.createElement("button");
+      btn.className = "sherpa-suggestion-btn";
+      btn.innerHTML = `<span class="sherpa-sugg-icon">${s.icon}</span>${s.text}`;
+      btn.addEventListener("click", () => sendUserMessage(s.text));
+      scroll.appendChild(btn);
+    });
+    document
+      .getElementById("sherpa-sugg-toggle")
+      .addEventListener("click", toggleSuggestions);
   }
 
-  // ==================== LOAD/SAVE CHAT HISTORY ====================
+  // ═══════════════════════════════════════════════════════════════════════
+  // 2. AUTH CHECK
+  // ═══════════════════════════════════════════════════════════════════════
+  function checkAuth() {
+    // Read from meta tags injected by PHP header
+    const meta = document.getElementById("sherpa-user-meta");
+    if (meta) {
+      isLoggedIn = meta.dataset.loggedIn === "1";
+      currentUserId = meta.dataset.userId || null;
+      currentUserName = meta.dataset.userName || "Traveller";
+    } else {
+      // Fallback: call history API; 401 = not logged in
+      isLoggedIn = false;
+    }
+  }
 
-  function saveChatHistory() {
-    localStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify({
-        messages: chatHistory,
-        timestamp: new Date().toISOString(),
-      }),
+  function showLoginBanner() {
+    loginBanner.style.display = "flex";
+    messagesEl.style.display = "none";
+    document.getElementById("sherpa-suggestions").style.display = "none";
+    document.querySelector(".sherpa-input-area").style.display = "none";
+  }
+
+  function showChatUI() {
+    loginBanner.style.display = "none";
+    messagesEl.style.display = "flex";
+    document.getElementById("sherpa-suggestions").style.display = "block";
+    document.querySelector(".sherpa-input-area").style.display = "flex";
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // 3. TOGGLE OPEN / CLOSE
+  // ═══════════════════════════════════════════════════════════════════════
+  function openChat() {
+    isOpen = true;
+    chatWindow.classList.remove("sherpa-hidden");
+    toggle.classList.add("sherpa-active");
+
+    if (!isLoggedIn) {
+      showLoginBanner();
+      return;
+    }
+
+    if (messagesEl.children.length === 0) {
+      showWelcome();
+    }
+    inputEl.focus();
+  }
+
+  function closeChat() {
+    isOpen = false;
+    chatWindow.classList.add("sherpa-hidden");
+    toggle.classList.remove("sherpa-active");
+    closeHistory();
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // 4. WELCOME MESSAGE
+  // ═══════════════════════════════════════════════════════════════════════
+  function showWelcome() {
+    const firstName = currentUserName.split(" ")[0];
+    appendMessage(
+      "assistant",
+      `**Namaste ${firstName}! 🙏**\n\nI'm **Sherpa**, your personal Nepal travel AI. I can help you plan trips, find the best destinations, estimate budgets, and discover hidden gems across Nepal.\n\nWhat adventure are you planning? 🏔️`,
     );
   }
 
-  function loadChatHistory() {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved) {
-      try {
-        const data = JSON.parse(saved);
-        chatHistory = data.messages || [];
-        // Show previous messages
-        chatHistory.forEach((msg) => {
-          if (msg.role === "user") {
-            addMessageToUI(msg.content, "user");
-          } else if (msg.role === "assistant") {
-            addMessageToUI(msg.content, "assistant");
-          }
-        });
-      } catch (e) {
-        console.log("Could not load chat history");
+  // ═══════════════════════════════════════════════════════════════════════
+  // 5. HISTORY PANEL
+  // ═══════════════════════════════════════════════════════════════════════
+  function openHistory() {
+    historyOpen = true;
+    historyPanel.classList.add("shp-open");
+    loadHistory();
+  }
+
+  function closeHistory() {
+    historyOpen = false;
+    historyPanel.classList.remove("shp-open");
+  }
+
+  async function loadHistory() {
+    historyList.innerHTML = '<div class="shp-loading">Loading…</div>';
+    try {
+      const res = await fetch(HISTORY_URL + "?action=list_conversations");
+      const data = await res.json();
+      if (!data.success) {
+        historyList.innerHTML = '<div class="shp-empty">No chats yet</div>';
+        return;
       }
-    }
-  }
 
-  function clearChatHistory() {
-    chatHistory = [];
-    localStorage.removeItem(STORAGE_KEY);
-    document.getElementById("chatbot-messages").innerHTML = "";
-    showSuggestions();
-  }
+      const convs = data.conversations;
+      if (!convs.length) {
+        historyList.innerHTML =
+          '<div class="shp-empty">No previous chats yet.<br>Start a new conversation!</div>';
+        return;
+      }
 
-  // ==================== UI CREATION ====================
+      historyList.innerHTML = "";
+      convs.forEach((c) => {
+        const item = document.createElement("div");
+        item.className =
+          "shp-item" + (c.id == conversationId ? " shp-item-active" : "");
+        item.dataset.id = c.id;
 
-  function createChatbotWidget() {
-    const container = document.createElement("div");
-    container.id = "sherpa-chatbot-container";
+        const date = new Date(c.updated_at).toLocaleDateString("en-US", {
+          month: "short",
+          day: "numeric",
+        });
+        const preview =
+          (c.last_message || "No messages").substring(0, 55) +
+          (c.last_message && c.last_message.length > 55 ? "…" : "");
 
-    container.innerHTML = `
-      <div class="sherpa-chatbot sherpa-hidden">
-        <!-- Header -->
-        <div class="sherpa-header">
-          <div class="sherpa-header-title">
-            <span class="sherpa-icon">🇳🇵</span>
-            <h3>Sherpa</h3>
+        item.innerHTML = `
+          <div class="shp-item-main">
+            <div class="shp-item-title">${escHtml(c.title)}</div>
+            <div class="shp-item-preview">${escHtml(preview)}</div>
+            <div class="shp-item-date">${date} · ${c.msg_count} msg${c.msg_count != 1 ? "s" : ""}</div>
           </div>
-          <div class="sherpa-header-actions">
-            <button class="sherpa-clear-btn" title="Clear chat">🗑️</button>
-            <button class="sherpa-close-btn" title="Close">&times;</button>
-          </div>
-        </div>
+          <div class="shp-item-actions">
+            <button class="shp-del-btn" data-id="${c.id}" title="Delete">🗑</button>
+          </div>`;
 
-        <!-- Messages Area -->
-        <div id="chatbot-messages" class="sherpa-messages"></div>
+        item.addEventListener("click", (e) => {
+          if (e.target.closest(".shp-del-btn")) return;
+          loadConversation(c.id, c.title);
+        });
+        item.querySelector(".shp-del-btn").addEventListener("click", (e) => {
+          e.stopPropagation();
+          deleteConversation(c.id, item);
+        });
 
-        <!-- Suggestions -->
-        <div id="sherpa-suggestions" class="sherpa-suggestions"></div>
-
-        <!-- Input Area -->
-        <div class="sherpa-input-area">
-          <input 
-            id="chatbot-input" 
-            type="text"
-            placeholder="Ask about Nepal travel..." 
-            autocomplete="off"
-          />
-          <button id="chatbot-send" class="sherpa-send-btn">Send</button>
-        </div>
-      </div>
-
-      <!-- Toggle Button -->
-      <button id="chatbot-toggle" class="sherpa-toggle">
-        <span class="sherpa-toggle-icon">🧑‍🏔️</span>
-        <span class="sherpa-badge">1</span>
-      </button>
-    `;
-
-    document.body.appendChild(container);
-  }
-
-  // ==================== MESSAGE HANDLING ====================
-
-  function getTimestamp() {
-    return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  }
-
-  function makeCopyBtn(getMsgText) {
-    const btn = document.createElement("button");
-    btn.className = "sherpa-copy-btn";
-    btn.title = "Copy message";
-    btn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>`;
-    btn.onclick = () => {
-      const text = getMsgText();
-      navigator.clipboard.writeText(text).then(() => {
-        btn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
-        btn.classList.add("sherpa-copy-btn--done");
-        setTimeout(() => {
-          btn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>`;
-          btn.classList.remove("sherpa-copy-btn--done");
-        }, 2000);
+        historyList.appendChild(item);
       });
-    };
-    return btn;
+    } catch (e) {
+      historyList.innerHTML =
+        '<div class="shp-empty">Failed to load history.</div>';
+    }
   }
 
-  function addMessageToUI(text, sender) {
-    const messagesDiv = document.getElementById("chatbot-messages");
+  async function loadConversation(id, title) {
+    conversationId = id;
+    messages = [];
+    messagesEl.innerHTML = "";
+    closeHistory();
 
-    const wrapper = document.createElement("div");
-    wrapper.className = `sherpa-msg-wrapper sherpa-msg-wrapper--${sender}`;
+    try {
+      const res = await fetch(
+        HISTORY_URL + `?action=get_messages&conversation_id=${id}`,
+      );
+      const data = await res.json();
+      if (!data.success) {
+        showToast("Failed to load conversation", "error");
+        return;
+      }
 
-    const msg = document.createElement("div");
-    msg.className = `sherpa-message sherpa-${sender}`;
+      // Restore context array for API calls
+      data.messages.forEach((m) => {
+        messages.push({ role: m.role, content: m.content });
+        appendMessage(m.role, m.content, new Date(m.created_at));
+      });
 
-    if (sender === "assistant") {
-      msg.innerHTML = window.marked ? marked.parse(text) : text;
-      msg.classList.add("sherpa-markdown");
-    } else {
-      msg.textContent = text;
+      // Update language if stored
+      if (data.conversation.language) language = data.conversation.language;
+
+      showToast(`Continued: ${title}`, "info");
+    } catch (e) {
+      showToast("Error loading conversation", "error");
+    }
+  }
+
+  async function deleteConversation(id, el) {
+    if (!confirm("Delete this conversation? This cannot be undone.")) return;
+    try {
+      const res = await fetch(HISTORY_URL + "?action=delete_conversation", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ conversation_id: id }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        el.remove();
+        if (id == conversationId) startNewChat();
+        if (!historyList.children.length)
+          historyList.innerHTML = '<div class="shp-empty">No chats yet.</div>';
+      }
+    } catch (e) {}
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // 6. NEW CHAT
+  // ═══════════════════════════════════════════════════════════════════════
+  function startNewChat() {
+    if (!isLoggedIn) {
+      showLoginBanner();
+      return;
     }
 
-    wrapper.appendChild(msg);
+    conversationId = null;
+    messages = [];
+    messagesEl.innerHTML = "";
+    showWelcome();
+    inputEl.focus();
+  }
 
-    // Meta row: timestamp + copy button
+  // ═══════════════════════════════════════════════════════════════════════
+  // 7. SEND MESSAGE
+  // ═══════════════════════════════════════════════════════════════════════
+  async function sendUserMessage(text) {
+    text = text.trim();
+    if (!text || isStreaming) return;
+
+    if (!isLoggedIn) {
+      showLoginBanner();
+      return;
+    }
+
+    // Collapse suggestions after first message
+    if (!suggestionsCollapsed) toggleSuggestions();
+
+    // Ensure we have a conversation in DB
+    if (!conversationId) {
+      conversationId = await createConversation(text);
+    }
+
+    // Add to local context
+    messages.push({ role: "user", content: text });
+    appendMessage("user", text);
+    inputEl.value = "";
+    inputEl.style.height = "auto";
+
+    // Save user message to DB
+    saveMessageToDB("user", text);
+
+    // Stream AI response
+    await streamResponse();
+  }
+
+  async function createConversation(firstMsg) {
+    const title = firstMsg.substring(0, 60) + (firstMsg.length > 60 ? "…" : "");
+    try {
+      const res = await fetch(HISTORY_URL + "?action=create_conversation", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title, language }),
+      });
+      const data = await res.json();
+      return data.success ? data.conversation_id : null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  async function saveMessageToDB(role, content) {
+    if (!conversationId) return;
+    try {
+      await fetch(HISTORY_URL + "?action=save_message", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          conversation_id: conversationId,
+          role,
+          content,
+        }),
+      });
+    } catch (e) {}
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // 8. STREAM AI RESPONSE
+  // ═══════════════════════════════════════════════════════════════════════
+  async function streamResponse() {
+    isStreaming = true;
+    sendBtn.disabled = true;
+    inputEl.disabled = true;
+
+    // Build payload from context (include system prompt via API)
+    const payload = {
+      messages: messages.filter((m) => m.role !== "system"),
+      language,
+      conversation_id: conversationId,
+    };
+
+    const thinkingEl = appendThinking();
+
+    let fullResponse = "";
+    let assistantBubble = null;
+
+    try {
+      const res = await fetch(API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      // Check for auth error
+      if (res.status === 401) {
+        const errData = await res.json();
+        thinkingEl.remove();
+        showLoginBanner();
+        return;
+      }
+
+      // Check for other HTTP errors
+      if (!res.ok) {
+        const errorText = await res.text();
+        console.error("API Error:", res.status, errorText);
+        thinkingEl.remove();
+        appendMessage(
+          "assistant",
+          `⚠️ API Error (${res.status}): ${errorText.substring(0, 200)}`,
+        );
+        return;
+      }
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+
+      thinkingEl.remove();
+      assistantBubble = appendStreamBubble();
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop();
+
+        for (const line of lines) {
+          if (!line.startsWith("data:")) continue;
+          const raw = line.slice(5).trim();
+          if (raw === "[DONE]") break;
+
+          try {
+            const parsed = JSON.parse(raw);
+            if (parsed.error) {
+              assistantBubble.innerHTML = `⚠️ ${escHtml(parsed.error)}`;
+              break;
+            }
+            const delta = parsed.choices?.[0]?.delta?.content;
+            if (delta) {
+              fullResponse += delta;
+              assistantBubble.innerHTML = renderMarkdown(fullResponse);
+              messagesEl.scrollTop = messagesEl.scrollHeight;
+            }
+          } catch (_) {}
+        }
+      }
+
+      if (fullResponse) {
+        messages.push({ role: "assistant", content: fullResponse });
+        // Wrap in meta div with timestamp + copy
+        finaliseBubble(assistantBubble, fullResponse);
+        // Save to DB
+        saveMessageToDB("assistant", fullResponse);
+        // Delay recommendations to ensure they appear after chat ends
+        setTimeout(() => {
+          const userMsg = messages[messages.length - 2]?.content || "";
+          if (userMsg) fetchRecommendations(userMsg);
+        }, 300);
+      }
+    } catch (e) {
+      if (thinkingEl.parentElement) thinkingEl.remove();
+      appendMessage("assistant", "⚠️ Connection error. Please try again.");
+    } finally {
+      isStreaming = false;
+      sendBtn.disabled = false;
+      inputEl.disabled = false;
+      inputEl.focus();
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // 8B. RECOMMENDATIONS
+  // ═══════════════════════════════════════════════════════════════════════
+  async function fetchRecommendations(userQuery) {
+    if (!isLoggedIn || !userQuery) return;
+    try {
+      const res = await fetch(RECOMMENDATIONS_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ query: userQuery }),
+      });
+      const data = await res.json();
+      if (
+        data.success &&
+        data.recommendations &&
+        data.recommendations.length > 0
+      ) {
+        appendRecommendationCards(data.recommendations);
+      }
+    } catch (e) {
+      // Silently fail - recommendations are optional
+    }
+  }
+
+  function appendRecommendationCards(recommendations) {
+    const wrapper = document.createElement("div");
+    wrapper.className = "sherpa-recommendations-wrapper";
+    wrapper.innerHTML =
+      '<div class="sherpa-rec-label">✨ Recommended for You</div>';
+
+    const scroll = document.createElement("div");
+    scroll.className = "sherpa-rec-scroll";
+
+    recommendations.forEach((rec) => {
+      const card = document.createElement("a");
+      card.href = rec.detail_link || "#";
+      card.className = "sherpa-rec-card";
+      card.target = "_blank";
+
+      // Build rating display if available
+      const rating = rec.avg_rating || rec.rating || 0;
+      const reviewCount = rec.review_count || rec.reviews_count || 0;
+      const stars = rating > 0 ? "⭐".repeat(Math.round(rating)) : "";
+      const reviewText = reviewCount > 0 ? `(${reviewCount} reviews)` : "";
+
+      card.innerHTML = `
+        <div class="sherpa-rec-header">
+          <div class="sherpa-rec-type">${rec.type === "deal" ? "🎫" : rec.type === "user_deal" ? "👤" : "🎉"}</div>
+          <div class="sherpa-rec-title">${escHtml(rec.title)}</div>
+        </div>
+        <div class="sherpa-rec-body">
+          <p class="sherpa-rec-desc">${escHtml(rec.description || "")}</p>
+          ${rec.price ? `<div class="sherpa-rec-price">NPR ${rec.price.toLocaleString()}</div>` : ""}
+          ${rating > 0 ? `<div class="sherpa-rec-rating">${stars} ${rating} ${reviewText}</div>` : ""}
+          <div class="sherpa-rec-meta">
+            ${rec.location ? `<span>${escHtml(rec.location)}</span>` : ""}
+            ${rec.category ? `<span>${escHtml(rec.category)}</span>` : ""}
+            ${rec.date ? `<span>${escHtml(rec.date)}</span>` : ""}
+          </div>
+        </div>
+      `;
+      scroll.appendChild(card);
+    });
+
+    wrapper.appendChild(scroll);
+    messagesEl.appendChild(wrapper);
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // 9. DOM HELPERS
+  // ═══════════════════════════════════════════════════════════════════════
+  function appendMessage(role, content, dateObj) {
+    const wrapper = document.createElement("div");
+    wrapper.className = `sherpa-msg-wrapper sherpa-msg-wrapper--${role}`;
+
+    const bubble = document.createElement("div");
+    bubble.className = `sherpa-message sherpa-${role}`;
+
+    if (role === "assistant") {
+      const md = document.createElement("div");
+      md.className = "sherpa-markdown";
+      md.innerHTML = renderMarkdown(content);
+      bubble.appendChild(md);
+    } else {
+      bubble.textContent = content;
+    }
+
     const meta = document.createElement("div");
     meta.className = "sherpa-msg-meta";
+    const ts = dateObj ? dateObj : new Date();
+    meta.innerHTML = `<span class="sherpa-timestamp">${formatTime(ts)}</span>`;
 
-    const ts = document.createElement("span");
-    ts.className = "sherpa-timestamp";
-    ts.textContent = getTimestamp();
-    meta.appendChild(ts);
-
-    if (sender === "assistant") {
-      const copyBtn = makeCopyBtn(() => msg.innerText);
+    if (role === "assistant") {
+      const copyBtn = document.createElement("button");
+      copyBtn.className = "sherpa-copy-btn";
+      copyBtn.title = "Copy";
+      copyBtn.innerHTML = "📋";
+      copyBtn.addEventListener("click", () => copyText(content, copyBtn));
       meta.appendChild(copyBtn);
     }
 
+    wrapper.appendChild(bubble);
     wrapper.appendChild(meta);
-    messagesDiv.appendChild(wrapper);
-    messagesDiv.scrollTop = messagesDiv.scrollHeight;
-    return msg;
+    messagesEl.appendChild(wrapper);
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+    return bubble;
   }
 
-  function showSuggestions() {
-    const suggestionsDiv = document.getElementById("sherpa-suggestions");
-    suggestionsDiv.style.display = "flex"; // Ensure it's visible if it was ever hidden
-    
-    // Create header with toggle button
-    suggestionsDiv.innerHTML = `
-      <div class="sherpa-suggestions-header">
-        <span class="sherpa-sugg-title">✨ Popular Ideas</span>
-        <button id="sherpa-sugg-toggle" class="sherpa-sugg-toggle-btn" title="Toggle Suggestions">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
-        </button>
-      </div>
-    `;
+  function appendThinking() {
+    const wrap = document.createElement("div");
+    wrap.className = "sherpa-msg-wrapper sherpa-msg-wrapper--assistant";
+    wrap.innerHTML = `<div class="sherpa-message sherpa-assistant sherpa-loading">
+      <span class="sherpa-typing">●</span>
+      <span class="sherpa-typing">●</span>
+      <span class="sherpa-typing">●</span>
+    </div>`;
+    messagesEl.appendChild(wrap);
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+    return wrap;
+  }
 
-    const scrollContainer = document.createElement("div");
-    scrollContainer.className = "sherpa-suggestions-scroll";
-    scrollContainer.id = "sherpa-suggestions-scroll";
+  function appendStreamBubble() {
+    const wrap = document.createElement("div");
+    wrap.className = "sherpa-msg-wrapper sherpa-msg-wrapper--assistant";
+    const bubble = document.createElement("div");
+    bubble.className = "sherpa-message sherpa-assistant sherpa-markdown";
+    wrap.appendChild(bubble);
+    messagesEl.appendChild(wrap);
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+    return bubble;
+  }
 
-    SUGGESTIONS.forEach((suggestion) => {
-      const btn = document.createElement("button");
-      btn.className = "sherpa-suggestion-btn";
-      btn.innerHTML = `<span class="sherpa-sugg-icon">${suggestion.icon}</span><span class="sherpa-sugg-text">${suggestion.title}</span>`;
-      btn.onclick = () => {
-        document.getElementById("chatbot-input").value = suggestion.prompt;
-        sendMessage();
-      };
-      scrollContainer.appendChild(btn);
+  function finaliseBubble(bubble, fullContent) {
+    const meta = document.createElement("div");
+    meta.className = "sherpa-msg-meta";
+    meta.innerHTML = `<span class="sherpa-timestamp">${formatTime(new Date())}</span>`;
+    const copyBtn = document.createElement("button");
+    copyBtn.className = "sherpa-copy-btn";
+    copyBtn.innerHTML = "📋";
+    copyBtn.title = "Copy";
+    copyBtn.addEventListener("click", () => copyText(fullContent, copyBtn));
+    meta.appendChild(copyBtn);
+    bubble.parentElement.appendChild(meta);
+  }
+
+  function renderMarkdown(text) {
+    if (typeof marked !== "undefined") {
+      return marked.parse(text);
+    }
+    return text.replace(/\n/g, "<br>");
+  }
+
+  function formatTime(d) {
+    return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  }
+
+  function escHtml(str) {
+    return String(str)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+  }
+
+  function copyText(text, btn) {
+    navigator.clipboard.writeText(text).then(() => {
+      btn.innerHTML = "✅";
+      setTimeout(() => (btn.innerHTML = "📋"), 1500);
     });
-
-    suggestionsDiv.appendChild(scrollContainer);
-
-    // Toggle logic with smooth class toggling
-    document.getElementById("sherpa-sugg-toggle").onclick = function() {
-      scrollContainer.classList.toggle("sherpa-suggestions-collapsed");
-      this.classList.toggle("sherpa-sugg-btn-collapsed");
-    };
   }
 
-  // ==================== LANGUAGE DETECTION ====================
-
-  function detectLanguage(text) {
-    // Simple detection: look for Nepali/Hindi Unicode patterns
-    const nepaliRegex = /[\u0900-\u097F]/g; // Devanagari script
-    const hindiRegex = /[\u0900-\u097F]/g;
-
-    if (text.match(nepaliRegex) || text.match(hindiRegex)) {
-      return text.match(/[\u0981-\u0983\u0981-\u098C\u0993-\u0994]/)
-        ? "nepali"
-        : "hindi";
-    }
-    return "english";
+  function showToast(msg, type = "info") {
+    const t = document.createElement("div");
+    t.className = `sherpa-toast sherpa-toast-${type}`;
+    t.textContent = msg;
+    document.body.appendChild(t);
+    setTimeout(() => t.classList.add("sherpa-toast-show"), 50);
+    setTimeout(() => {
+      t.classList.remove("sherpa-toast-show");
+      setTimeout(() => t.remove(), 400);
+    }, 2500);
   }
 
-  // ==================== SEND MESSAGE ====================
+  // ═══════════════════════════════════════════════════════════════════════
+  // 10. LANGUAGE CYCLE
+  // ═══════════════════════════════════════════════════════════════════════
+  function cycleLanguage() {
+    const langs = ["english", "nepali", "hindi"];
+    const labels = ["EN", "नेपाली", "हिंदी"];
+    let idx = langs.indexOf(language);
+    idx = (idx + 1) % langs.length;
+    language = langs[idx];
+    document.getElementById("sherpa-lang-btn").textContent = labels[idx];
+    showToast(`Language: ${labels[idx]}`, "info");
+  }
 
-  async function sendMessage() {
-    const input = document.getElementById("chatbot-input");
-    const message = input.value.trim();
+  // ═══════════════════════════════════════════════════════════════════════
+  // 11. SUGGESTIONS TOGGLE
+  // ═══════════════════════════════════════════════════════════════════════
+  function toggleSuggestions() {
+    suggestionsCollapsed = !suggestionsCollapsed;
+    const scroll = document.getElementById("sherpa-sugg-scroll");
+    const btn = document.getElementById("sherpa-sugg-toggle");
+    scroll.classList.toggle(
+      "sherpa-suggestions-collapsed",
+      suggestionsCollapsed,
+    );
+    btn.classList.toggle("sherpa-sugg-btn-collapsed", suggestionsCollapsed);
+  }
 
-    if (!message || isSending) return;
-
-    isSending = true;
-    document.getElementById("chatbot-send").disabled = true;
-    input.disabled = true;
-
-    // Automatically collapse popular suggestions
-    const scrollContainer = document.getElementById("sherpa-suggestions-scroll");
-    const toggleBtn = document.getElementById("sherpa-sugg-toggle");
-    if (scrollContainer && !scrollContainer.classList.contains("sherpa-suggestions-collapsed")) {
-      scrollContainer.classList.add("sherpa-suggestions-collapsed");
-      if (toggleBtn) toggleBtn.classList.add("sherpa-sugg-btn-collapsed");
-    }
-
-    // Add user message
-    addMessageToUI(message, "user");
-    input.value = "";
-    chatHistory.push({ role: "user", content: message });
-
-    // Add loading indicator
-    const loadingWrapper = document.createElement("div");
-    loadingWrapper.className = "sherpa-msg-wrapper sherpa-msg-wrapper--assistant";
-    const loadingMsg = document.createElement("div");
-    loadingMsg.className = "sherpa-message sherpa-assistant sherpa-loading";
-    loadingMsg.innerHTML = `
-      <span class="sherpa-typing">●</span>
-      <span class="sherpa-typing">●</span>
-      <span class="sherpa-typing">●</span>
-      <span class="sherpa-thinking-label">Sherpa is thinking…</span>
-    `;
-    loadingWrapper.appendChild(loadingMsg);
-    document.getElementById("chatbot-messages").appendChild(loadingWrapper);
-    document.getElementById("chatbot-messages").scrollTop =
-      document.getElementById("chatbot-messages").scrollHeight;
-
-    try {
-      const language = detectLanguage(message);
-      const res = await fetch(CHATBOT_API, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          messages: chatHistory,
-          conversation_id: conversationId,
-          language: language,
-        }),
-      });
-
-      // Remove loading indicator
-      loadingWrapper.remove();
-
-      const contentType = res.headers.get("content-type");
-      if (contentType && contentType.includes("application/json")) {
-        // Fallback for standard JSON errors
-        const data = await res.json();
-        if (!data.success) {
-          addMessageToUI("❌ Error: " + (data.error || "Unknown error"), "error");
-        }
-      } else {
-        // Handle Server-Sent Events stream
-        const reader = res.body.getReader();
-        const decoder = new TextDecoder("utf-8");
-        let done = false;
-        let fullMessage = "";
-        let buffer = "";
-
-        const responseMsg = addMessageToUI("", "assistant");
-        const msgsDiv = document.getElementById("chatbot-messages");
-
-        while (!done) {
-          const { value, done: readerDone } = await reader.read();
-          done = readerDone;
-          
-          if (value) {
-            buffer += decoder.decode(value, { stream: true });
-            const lines = buffer.split("\n");
-            buffer = lines.pop(); // Keep partial line in buffer
-
-            for (const line of lines) {
-              const trimmedLine = line.trim();
-              if (trimmedLine.startsWith("data: ")) {
-                const dataStr = trimmedLine.substring(6).trim();
-                
-                if (dataStr === "[DONE]") continue;
-                
-                try {
-                  const data = JSON.parse(dataStr);
-                  
-                  // Check for streaming errors
-                  if (data.error) {
-                    responseMsg.innerHTML += "<br/>❌ Error: " + data.error;
-                    continue;
-                  }
-
-                  if (data.choices && data.choices[0].delta && data.choices[0].delta.content) {
-                    fullMessage += data.choices[0].delta.content;
-                    responseMsg.innerHTML = window.marked ? marked.parse(fullMessage) : fullMessage;
-                    
-                    // Keep scroll at bottom during stream
-                    msgsDiv.scrollTop = msgsDiv.scrollHeight;
-                  }
-                } catch (e) {
-                  // Ignore parse errors for fragmented chunks
-                }
-              }
-            }
-          }
-        }
-        
-        if (fullMessage.trim() !== "") {
-          chatHistory.push({
-            role: "assistant",
-            content: fullMessage,
-          });
-          saveChatHistory();
-
-          // Add timestamp + copy button after streaming ends
-          const parentWrapper = responseMsg.closest(".sherpa-msg-wrapper");
-          if (parentWrapper && !parentWrapper.querySelector(".sherpa-msg-meta")) {
-            const meta = document.createElement("div");
-            meta.className = "sherpa-msg-meta";
-            const ts = document.createElement("span");
-            ts.className = "sherpa-timestamp";
-            ts.textContent = getTimestamp();
-            meta.appendChild(ts);
-            const copyBtn = makeCopyBtn(() => responseMsg.innerText);
-            meta.appendChild(copyBtn);
-            parentWrapper.appendChild(meta);
-          }
-        }
+  // ═══════════════════════════════════════════════════════════════════════
+  // 12. EVENTS
+  // ═══════════════════════════════════════════════════════════════════════
+  function bindEvents() {
+    toggle.addEventListener("click", () => (isOpen ? closeChat() : openChat()));
+    closeBtn.addEventListener("click", closeChat);
+    historyBtn.addEventListener("click", () => {
+      if (!isLoggedIn) {
+        showLoginBanner();
+        return;
       }
-    } catch (err) {
-      if (document.querySelector(".sherpa-loading")) {
-        document.querySelector(".sherpa-loading").remove();
-      }
-      addMessageToUI("❌ Connection error: " + err.message, "error");
-    } finally {
-      isSending = false;
-      document.getElementById("chatbot-send").disabled = false;
-      input.disabled = false;
-      input.focus();
-    }
-  }
-
-  // ==================== UI INTERACTIONS ====================
-
-  function toggleChatbot() {
-    const chatbot = document.querySelector(".sherpa-chatbot");
-    const toggle = document.getElementById("chatbot-toggle");
-    const badge = document.querySelector(".sherpa-badge");
-
-    chatbot.classList.toggle("sherpa-hidden");
-    toggle.classList.toggle("sherpa-hidden");
-
-    if (badge) {
-      badge.style.display = badge.style.display === "none" ? "block" : "none";
-    }
-
-    if (!chatbot.dataset.opened) {
-      addMessageToUI(
-        `Hello! I'm Sherpa, your Nepal travel expert! How can I help you plan your trip today? You can ask me things like:
-        <div class="sherpa-inline-suggestions">
-          <button class="sherpa-inline-btn" data-prompt="What is the best time to visit Nepal?">What is the best time to visit Nepal?</button>
-          <button class="sherpa-inline-btn" data-prompt="Can you plan a 5-day budget trip to Pokhara?">Can you plan a 5-day budget trip to Pokhara?</button>
-          <button class="sherpa-inline-btn" data-prompt="What are the top short treks?">What are the top short treks?</button>
-        </div>`,
-        "assistant",
-      );
-      showSuggestions();
-      chatbot.dataset.opened = true;
-    }
-  }
-
-  function attachEvents() {
-    document.getElementById("chatbot-send").onclick = sendMessage;
-    document.getElementById("chatbot-toggle").onclick = toggleChatbot;
-    document.querySelector(".sherpa-close-btn").onclick = toggleChatbot;
-    document.querySelector(".sherpa-clear-btn").onclick = clearChatHistory;
-
+      historyOpen ? closeHistory() : openHistory();
+    });
     document
-      .getElementById("chatbot-input")
-      .addEventListener("keypress", (e) => {
-        if (e.key === "Enter" && !e.shiftKey) {
-          e.preventDefault();
-          sendMessage();
-        }
-      });
+      .getElementById("sherpa-history-close")
+      .addEventListener("click", closeHistory);
+    newChatBtn.addEventListener("click", startNewChat);
+    document.getElementById("sherpa-shp-new").addEventListener("click", () => {
+      startNewChat();
+      closeHistory();
+    });
 
-    // Delegate clicks for inline suggestion buttons
-    document.getElementById("chatbot-messages").addEventListener("click", (e) => {
-      const btn = e.target.closest(".sherpa-inline-btn");
-      if (btn && !isSending) {
-        document.getElementById("chatbot-input").value = btn.dataset.prompt;
-        sendMessage();
+    sendBtn.addEventListener("click", () => sendUserMessage(inputEl.value));
+    inputEl.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        sendUserMessage(inputEl.value);
       }
+    });
+    inputEl.addEventListener("input", () => {
+      inputEl.style.height = "auto";
+      inputEl.style.height = Math.min(inputEl.scrollHeight, 120) + "px";
+    });
+
+    // Close history when clicking messages area
+    messagesEl.addEventListener("click", () => {
+      if (historyOpen) closeHistory();
     });
   }
 
-  // ==================== INITIALIZE ====================
+  // ═══════════════════════════════════════════════════════════════════════
+  // 13. INIT
+  // ═══════════════════════════════════════════════════════════════════════
+  function init() {
+    buildHTML();
+    checkAuth();
+    bindEvents();
+
+    if (!isLoggedIn) {
+      // Show login banner by default
+      showLoginBanner();
+
+      // Show lock badge on toggle
+      const badge = document.createElement("span");
+      badge.className = "sherpa-lock-badge";
+      badge.textContent = "🔒";
+      toggle.appendChild(badge);
+    } else {
+      // If logged in, show chat UI by default
+      showChatUI();
+    }
+
+    // If opened via URL hash
+    if (window.location.hash === "#sherpa") openChat();
+  }
 
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", init);

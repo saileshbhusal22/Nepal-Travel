@@ -5,6 +5,67 @@ if (!isset($_SESSION['user_id'])) {
 }
 require_once '../config/db.php';
 
+// ── AJAX: Cancel booking (called via fetch, returns JSON) ─────────────────
+if (
+    isset($_SERVER['HTTP_X_REQUESTED_WITH']) &&
+    strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest' &&
+    $_SERVER['REQUEST_METHOD'] === 'POST' &&
+    isset($_POST['booking_action']) && $_POST['booking_action'] === 'cancel'
+) {
+    header('Content-Type: application/json');
+    $bid = (int)($_POST['booking_id'] ?? 0);
+
+    $chk = $conn->prepare("SELECT id, status, payment_method FROM bookings WHERE id = ? AND user_id = ?");
+    $chk->bind_param("ii", $bid, $_SESSION['user_id']);
+    $chk->execute();
+    $bk = $chk->get_result()->fetch_assoc();
+    $chk->close();
+
+    if (!$bk) {
+        echo json_encode(['success' => false, 'message' => 'Invalid booking.']);
+        exit;
+    }
+    if ($bk['status'] === 'cancelled') {
+        echo json_encode(['success' => false, 'message' => 'Already cancelled.']);
+        exit;
+    }
+    if ($bk['payment_method'] === 'khalti') {
+        echo json_encode(['success' => false, 'message' => 'Khalti-paid bookings cannot be self-cancelled. Please contact support.']);
+        exit;
+    }
+
+    $c = $conn->prepare("UPDATE bookings SET status = 'cancelled' WHERE id = ?");
+    $c->bind_param("i", $bid);
+    if ($c->execute()) {
+        // Return new total booking count AND new confirmed (paid) count
+        $stmtTotal = $conn->prepare("SELECT COUNT(*) FROM bookings WHERE user_id = ?");
+        $stmtTotal->bind_param("i", $_SESSION['user_id']);
+        $stmtTotal->execute();
+        $stmtTotal->bind_result($newTotal);
+        $stmtTotal->fetch();
+        $stmtTotal->close();
+
+        $stmtPaid = $conn->prepare("SELECT COUNT(*) FROM bookings WHERE user_id = ? AND payment_method = 'khalti' AND status = 'confirmed'");
+        $stmtPaid->bind_param("i", $_SESSION['user_id']);
+        $stmtPaid->execute();
+        $stmtPaid->bind_result($newPaid);
+        $stmtPaid->fetch();
+        $stmtPaid->close();
+
+        echo json_encode([
+            'success'       => true,
+            'message'       => 'Booking cancelled.',
+            'newTotal'      => (int)$newTotal,
+            'newPaidTrips'  => (int)$newPaid,
+        ]);
+    } else {
+        echo json_encode(['success' => false, 'message' => 'Database error.']);
+    }
+    $c->close();
+    exit;
+}
+// ─────────────────────────────────────────────────────────────────────────
+
 $stmt = $conn->prepare("SELECT id, full_name, username, email, profile_image, created_at FROM users WHERE id = ?");
 $stmt->bind_param("i", $_SESSION['user_id']);
 $stmt->execute();
@@ -38,13 +99,19 @@ $stmt->bind_result($bookingCount);
 $stmt->fetch();
 $stmt->close();
 
+$stmtPaid = $conn->prepare("SELECT COUNT(*) FROM bookings WHERE user_id = ? AND payment_method = 'khalti' AND status = 'confirmed'");
+$stmtPaid->bind_param("i", $_SESSION['user_id']);
+$stmtPaid->execute();
+$stmtPaid->bind_result($paidTripsCount);
+$stmtPaid->fetch();
+$stmtPaid->close();
+
 $savedCount = count($_SESSION['saved_deals'] ?? []);
 // ─────────────────────────────────────────────────────────────────────────
 
 // ── SETTINGS: name / password ─────────────────────────────────────────────
 $settings_message = ''; $settings_msg_type = '';
 
-// Carry delete error back from redirect
 if (isset($_GET['delete_error'])) {
     $settings_message  = urldecode($_GET['delete_error']);
     $settings_msg_type = 'error';
@@ -83,33 +150,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $activeTab === 'settings') {
     }
 }
 
-// ── BOOKING ACTIONS ───────────────────────────────────────────────────────
+// ── BOOKING ACTIONS (non-cancel, non-AJAX) ────────────────────────────────
 $booking_action_message = ''; $booking_action_type = '';
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['booking_action'])) {
-    $bid = (int)($_POST['booking_id'] ?? 0); $action = $_POST['booking_action'];
-    $chk = $conn->prepare("SELECT id, status FROM bookings WHERE id = ? AND user_id = ?");
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['booking_action']) && $_POST['booking_action'] === 'update_guests') {
+    $bid = (int)($_POST['booking_id'] ?? 0);
+
+    $chk = $conn->prepare("SELECT id, status, payment_method FROM bookings WHERE id = ? AND user_id = ?");
     $chk->bind_param("ii", $bid, $_SESSION['user_id']); $chk->execute();
     $bk = $chk->get_result()->fetch_assoc(); $chk->close();
-    if (!$bk) { $booking_action_message='Invalid booking.'; $booking_action_type='error'; }
-    elseif ($action === 'update_guests') {
+
+    if (!$bk) {
+        $booking_action_message = 'Invalid booking.'; $booking_action_type = 'error';
+    } else {
         $ng = (int)($_POST['guests'] ?? 0);
-        if ($ng<1||$ng>50) { $booking_action_message='Guests 1-50.'; $booking_action_type='error'; }
-        elseif ($bk['status']==='cancelled') { $booking_action_message='Booking is cancelled.'; $booking_action_type='error'; }
-        else {
-            $u = $conn->prepare("UPDATE bookings SET guests=? WHERE id=?");
-            $u->bind_param("ii",$ng,$bid);
-            if ($u->execute()) { $booking_action_message='Guests updated!'; $booking_action_type='success'; }
-            else { $booking_action_message='DB error.'; $booking_action_type='error'; }
+        if ($ng < 1 || $ng > 50) {
+            $booking_action_message = 'Guests must be between 1 and 50.'; $booking_action_type = 'error';
+        } elseif ($bk['status'] === 'cancelled') {
+            $booking_action_message = 'Booking is cancelled.'; $booking_action_type = 'error';
+        } elseif ($bk['payment_method'] === 'khalti') {
+            $booking_action_message = 'Khalti-paid bookings cannot be modified. Please contact support.'; $booking_action_type = 'error';
+        } else {
+            $u = $conn->prepare("UPDATE bookings SET guests = ? WHERE id = ?");
+            $u->bind_param("ii", $ng, $bid);
+            if ($u->execute()) { $booking_action_message = 'Guests updated!'; $booking_action_type = 'success'; }
+            else { $booking_action_message = 'Database error.'; $booking_action_type = 'error'; }
             $u->close();
-        }
-    } elseif ($action === 'cancel') {
-        if ($bk['status']==='cancelled') { $booking_action_message='Already cancelled.'; $booking_action_type='error'; }
-        else {
-            $c = $conn->prepare("UPDATE bookings SET status='cancelled' WHERE id=?");
-            $c->bind_param("i",$bid);
-            if ($c->execute()) { $booking_action_message='Booking cancelled.'; $booking_action_type='success'; }
-            else { $booking_action_message='DB error.'; $booking_action_type='error'; }
-            $c->close();
         }
     }
 }
@@ -121,6 +186,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['booking_action'])) {
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>My Nepal Journey — Dashboard</title>
 <link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Outfit:wght@300;400;500;600&family=Space+Mono&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/Nepal-Travel/assets/css/chatbot.css">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -140,6 +206,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['booking_action'])) {
   --ember:#C4622A;
   --ember2:#E8956A;
   --flag-r:#C0392B;
+  --khalti:#5C2D91;
+  --khalti-light:#EDE0FF;
   --ff-serif:'Libre Baskerville',Georgia,serif;
   --ff-body:'Outfit',sans-serif;
   --ff-mono:'Space Mono',monospace;
@@ -155,10 +223,7 @@ input,button{font-family:var(--ff-body)}
   padding:0 52px;justify-content:space-between;
   position:sticky;top:0;z-index:200;
 }
-.tb-logo{
-  font-family:var(--ff-serif);font-size:20px;font-weight:700;
-  color:var(--snow);display:flex;align-items:center;gap:14px;
-}
+.tb-logo{font-family:var(--ff-serif);font-size:20px;font-weight:700;color:var(--snow);display:flex;align-items:center;gap:14px;}
 .tb-logo em{font-style:italic;color:var(--sand)}
 .nepal-flag{display:flex;flex-direction:column;gap:1px;flex-shrink:0;}
 .flag-top{width:0;height:0;border-left:11px solid transparent;border-right:11px solid transparent;border-bottom:14px solid var(--flag-r);}
@@ -166,20 +231,9 @@ input,button{font-family:var(--ff-body)}
 .tb-right{display:flex;align-items:center;gap:20px}
 .tb-back{font-size:12px;color:rgba(255,255,255,0.35);letter-spacing:0.5px;font-weight:400;transition:color 0.2s;}
 .tb-back:hover{color:var(--sand)}
-.tb-user-pill{
-  display:flex;align-items:center;gap:10px;
-  background:rgba(255,255,255,0.06);
-  border:1px solid rgba(196,168,130,0.2);
-  border-radius:100px;padding:5px 14px 5px 5px;
-  cursor:pointer;transition:border-color 0.2s;
-}
+.tb-user-pill{display:flex;align-items:center;gap:10px;background:rgba(255,255,255,0.06);border:1px solid rgba(196,168,130,0.2);border-radius:100px;padding:5px 14px 5px 5px;cursor:pointer;transition:border-color 0.2s;}
 .tb-user-pill:hover{border-color:rgba(196,168,130,0.5)}
-.tb-avatar{
-  width:32px;height:32px;border-radius:50%;
-  background:var(--bark);overflow:hidden;
-  display:flex;align-items:center;justify-content:center;
-  flex-shrink:0;position:relative;
-}
+.tb-avatar{width:32px;height:32px;border-radius:50%;background:var(--bark);overflow:hidden;display:flex;align-items:center;justify-content:center;flex-shrink:0;position:relative;}
 .tb-avatar img{width:100%;height:100%;object-fit:cover}
 .tb-avatar-init{font-size:12px;font-weight:700;color:var(--sand);font-family:var(--ff-serif)}
 .tb-uname{font-size:12px;font-weight:500;color:rgba(255,255,255,0.7)}
@@ -201,11 +255,7 @@ input,button{font-family:var(--ff-body)}
   padding:52px 52px 0;
   position:relative;overflow:hidden;
 }
-.hero::before{
-  content:'';position:absolute;inset:0;
-  background:radial-gradient(ellipse at center, transparent 40%, rgba(43,38,32,0.45) 100%);
-  pointer-events:none;z-index:1;
-}
+.hero::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at center, transparent 40%, rgba(43,38,32,0.45) 100%);pointer-events:none;z-index:1;}
 .hero-grid{display:grid;grid-template-columns:1fr auto;gap:40px;align-items:end;position:relative;z-index:2;margin-bottom:40px;}
 .hero-eyebrow{font-family:var(--ff-mono);font-size:10px;letter-spacing:3px;color:var(--sand);text-transform:uppercase;margin-bottom:14px;opacity:0.9;}
 .hero-h1{font-family:var(--ff-serif);font-size:46px;font-weight:700;color:var(--snow);line-height:1.1;text-shadow:0 2px 12px rgba(0,0,0,0.4);}
@@ -215,23 +265,24 @@ input,button{font-family:var(--ff-body)}
 .hr-since-label{font-family:var(--ff-mono);font-size:10px;color:rgba(255,255,255,0.35);letter-spacing:2px;text-transform:uppercase;}
 .hr-since-val{font-family:var(--ff-serif);font-size:18px;color:var(--sand);margin-top:4px;}
 .hr-actions{margin-top:20px;display:flex;gap:10px;justify-content:flex-end}
-.hero-stats-strip{
-  display:flex;border-top:1px solid rgba(255,255,255,0.10);
-  position:relative;z-index:2;
-  background:rgba(0,0,0,0.25);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
-}
+.hero-stats-strip{display:flex;border-top:1px solid rgba(255,255,255,0.10);position:relative;z-index:2;background:rgba(0,0,0,0.25);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);}
 .hss{flex:1;padding:20px 28px;border-right:1px solid rgba(255,255,255,0.08);transition:background 0.2s;}
 .hss:last-child{border-right:none}
 .hss:hover{background:rgba(255,255,255,0.06)}
-.hss-n{font-family:var(--ff-serif);font-size:36px;font-weight:700;color:var(--snow);line-height:1;margin-bottom:5px;}
+.hss-n{
+  font-family:var(--ff-serif);font-size:36px;font-weight:700;color:var(--snow);line-height:1;margin-bottom:5px;
+  transition:transform 0.35s cubic-bezier(0.34,1.56,0.64,1), color 0.25s;
+  display:inline-block;
+}
+/* Number pop animation triggered by JS */
+.hss-n.pop{
+  transform:scale(1.25);
+  color:var(--ember2);
+}
 .hss-l{font-size:10px;letter-spacing:2.5px;text-transform:uppercase;color:rgba(255,255,255,0.4);font-weight:500;}
 
 /* TAB BAR */
-.tabbar{
-  background:var(--mist);border-bottom:2px solid rgba(196,168,130,0.5);
-  padding:0 52px;display:flex;align-items:flex-end;gap:2px;
-  position:sticky;top:62px;z-index:100;box-shadow:0 2px 10px rgba(43,38,32,0.07);
-}
+.tabbar{background:var(--mist);border-bottom:2px solid rgba(196,168,130,0.5);padding:0 52px;display:flex;align-items:flex-end;gap:2px;position:sticky;top:62px;z-index:100;box-shadow:0 2px 10px rgba(43,38,32,0.07);}
 .tab{display:inline-flex;align-items:center;gap:8px;padding:14px 20px 12px;font-size:13px;font-weight:500;color:var(--bark);border-bottom:3px solid transparent;margin-bottom:-2px;transition:all 0.18s;white-space:nowrap;}
 .tab svg{width:15px;height:15px;flex-shrink:0;opacity:0.55}
 .tab:hover{color:var(--stone);background:rgba(92,74,58,0.05)}
@@ -306,22 +357,33 @@ table.bkt th{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:va
 table.bkt td{padding:15px 22px;border-bottom:1px solid var(--mist);font-size:13px;color:var(--stone);vertical-align:middle;}
 table.bkt tr:last-child td{border-bottom:none}
 table.bkt tr:hover td{background:rgba(247,244,239,0.8)}
+/* Row fade-out on cancel */
+table.bkt tr.cancelling td{transition:opacity 0.4s, background 0.4s;opacity:0.4;background:rgba(192,57,43,0.04);}
 .bk-id{font-family:var(--ff-mono);font-size:11px;color:var(--soil)}
 .bk-dest{font-weight:600}
+
+/* STATUS PILLS */
 .pill{display:inline-block;padding:4px 12px;border-radius:20px;font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;}
 .pill-pending{background:#FEF3E2;color:#9A6200}
+.pill-active{background:#E5F2E5;color:#2A5C2A}
 .pill-confirmed{background:#E5F2E5;color:#2A5C2A}
 .pill-cancelled{background:#FCEAEA;color:#8C2020}
+.pill-khalti{background:var(--khalti-light);color:var(--khalti)}
+
 .bk-btns{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .btn-tkt{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:500;color:var(--stone);border:1px solid var(--mist);border-radius:4px;padding:5px 12px;transition:all 0.2s;}
 .btn-tkt:hover{background:var(--stone);color:var(--snow);border-color:var(--stone)}
 .btn-cancbk{font-size:11px;font-weight:500;color:var(--flag-r);border:1px solid rgba(192,57,43,0.25);border-radius:4px;padding:5px 12px;background:transparent;cursor:pointer;transition:all 0.2s;}
 .btn-cancbk:hover{background:var(--flag-r);color:#fff;border-color:var(--flag-r)}
+.btn-cancbk:disabled{opacity:0.5;cursor:not-allowed}
 .gf{display:inline-flex;align-items:center;gap:8px}
 .gf input{width:60px;padding:5px 8px;border-radius:4px;border:1px solid var(--mist);font-size:13px;text-align:center;background:var(--fog);color:var(--stone);}
 .gf input:focus{outline:none;border-color:var(--moss)}
 .btn-upd{font-size:11px;font-weight:500;color:var(--forest);border:1px solid rgba(45,74,45,0.3);border-radius:4px;padding:5px 12px;background:transparent;cursor:pointer;transition:all 0.2s;}
 .btn-upd:hover{background:var(--forest);color:#fff}
+
+.khalti-locked{display:inline-flex;align-items:center;gap:5px;font-size:11px;color:var(--khalti);background:var(--khalti-light);border:1px solid rgba(92,45,145,0.2);border-radius:4px;padding:5px 12px;white-space:nowrap;}
+
 .empty-st{padding:80px 40px;text-align:center}
 .empty-glyph{font-size:80px;line-height:1;margin-bottom:18px;opacity:0.15;font-family:var(--ff-serif);font-weight:700;letter-spacing:-4px;color:var(--bark);}
 .empty-h{font-family:var(--ff-serif);font-size:22px;color:var(--bark);margin-bottom:8px}
@@ -402,6 +464,20 @@ table.bkt tr:hover td{background:rgba(247,244,239,0.8)}
 .btn-open-delete:hover{background:var(--flag-r);color:#fff}
 .btn-open-delete svg{width:15px;height:15px;fill:currentColor}
 
+/* Confirm cancel mini-modal */
+.confirm-overlay{display:none;position:fixed;inset:0;background:rgba(43,38,32,0.55);z-index:8000;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px);}
+.confirm-overlay.open{display:flex}
+.confirm-box{background:var(--snow);border-radius:12px;max-width:360px;width:100%;padding:28px;box-shadow:0 20px 60px rgba(43,38,32,0.28);animation:modalIn 0.2s cubic-bezier(0.34,1.4,0.64,1);text-align:center;}
+.confirm-box h3{font-family:var(--ff-serif);font-size:18px;color:var(--stone);margin-bottom:8px;}
+.confirm-box p{font-size:13px;color:var(--soil);line-height:1.6;margin-bottom:22px;}
+.confirm-btns{display:flex;gap:10px;}
+.confirm-btns button{flex:1;border-radius:6px;padding:11px;font-size:13px;font-weight:600;cursor:pointer;transition:all 0.2s;border:none;}
+.cb-keep{background:var(--fog);color:var(--stone);border:1px solid var(--mist);}
+.cb-keep:hover{background:var(--mist)}
+.cb-yes{background:var(--flag-r);color:#fff;}
+.cb-yes:hover{background:#9B2D20}
+.cb-yes:disabled{opacity:0.6;cursor:not-allowed}
+
 /* RESPONSIVE */
 @media(max-width:900px){
   .topbar,.hero,.content{padding-left:20px;padding-right:20px}
@@ -421,6 +497,12 @@ table.bkt tr:hover td{background:rgba(247,244,239,0.8)}
 </style>
 </head>
 <body>
+<!-- Sherpa AI user meta (read by chatbot.js) -->
+<span id="sherpa-user-meta" style="display:none"
+  data-logged-in="1"
+  data-user-id="<?php echo (int)$_SESSION['user_id']; ?>"
+  data-user-name="<?php echo htmlspecialchars($userName); ?>"
+></span>
 
 <!-- TOPBAR -->
 <header class="topbar">
@@ -469,10 +551,23 @@ table.bkt tr:hover td{background:rgba(247,244,239,0.8)}
     </div>
   </div>
   <div class="hero-stats-strip">
-    <div class="hss"><div class="hss-n">0</div><div class="hss-l">Trips Taken</div></div>
-    <div class="hss"><div class="hss-n"><?= $bookingCount ?></div><div class="hss-l">Bookings</div></div>
-    <div class="hss"><div class="hss-n"><?= $savedCount ?></div><div class="hss-l">Saved Places</div></div>
-    <div class="hss"><div class="hss-n">0</div><div class="hss-l">Peaks Explored</div></div>
+    <!-- Trips Taken = confirmed Khalti-paid bookings -->
+    <div class="hss">
+      <div class="hss-n" id="stat-trips"><?= $paidTripsCount ?></div>
+      <div class="hss-l">Trips Taken</div>
+    </div>
+    <div class="hss">
+      <div class="hss-n" id="stat-bookings"><?= $bookingCount ?></div>
+      <div class="hss-l">Bookings</div>
+    </div>
+    <div class="hss">
+      <div class="hss-n" id="stat-saved"><?= $savedCount ?></div>
+      <div class="hss-l">Saved Places</div>
+    </div>
+    <div class="hss">
+      <div class="hss-n">0</div>
+      <div class="hss-l">Peaks Explored</div>
+    </div>
   </div>
 </div>
 
@@ -493,6 +588,10 @@ table.bkt tr:hover td{background:rgba(247,244,239,0.8)}
   <a href="?tab=settings" class="tab <?php echo $activeTab==='settings'?'on':''; ?>">
     <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
     Settings
+  </a>
+  <a href="?tab=sherpa" class="tab <?php echo $activeTab==='sherpa'?'on':''; ?>" style="<?php echo $activeTab==='sherpa'?'border-bottom-color:#3b82f6;color:#1e293b':''; ?>">
+    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"/></svg>
+    Sherpa AI
   </a>
   <div class="tab-gap"></div>
   <a href="/Nepal-Travel/Public/experience.php" class="tab-explore">
@@ -566,10 +665,10 @@ table.bkt tr:hover td{background:rgba(247,244,239,0.8)}
       <div class="qa-t">Deals &amp; Packages</div><div class="qa-s">Special offers</div>
       <span class="qa-arr">↗</span>
     </a>
-    <a href="/Nepal-Travel/Public/events.php" class="qa">
-      <div class="qa-accent"></div>
-      <div class="qa-ico"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M17 12h-5v5h5v-5zM16 1v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2h-1V1h-2zm3 18H5V8h14v11z"/></svg></div>
-      <div class="qa-t">Events &amp; Festivals</div><div class="qa-s">Culture &amp; tradition</div>
+    <a href="?tab=sherpa" class="qa" style="border-color:rgba(59,130,246,0.25)">
+      <div class="qa-accent" style="background:linear-gradient(135deg,#3b82f6,#1e40af)"></div>
+      <div class="qa-ico" style="background:rgba(59,130,246,0.08);border-color:rgba(59,130,246,0.2)"><svg viewBox="0 0 24 24" fill="#3b82f6"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"/></svg></div>
+      <div class="qa-t">Sherpa AI</div><div class="qa-s">Your travel assistant</div>
       <span class="qa-arr">↗</span>
     </a>
     <a href="?tab=bookings" class="qa">
@@ -581,7 +680,7 @@ table.bkt tr:hover td{background:rgba(247,244,239,0.8)}
   </div>
 
 <?php elseif ($activeTab === 'bookings'):
-  $stmt = $conn->prepare("SELECT id, destination, date, guests, status, created_at FROM bookings WHERE user_id = ? ORDER BY created_at DESC");
+  $stmt = $conn->prepare("SELECT id, destination, date, guests, status, payment_method, created_at FROM bookings WHERE user_id = ? ORDER BY created_at DESC");
   $stmt->bind_param("i", $_SESSION['user_id']);
   $stmt->execute();
   $bookings = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
@@ -599,6 +698,7 @@ table.bkt tr:hover td{background:rgba(247,244,239,0.8)}
       <span class="bk-hd-t">Booking History</span>
       <a href="/Nepal-Travel/Public/booking.php" class="btn-new-bk">+ New Booking</a>
     </div>
+
     <?php if (count($bookings) === 0): ?>
       <div class="empty-st">
         <div class="empty-glyph">⛰</div>
@@ -609,35 +709,90 @@ table.bkt tr:hover td{background:rgba(247,244,239,0.8)}
     <?php else: ?>
       <div style="overflow-x:auto">
         <table class="bkt">
-          <thead><tr><th>ID</th><th>Destination</th><th>Travel Date</th><th>Guests</th><th>Status</th><th>Booked</th><th>Actions</th></tr></thead>
-          <tbody>
-            <?php foreach ($bookings as $b): ?>
+          <thead>
             <tr>
-              <td class="bk-id">#<?php echo str_pad($b['id'],6,'0',STR_PAD_LEFT); ?></td>
+              <th>ID</th>
+              <th>Destination</th>
+              <th>Travel Date</th>
+              <th>Guests</th>
+              <th>Payment</th>
+              <th>Status</th>
+              <th>Booked</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <?php foreach ($bookings as $b):
+              $isKhalti = ($b['payment_method'] === 'khalti');
+            ?>
+            <tr id="bk-row-<?php echo $b['id']; ?>">
+              <td class="bk-id">#<?php echo str_pad($b['id'], 6, '0', STR_PAD_LEFT); ?></td>
+
               <td class="bk-dest"><?php echo htmlspecialchars($b['destination']); ?></td>
+
               <td><?php echo date('M j, Y', strtotime($b['date'])); ?></td>
-              <td><?php if ($b['status']!=='cancelled'): ?>
-                <form method="POST" action="?tab=bookings" class="gf">
-                  <input type="hidden" name="booking_id" value="<?php echo $b['id']; ?>">
-                  <input type="hidden" name="booking_action" value="update_guests">
-                  <input type="number" name="guests" value="<?php echo $b['guests']; ?>" min="1" max="50">
-                  <button type="submit" class="btn-upd">Save</button>
-                </form>
-              <?php else: ?><span style="color:var(--soil)"><?php echo $b['guests']; ?></span><?php endif; ?></td>
-              <td><span class="pill pill-<?php echo $b['status']; ?>"><?php echo ucfirst($b['status']); ?></span></td>
-              <td style="color:var(--soil)"><?php echo date('M j, Y', strtotime($b['created_at'])); ?></td>
+
+              <!-- GUESTS: locked if Khalti-paid -->
               <td>
-                <div class="bk-btns">
+                <?php if (!$isKhalti && $b['status'] !== 'cancelled'): ?>
+                  <form method="POST" action="?tab=bookings" class="gf">
+                    <input type="hidden" name="booking_id" value="<?php echo $b['id']; ?>">
+                    <input type="hidden" name="booking_action" value="update_guests">
+                    <input type="number" name="guests" value="<?php echo $b['guests']; ?>" min="1" max="50">
+                    <button type="submit" class="btn-upd">Save</button>
+                  </form>
+                <?php else: ?>
+                  <span style="color:var(--soil)"><?php echo $b['guests']; ?></span>
+                <?php endif; ?>
+              </td>
+
+              <!-- PAYMENT METHOD -->
+              <td>
+                <?php if ($isKhalti): ?>
+                  <span style="display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;color:var(--khalti);background:var(--khalti-light);padding:3px 10px;border-radius:20px;">
+                    <svg viewBox="0 0 24 24" fill="currentColor" style="width:11px;height:11px"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+                    Khalti
+                  </span>
+                <?php else: ?>
+                  <span style="font-size:12px;color:var(--soil);">
+                    <?php echo ucfirst($b['payment_method'] ?? 'Cash'); ?>
+                  </span>
+                <?php endif; ?>
+              </td>
+
+              <!-- STATUS -->
+              <td>
+                <?php if ($isKhalti): ?>
+                  <span class="pill pill-khalti" id="pill-<?php echo $b['id']; ?>">✓ Confirmed</span>
+                <?php else: ?>
+                  <span class="pill pill-<?php echo htmlspecialchars($b['status']); ?>" id="pill-<?php echo $b['id']; ?>">
+                    <?php echo ucfirst($b['status']); ?>
+                  </span>
+                <?php endif; ?>
+              </td>
+
+              <td style="color:var(--soil)"><?php echo date('M j, Y', strtotime($b['created_at'])); ?></td>
+
+              <!-- ACTIONS -->
+              <td>
+                <div class="bk-btns" id="actions-<?php echo $b['id']; ?>">
                   <a href="/Nepal-Travel/Public/ticket.php?id=<?php echo $b['id']; ?>" class="btn-tkt">
                     <svg viewBox="0 0 24 24" fill="currentColor" style="width:12px;height:12px"><path d="M22 10V6c0-1.11-.9-2-2-2H4c-1.1 0-1.99.89-1.99 2v4c1.1 0 1.99.9 1.99 2s-.89 2-1.99 2v4c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2v-4c-1.1 0-2-.9-2-2s.9-2 2-2z"/></svg>
                     Ticket
                   </a>
-                  <?php if ($b['status']!=='cancelled'): ?>
-                    <form method="POST" action="?tab=bookings" style="display:inline">
-                      <input type="hidden" name="booking_id" value="<?php echo $b['id']; ?>">
-                      <input type="hidden" name="booking_action" value="cancel">
-                      <button type="submit" class="btn-cancbk" onclick="return confirm('Cancel this booking?')">Cancel</button>
-                    </form>
+
+                  <?php if ($isKhalti): ?>
+                    <span class="khalti-locked">
+                      <svg viewBox="0 0 24 24" fill="currentColor" style="width:11px;height:11px"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg>
+                      Contact support to modify
+                    </span>
+                  <?php elseif ($b['status'] !== 'cancelled'): ?>
+                    <!-- AJAX cancel button -->
+                    <button
+                      type="button"
+                      class="btn-cancbk js-cancel-btn"
+                      data-id="<?php echo $b['id']; ?>"
+                    >Cancel</button>
                   <?php endif; ?>
                 </div>
               </td>
@@ -674,7 +829,6 @@ table.bkt tr:hover td{background:rgba(247,244,239,0.8)}
     <div class="cta-row">
       <a href="/Nepal-Travel/Public/deals-and-packages.php" class="btn-plan">Explore &amp; Save Places →</a>
     </div>
-
   <?php else: ?>
     <div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:22px; margin-bottom:40px;">
       <?php foreach ($saved_deals as $deal): ?>
@@ -764,7 +918,7 @@ table.bkt tr:hover td{background:rgba(247,244,239,0.8)}
     </div>
   </div>
 
-  <!-- ══ DANGER ZONE ══════════════════════════════════════════════════════ -->
+  <!-- DANGER ZONE -->
   <div class="danger-card">
     <div class="danger-hd">
       <h3>⚠ Danger Zone</h3>
@@ -779,14 +933,372 @@ table.bkt tr:hover td{background:rgba(247,244,239,0.8)}
     </div>
   </div>
 
+<?php elseif ($activeTab === 'sherpa'): ?>
+
+  <style>
+  .sherpa-dash-wrap{display:flex;gap:0;height:calc(100vh - 180px);min-height:560px;background:#fff;border-radius:16px;overflow:hidden;border:1px solid rgba(196,168,130,0.3);box-shadow:0 4px 24px rgba(43,38,32,0.08);}
+  .sdash-sidebar{width:260px;flex-shrink:0;border-right:1px solid #f0ede8;display:flex;flex-direction:column;background:#fdfcfa;}
+  .sdash-sidebar-hd{padding:20px 18px 14px;border-bottom:1px solid #f0ede8;}
+  .sdash-sidebar-hd h3{font-family:var(--ff-serif);font-size:16px;font-weight:700;color:var(--stone);margin-bottom:2px;}
+  .sdash-sidebar-hd p{font-size:12px;color:var(--soil);}
+  .sdash-new-btn{display:flex;align-items:center;gap:8px;margin:12px 14px;background:linear-gradient(135deg,#3b82f6,#1e40af);color:#fff;border:none;border-radius:8px;padding:10px 16px;font-size:13px;font-weight:600;cursor:pointer;transition:opacity 0.2s;font-family:var(--ff-body);}
+  .sdash-new-btn:hover{opacity:0.9;}
+  .sdash-conv-list{flex:1;overflow-y:auto;}
+  .sdash-conv-list::-webkit-scrollbar{width:4px;}
+  .sdash-conv-list::-webkit-scrollbar-thumb{background:#e2d8cc;border-radius:4px;}
+  .sdash-conv-item{padding:11px 16px;cursor:pointer;border-bottom:1px solid #f5f2ee;transition:background 0.15s;position:relative;}
+  .sdash-conv-item:hover{background:#f7f4ef;}
+  .sdash-conv-item.active{background:#eff6ff;border-left:3px solid #3b82f6;}
+  .sdash-conv-title{font-size:13px;font-weight:600;color:var(--stone);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:3px;}
+  .sdash-conv-preview{font-size:11px;color:var(--soil);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:2px;}
+  .sdash-conv-date{font-size:11px;color:#aaa;}
+  .sdash-del-btn{position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;font-size:13px;cursor:pointer;opacity:0;transition:opacity 0.15s;padding:4px;border-radius:4px;}
+  .sdash-conv-item:hover .sdash-del-btn{opacity:1;}
+  .sdash-del-btn:hover{background:rgba(239,68,68,0.1);}
+  .sdash-main{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+  .sdash-chat-hd{padding:16px 24px;border-bottom:1px solid #f0ede8;display:flex;align-items:center;justify-content:space-between;background:#fdfcfa;flex-shrink:0;}
+  .sdash-chat-hd-title{font-family:var(--ff-serif);font-size:18px;font-weight:700;color:var(--stone);}
+  .sdash-chat-hd-sub{font-size:12px;color:var(--soil);margin-top:2px;}
+  .sdash-messages{flex:1;overflow-y:auto;padding:24px;display:flex;flex-direction:column;gap:16px;background:linear-gradient(180deg,#fdfcfa 0%,#f7f4ef 100%);}
+  .sdash-messages::-webkit-scrollbar{width:6px;}
+  .sdash-messages::-webkit-scrollbar-thumb{background:#e2d8cc;border-radius:6px;}
+  .sdash-msg-wrap{display:flex;flex-direction:column;}
+  .sdash-msg-wrap--user{align-items:flex-end;}
+  .sdash-msg-wrap--assistant{align-items:flex-start;}
+  .sdash-bubble{padding:13px 17px;border-radius:18px;max-width:75%;font-size:14px;line-height:1.55;word-wrap:break-word;}
+  .sdash-bubble--user{background:linear-gradient(135deg,#3b82f6,#1e40af);color:#fff;border-bottom-right-radius:4px;box-shadow:0 3px 12px rgba(59,130,246,0.2);}
+  .sdash-bubble--assistant{background:#fff;color:var(--stone);border:1px solid rgba(0,0,0,0.06);border-bottom-left-radius:4px;box-shadow:0 3px 12px rgba(43,38,32,0.06);}
+  .sdash-meta{font-size:11px;color:#aaa;margin-top:4px;padding:0 4px;}
+  .sdash-input-row{display:flex;gap:12px;padding:16px 20px;border-top:1px solid #f0ede8;background:#fdfcfa;flex-shrink:0;}
+  .sdash-input{flex:1;border:1px solid rgba(0,0,0,0.1);border-radius:24px;padding:11px 20px;font-size:14px;font-family:var(--ff-body);outline:none;background:#fff;transition:border-color 0.2s,box-shadow 0.2s;resize:none;line-height:1.4;max-height:100px;overflow-y:auto;}
+  .sdash-input:focus{border-color:#3b82f6;box-shadow:0 0 0 3px rgba(59,130,246,0.12);}
+  .sdash-send-btn{background:linear-gradient(135deg,#3b82f6,#1e40af);color:#fff;border:none;border-radius:24px;padding:0 24px;font-size:14px;font-weight:600;cursor:pointer;transition:opacity 0.2s,transform 0.15s;font-family:var(--ff-body);display:flex;align-items:center;gap:8px;}
+  .sdash-send-btn:hover:not(:disabled){opacity:0.92;transform:translateY(-1px);}
+  .sdash-send-btn:disabled{background:#cbd5e1;cursor:not-allowed;}
+  .sdash-sugg-row{display:flex;gap:8px;flex-wrap:wrap;padding:0 20px 14px;}
+  .sdash-sugg-btn{background:#fff;border:1px solid rgba(59,130,246,0.25);color:#3b82f6;border-radius:20px;padding:7px 14px;font-size:12px;font-weight:500;cursor:pointer;transition:all 0.2s;font-family:var(--ff-body);}
+  .sdash-sugg-btn:hover{background:linear-gradient(135deg,#3b82f6,#1e40af);color:#fff;border-color:transparent;}
+  .sdash-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;text-align:center;padding:40px 24px;}
+  .sdash-empty-icon{font-size:56px;margin-bottom:18px;opacity:0.6;}
+  .sdash-empty h3{font-family:var(--ff-serif);font-size:22px;color:var(--bark);margin-bottom:8px;}
+  .sdash-empty p{font-size:14px;color:var(--soil);line-height:1.6;}
+  .sdash-markdown h1,.sdash-markdown h2,.sdash-markdown h3{font-weight:700;margin:10px 0 6px;font-family:var(--ff-serif);}
+  .sdash-markdown h2{font-size:15px;}
+  .sdash-markdown h3{font-size:14px;}
+  .sdash-markdown p{margin:6px 0;}
+  .sdash-markdown ul,.sdash-markdown ol{margin:6px 0 6px 18px;}
+  .sdash-markdown li{margin:4px 0;}
+  .sdash-markdown strong{font-weight:700;}
+  .sdash-markdown table{border-collapse:collapse;width:100%;margin:10px 0;font-size:13px;display:block;overflow-x:auto;}
+  .sdash-markdown th,.sdash-markdown td{border:1px solid rgba(0,0,0,0.1);padding:7px 11px;text-align:left;}
+  .sdash-markdown th{background:rgba(0,0,0,0.03);font-weight:600;}
+  .sdash-loading-dots{display:flex;gap:5px;padding:14px 18px;}
+  .sdash-dot{width:8px;height:8px;border-radius:50%;background:#cbd5e1;animation:sdash-blink 1.4s infinite;}
+  .sdash-dot:nth-child(2){animation-delay:0.2s;}
+  .sdash-dot:nth-child(3){animation-delay:0.4s;}
+  @keyframes sdash-blink{0%,60%,100%{opacity:0.3;}30%{opacity:1;}}
+  @media(max-width:768px){.sherpa-dash-wrap{flex-direction:column;height:auto;}.sdash-sidebar{width:100%;height:200px;border-right:none;border-bottom:1px solid #f0ede8;}.sdash-conv-list{display:flex;overflow-y:hidden;overflow-x:auto;gap:0;}.sdash-conv-item{min-width:180px;border-bottom:none;border-right:1px solid #f0ede8;}.sdash-main{height:500px;}.sdash-bubble{max-width:90%;}}
+  </style>
+
+  <div class="sh"><span class="sh-title">🏔️ Sherpa AI — Travel Assistant</span><div class="sh-rule"></div></div>
+
+  <div class="sherpa-dash-wrap">
+
+    <!-- Sidebar: conversation list -->
+    <div class="sdash-sidebar">
+      <div class="sdash-sidebar-hd">
+        <h3>Chat History</h3>
+        <p>Your saved conversations</p>
+      </div>
+      <button class="sdash-new-btn" id="sdash-new-btn">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="white"><path d="M19 13H13v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+        New Conversation
+      </button>
+      <div class="sdash-conv-list" id="sdash-conv-list">
+        <div style="padding:20px;text-align:center;font-size:13px;color:#aaa;">Loading…</div>
+      </div>
+    </div>
+
+    <!-- Main chat area -->
+    <div class="sdash-main">
+      <div class="sdash-chat-hd">
+        <div>
+          <div class="sdash-chat-hd-title" id="sdash-chat-title">Sherpa AI</div>
+          <div class="sdash-chat-hd-sub" id="sdash-chat-sub">Start a conversation or pick one from the left</div>
+        </div>
+        <div style="display:flex;gap:8px;">
+          <select id="sdash-lang" style="border:1px solid #e2d8cc;border-radius:6px;padding:6px 10px;font-size:12px;font-family:var(--ff-body);background:#fff;color:var(--stone);cursor:pointer;">
+            <option value="english">🌐 English</option>
+            <option value="nepali">🇳🇵 Nepali</option>
+            <option value="hindi">🇮🇳 Hindi</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="sdash-messages" id="sdash-messages">
+        <div class="sdash-empty" id="sdash-empty">
+          <div class="sdash-empty-icon">🏔️</div>
+          <h3>Namaste, <?php echo $userName; ?>!</h3>
+          <p>Ask Sherpa anything about Nepal travel — trekking routes, budget planning, cultural experiences, and more.</p>
+        </div>
+      </div>
+
+      <!-- Quick suggestion chips -->
+      <div class="sdash-sugg-row" id="sdash-sugg-row">
+        <button class="sdash-sugg-btn" onclick="sdashSend('Plan a 7-day Everest Base Camp trek')">🏔️ Everest trek plan</button>
+        <button class="sdash-sugg-btn" onclick="sdashSend('Best places in Kathmandu valley')">🏙️ Kathmandu guide</button>
+        <button class="sdash-sugg-btn" onclick="sdashSend('Budget trip Nepal under $500')">💰 Budget tips</button>
+        <button class="sdash-sugg-btn" onclick="sdashSend('Pokhara 3-day itinerary')">🌊 Pokhara trip</button>
+      </div>
+
+      <div class="sdash-input-row">
+        <textarea class="sdash-input" id="sdash-input" placeholder="Ask Sherpa about Nepal travel…" rows="1"></textarea>
+        <button class="sdash-send-btn" id="sdash-send-btn" onclick="sdashSend()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+          Send
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script>
+  (function(){
+    const HIST = '/Nepal-Travel/user/chatbot_history_api.php';
+    const API  = '/Nepal-Travel/user/chatbot_api.php';
+    const USER_NAME = <?php echo json_encode($userName); ?>;
+    let convId = null, msgs = [], streaming = false, lang = 'english';
+
+    const listEl  = document.getElementById('sdash-conv-list');
+    const msgsEl  = document.getElementById('sdash-messages');
+    const inputEl = document.getElementById('sdash-input');
+    const sendBtn = document.getElementById('sdash-send-btn');
+    const emptyEl = document.getElementById('sdash-empty');
+    const titleEl = document.getElementById('sdash-chat-title');
+    const subEl   = document.getElementById('sdash-chat-sub');
+    const langSel = document.getElementById('sdash-lang');
+    const suggRow = document.getElementById('sdash-sugg-row');
+
+    langSel.addEventListener('change', e => lang = e.target.value);
+
+    // ── Load history ──────────────────────────────────────────────────────
+    async function loadHistory() {
+      listEl.innerHTML = '<div style="padding:16px;text-align:center;font-size:13px;color:#aaa;">Loading…</div>';
+      const res  = await fetch(HIST + '?action=list_conversations').catch(() => null);
+      if (!res || !res.ok) { listEl.innerHTML = '<div style="padding:16px;font-size:13px;color:#aaa;text-align:center;">Could not load history.</div>'; return; }
+      const data = await res.json();
+      if (!data.success || !data.conversations.length) {
+        listEl.innerHTML = '<div style="padding:20px;text-align:center;font-size:12px;color:#aaa;">No conversations yet.<br>Start a new chat!</div>';
+        return;
+      }
+      listEl.innerHTML = '';
+      data.conversations.forEach(c => {
+        const item = document.createElement('div');
+        item.className = 'sdash-conv-item' + (c.id == convId ? ' active' : '');
+        item.dataset.id = c.id;
+        const date = new Date(c.updated_at).toLocaleDateString('en-US',{month:'short',day:'numeric'});
+        const preview = (c.last_message || '').substring(0,50);
+        item.innerHTML = `
+          <div class="sdash-conv-title">${esc(c.title)}</div>
+          <div class="sdash-conv-preview">${esc(preview) || 'No messages yet'}</div>
+          <div class="sdash-conv-date">${date} &middot; ${c.msg_count} msg${c.msg_count!=1?'s':''}</div>
+          <button class="sdash-del-btn" data-id="${c.id}" title="Delete">🗑</button>`;
+        item.addEventListener('click', e => { if(e.target.closest('.sdash-del-btn')) return; loadConv(c.id, c.title); });
+        item.querySelector('.sdash-del-btn').addEventListener('click', e => { e.stopPropagation(); delConv(c.id, item); });
+        listEl.appendChild(item);
+      });
+    }
+
+    // ── Load conversation ─────────────────────────────────────────────────
+    async function loadConv(id, title) {
+      convId = id; msgs = [];
+      msgsEl.innerHTML = '';
+      if(emptyEl) emptyEl.style.display = 'none';
+      suggRow.style.display = 'none';
+      titleEl.textContent = title;
+      subEl.textContent   = 'Loading messages…';
+      listEl.querySelectorAll('.sdash-conv-item').forEach(el => {
+        el.classList.toggle('active', el.dataset.id == id);
+      });
+      const res  = await fetch(HIST + `?action=get_messages&conversation_id=${id}`).catch(() => null);
+      if (!res || !res.ok) { subEl.textContent = 'Failed to load.'; return; }
+      const data = await res.json();
+      if (!data.success) { subEl.textContent = 'Error loading.'; return; }
+      data.messages.forEach(m => {
+        msgs.push({role: m.role, content: m.content});
+        appendMsg(m.role, m.content, new Date(m.created_at));
+      });
+      subEl.textContent = `${data.messages.length} message${data.messages.length!=1?'s':''} — click Send to continue`;
+      if (data.conversation.language) lang = data.conversation.language;
+      langSel.value = lang;
+    }
+
+    // ── Delete conversation ───────────────────────────────────────────────
+    async function delConv(id, el) {
+      if (!confirm('Delete this conversation?')) return;
+      const res = await fetch(HIST + '?action=delete_conversation', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({conversation_id: id})
+      }).catch(()=>null);
+      const data = res ? await res.json() : null;
+      if (data && data.success) {
+        el.remove();
+        if (id == convId) newChat();
+        if (!listEl.children.length) listEl.innerHTML = '<div style="padding:20px;text-align:center;font-size:12px;color:#aaa;">No conversations yet.</div>';
+      }
+    }
+
+    // ── New chat ──────────────────────────────────────────────────────────
+    function newChat() {
+      convId = null; msgs = [];
+      msgsEl.innerHTML = '';
+      if(emptyEl){ emptyEl.style.display='flex'; }
+      else {
+        msgsEl.innerHTML = `<div class="sdash-empty"><div class="sdash-empty-icon">🏔️</div><h3>Namaste, ${esc(USER_NAME)}!</h3><p>Ask Sherpa anything about Nepal travel.</p></div>`;
+      }
+      suggRow.style.display = 'flex';
+      titleEl.textContent = 'Sherpa AI';
+      subEl.textContent   = 'Start a conversation or pick one from the left';
+      listEl.querySelectorAll('.sdash-conv-item').forEach(el => el.classList.remove('active'));
+      inputEl.focus();
+    }
+
+    document.getElementById('sdash-new-btn').addEventListener('click', newChat);
+
+    // ── Send message ──────────────────────────────────────────────────────
+    window.sdashSend = async function(text) {
+      text = (text || inputEl.value).trim();
+      if (!text || streaming) return;
+      inputEl.value = ''; inputEl.style.height = 'auto';
+      if(emptyEl) emptyEl.style.display = 'none';
+      suggRow.style.display = 'none';
+      streaming = true; sendBtn.disabled = true; inputEl.disabled = true;
+
+      // Create conversation if none
+      if (!convId) {
+        const title = text.substring(0,60) + (text.length>60?'…':'');
+        const cr = await fetch(HIST + '?action=create_conversation', {
+          method:'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({title, language: lang})
+        }).catch(()=>null);
+        if (cr && cr.ok) { const cd = await cr.json(); if(cd.success) convId = cd.conversation_id; }
+        titleEl.textContent = title;
+        subEl.textContent   = 'New conversation';
+      }
+
+      msgs.push({role:'user', content:text});
+      appendMsg('user', text);
+
+      // Save user msg
+      if (convId) fetch(HIST+'?action=save_message',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({conversation_id:convId,role:'user',content:text})}).catch(()=>{});
+
+      // Thinking indicator
+      const thinkWrap = document.createElement('div');
+      thinkWrap.className = 'sdash-msg-wrap sdash-msg-wrap--assistant';
+      thinkWrap.innerHTML = '<div class="sdash-bubble sdash-bubble--assistant"><div class="sdash-loading-dots"><div class="sdash-dot"></div><div class="sdash-dot"></div><div class="sdash-dot"></div></div></div>';
+      msgsEl.appendChild(thinkWrap);
+      msgsEl.scrollTop = msgsEl.scrollHeight;
+
+      // Stream
+      let full = '';
+      try {
+        const payload = {messages: msgs.filter(m=>m.role!=='system'), language: lang, conversation_id: convId};
+        const res = await fetch(API, {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+        if (res.status === 401) { thinkWrap.remove(); window.location.href='/Nepal-Travel/user/login.php'; return; }
+        thinkWrap.remove();
+
+        const bubbleWrap = document.createElement('div');
+        bubbleWrap.className = 'sdash-msg-wrap sdash-msg-wrap--assistant';
+        const bubble = document.createElement('div');
+        bubble.className = 'sdash-bubble sdash-bubble--assistant sdash-markdown';
+        bubbleWrap.appendChild(bubble);
+        msgsEl.appendChild(bubbleWrap);
+
+        const reader  = res.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer    = '';
+        while(true) {
+          const {done, value} = await reader.read();
+          if(done) break;
+          buffer += decoder.decode(value, {stream:true});
+          const lines = buffer.split('\n'); buffer = lines.pop();
+          for(const line of lines) {
+            if(!line.startsWith('data:')) continue;
+            const raw = line.slice(5).trim();
+            if(raw==='[DONE]') break;
+            try {
+              const p = JSON.parse(raw);
+              const delta = p.choices?.[0]?.delta?.content;
+              if(delta){ full+=delta; bubble.innerHTML = typeof marked!=='undefined' ? marked.parse(full) : full.replace(/\n/g,'<br>'); msgsEl.scrollTop=msgsEl.scrollHeight; }
+            } catch(_){}
+          }
+        }
+        // Meta row
+        const meta = document.createElement('div');
+        meta.className='sdash-meta';
+        meta.textContent = new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+        bubbleWrap.appendChild(meta);
+
+        if(full){
+          msgs.push({role:'assistant',content:full});
+          if(convId) fetch(HIST+'?action=save_message',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({conversation_id:convId,role:'assistant',content:full})}).catch(()=>{});
+        }
+        subEl.textContent = `${msgs.filter(m=>m.role==='user').length} message${msgs.filter(m=>m.role==='user').length!=1?'s':''} — click Send to continue`;
+        loadHistory();
+      } catch(e) {
+        if(thinkWrap.parentElement) thinkWrap.remove();
+        appendMsg('assistant', '⚠️ Connection error. Please try again.');
+      } finally {
+        streaming=false; sendBtn.disabled=false; inputEl.disabled=false; inputEl.focus();
+      }
+    };
+
+    // ── Append message ────────────────────────────────────────────────────
+    function appendMsg(role, content, dateObj) {
+      const wrap = document.createElement('div');
+      wrap.className = `sdash-msg-wrap sdash-msg-wrap--${role}`;
+      const bubble = document.createElement('div');
+      bubble.className = `sdash-bubble sdash-bubble--${role}${role==='assistant'?' sdash-markdown':''}`;
+      if(role==='assistant') bubble.innerHTML = typeof marked!=='undefined' ? marked.parse(content) : content.replace(/\n/g,'<br>');
+      else bubble.textContent = content;
+      const meta = document.createElement('div');
+      meta.className='sdash-meta';
+      const ts = dateObj || new Date();
+      meta.textContent = ts.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+      wrap.appendChild(bubble); wrap.appendChild(meta);
+      msgsEl.appendChild(wrap);
+      msgsEl.scrollTop = msgsEl.scrollHeight;
+    }
+
+    function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+    // ── Input auto-resize ─────────────────────────────────────────────────
+    inputEl.addEventListener('keydown', e => { if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sdashSend();} });
+    inputEl.addEventListener('input', () => { inputEl.style.height='auto'; inputEl.style.height=Math.min(inputEl.scrollHeight,100)+'px'; });
+
+    loadHistory();
+  })();
+  </script>
+
 <?php endif; ?>
 
 </div><!-- /content -->
 
-<!-- ══ DELETE ACCOUNT MODAL ═══════════════════════════════════════════════ -->
+<!-- ── CONFIRM CANCEL MINI-MODAL ───────────────────────────────────────────── -->
+<div class="confirm-overlay" id="confirmOverlay">
+  <div class="confirm-box">
+    <h3>Cancel this booking?</h3>
+    <p>This will mark the booking as cancelled. You will need to re-book if you change your mind.</p>
+    <div class="confirm-btns">
+      <button type="button" class="cb-keep" id="confirmKeep">Keep it</button>
+      <button type="button" class="cb-yes"  id="confirmYes">Yes, cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- DELETE ACCOUNT MODAL -->
 <div class="modal-overlay" id="deleteModal">
   <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="delModalTitle">
-
     <div class="modal-head">
       <div class="modal-head-icon">
         <svg viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
@@ -794,34 +1306,23 @@ table.bkt tr:hover td{background:rgba(247,244,239,0.8)}
       <h2 id="delModalTitle">Delete Your Account</h2>
       <p>You are about to permanently delete your account. This action is <strong>irreversible</strong> — once done, there is no recovery.</p>
     </div>
-
     <ul class="modal-warns">
       <li>Your profile and personal information will be erased</li>
       <li>All your bookings will be permanently deleted</li>
       <li>Your uploaded profile photo will be removed</li>
       <li>Your saved places will be lost</li>
     </ul>
-
     <form method="POST" action="/Nepal-Travel/user/delete_account.php" id="deleteAccountForm">
       <div class="modal-body">
         <label class="flbl" for="deletePasswordInput">Enter your password to confirm deletion</label>
         <div class="del-pw-wrap">
-          <input
-            type="password"
-            name="delete_password"
-            id="deletePasswordInput"
-            class="fin"
-            placeholder="Your current password"
-            autocomplete="current-password"
-            style="border-color:rgba(192,57,43,0.35);"
-          >
+          <input type="password" name="delete_password" id="deletePasswordInput" class="fin" placeholder="Your current password" autocomplete="current-password" style="border-color:rgba(192,57,43,0.35);">
           <button type="button" class="del-pw-toggle" id="delPwToggle" title="Show/hide password">
             <svg id="delEyeIcon" viewBox="0 0 24 24"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
           </button>
         </div>
         <p class="del-error" id="delError">Please enter your password before proceeding.</p>
       </div>
-
       <div class="modal-footer">
         <button type="button" class="btn-cancel-modal" id="closeDeleteModal">Keep My Account</button>
         <button type="submit" class="btn-delete-confirm" id="delSubmitBtn">
@@ -830,7 +1331,6 @@ table.bkt tr:hover td{background:rgba(247,244,239,0.8)}
         </button>
       </div>
     </form>
-
   </div>
 </div>
 
@@ -838,18 +1338,139 @@ table.bkt tr:hover td{background:rgba(247,244,239,0.8)}
 
 <script>
 (function(){
+
+  /* ── TOAST ──────────────────────────────────────────────────────────── */
+  const toast = document.getElementById('toast');
+  function showToast(msg, type) {
+    toast.textContent = msg;
+    toast.className = 'toast ' + (type || '') + ' show';
+    clearTimeout(toast._t);
+    toast._t = setTimeout(() => toast.classList.remove('show'), 3800);
+  }
+
+  /* ── ANIMATE HERO STAT NUMBER ───────────────────────────────────────── */
+  function animateStat(el, newVal) {
+    if (!el) return;
+    const startVal = parseInt(el.textContent, 10) || 0;
+    if (startVal === newVal) return;
+
+    // Brief pop animation
+    el.classList.add('pop');
+    setTimeout(() => el.classList.remove('pop'), 400);
+
+    // Count-down / count-up
+    const duration = 600;
+    const startTime = performance.now();
+    function tick(now) {
+      const elapsed = now - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      // ease-out
+      const eased = 1 - Math.pow(1 - progress, 3);
+      el.textContent = Math.round(startVal + (newVal - startVal) * eased);
+      if (progress < 1) requestAnimationFrame(tick);
+      else el.textContent = newVal;
+    }
+    requestAnimationFrame(tick);
+  }
+
+  /* ── AJAX BOOKING CANCEL ────────────────────────────────────────────── */
+  const confirmOverlay = document.getElementById('confirmOverlay');
+  const confirmYes     = document.getElementById('confirmYes');
+  const confirmKeep    = document.getElementById('confirmKeep');
+  let   pendingCancelId = null;
+
+  // Open mini-confirm when any Cancel button clicked
+  document.addEventListener('click', function(e) {
+    const btn = e.target.closest('.js-cancel-btn');
+    if (!btn) return;
+    pendingCancelId = btn.dataset.id;
+    confirmOverlay.classList.add('open');
+    confirmYes.disabled = false;
+    confirmYes.textContent = 'Yes, cancel';
+  });
+
+  // Close on overlay backdrop click or Keep button
+  confirmKeep.addEventListener('click', closeConfirm);
+  confirmOverlay.addEventListener('click', function(e) {
+    if (e.target === confirmOverlay) closeConfirm();
+  });
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape' && confirmOverlay.classList.contains('open')) closeConfirm();
+  });
+
+  function closeConfirm() {
+    confirmOverlay.classList.remove('open');
+    pendingCancelId = null;
+  }
+
+  // Confirmed — fire AJAX cancel
+  confirmYes.addEventListener('click', function() {
+    if (!pendingCancelId) return;
+    const bookingId = pendingCancelId;
+
+    confirmYes.disabled = true;
+    confirmYes.textContent = 'Cancelling…';
+
+    const fd = new FormData();
+    fd.append('booking_action', 'cancel');
+    fd.append('booking_id', bookingId);
+
+    fetch(window.location.href, {
+      method: 'POST',
+      headers: { 'X-Requested-With': 'XMLHttpRequest' },
+      body: fd
+    })
+    .then(r => r.json())
+    .then(data => {
+      closeConfirm();
+
+      if (data.success) {
+        // 1. Update status pill in table row
+        const pill = document.getElementById('pill-' + bookingId);
+        if (pill) {
+          pill.className = 'pill pill-cancelled';
+          pill.textContent = 'Cancelled';
+        }
+
+        // 2. Remove the Cancel button, keep Ticket button intact
+        const btn = document.querySelector('.js-cancel-btn[data-id="' + bookingId + '"]');
+        if (btn) btn.remove();
+
+        // 3. Briefly dim the row
+        const row = document.getElementById('bk-row-' + bookingId);
+        if (row) {
+          row.classList.add('cancelling');
+          setTimeout(() => row.classList.remove('cancelling'), 700);
+        }
+
+        // 4. Animate hero stats — update Bookings count + Trips Taken
+        const statBookings = document.getElementById('stat-bookings');
+        const statTrips    = document.getElementById('stat-trips');
+        if (statBookings) animateStat(statBookings, data.newTotal);
+        if (statTrips)    animateStat(statTrips, data.newPaidTrips);
+
+        showToast('Booking cancelled successfully.', 'success');
+      } else {
+        showToast(data.message || 'Could not cancel booking.', 'error');
+      }
+    })
+    .catch(() => {
+      closeConfirm();
+      showToast('Network error — please try again.', 'error');
+    });
+  });
+
   /* ── PROFILE PHOTO UPLOAD ───────────────────────────────────────────── */
   const pfInput  = document.getElementById('pfInput');
   const tbAvatar = document.getElementById('tbAvatar');
   const tbImg    = document.getElementById('tbAvatarImg');
   const spin     = document.getElementById('uploadSpin');
-  const toast    = document.getElementById('toast');
   const pcAvs    = document.querySelectorAll('.pc-av');
 
   pfInput.addEventListener('change', function(){
     if (!this.files || !this.files[0]) return;
     const file = this.files[0];
-    if (file.size > 5*1024*1024){ showToast('File too large — max 5 MB.','error'); return; }
+    if (file.size > 5*1024*1024) { showToast('File too large — max 5 MB.', 'error'); return; }
 
     const reader = new FileReader();
     reader.onload = e => {
@@ -859,13 +1480,13 @@ table.bkt tr:hover td{background:rgba(247,244,239,0.8)}
       }
       pcAvs.forEach(a => {
         let img = a.querySelector('img');
-        if (!img){
+        if (!img) {
           const ov = a.querySelector('.pc-av-overlay');
           a.innerHTML = '';
           img = document.createElement('img');
           img.style.cssText = 'width:100%;height:100%;object-fit:cover';
           a.appendChild(img);
-          if(ov) a.appendChild(ov);
+          if (ov) a.appendChild(ov);
         }
         img.src = e.target.result;
       });
@@ -873,15 +1494,15 @@ table.bkt tr:hover td{background:rgba(247,244,239,0.8)}
     reader.readAsDataURL(file);
 
     spin.classList.add('on');
-    const fd = new FormData(); fd.append('profile_image', file);
-    fetch('/Nepal-Travel/user/upload_profile.php',{method:'POST',body:fd})
-      .then(r=>r.json())
-      .then(d=>{
+    const fd2 = new FormData(); fd2.append('profile_image', file);
+    fetch('/Nepal-Travel/user/upload_profile.php', { method:'POST', body:fd2 })
+      .then(r => r.json())
+      .then(d => {
         spin.classList.remove('on');
-        showToast(d.success ? 'Profile photo updated!' : (d.message||'Upload failed.'), d.success?'success':'error');
+        showToast(d.success ? 'Profile photo updated!' : (d.message || 'Upload failed.'), d.success ? 'success' : 'error');
       })
-      .catch(e=>{ spin.classList.remove('on'); showToast(e.message||'Upload failed.','error'); });
-    this.value='';
+      .catch(err => { spin.classList.remove('on'); showToast(err.message || 'Upload failed.', 'error'); });
+    this.value = '';
   });
 
   /* ── DELETE MODAL ───────────────────────────────────────────────────── */
@@ -896,69 +1517,58 @@ table.bkt tr:hover td{background:rgba(247,244,239,0.8)}
   const delPwToggle  = document.getElementById('delPwToggle');
   const delEyeIcon   = document.getElementById('delEyeIcon');
 
-  // Eye icon paths
   const eyeOpen  = 'M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z';
   const eyeClosed = 'M19.07 14.93A9.93 9.93 0 0 0 21 12C19.27 7.61 15 4.5 10 4.5c-1.31 0-2.56.24-3.72.67l1.53 1.53A7.5 7.5 0 0 1 10 6c3.86 0 7.13 2.33 8.66 5.7-.46 1.01-1.1 1.92-1.87 2.69l1.28 1.54zM14.54 9.47l-1.54-1.54A3 3 0 0 0 9.07 11.93l1.54 1.54A3 3 0 0 0 14.54 9.47zM3 4.27l1.45 1.45A9.96 9.96 0 0 0 1 12c1.73 4.39 6 7.5 11 7.5 1.68 0 3.28-.37 4.72-1.02L18.73 20.5 20 19.27 4.27 3 3 4.27zm7 7l1.26 1.26A1.5 1.5 0 0 1 10 13.5a1.5 1.5 0 0 1-1.5-1.5 1.5 1.5 0 0 1 .5-1.23zm4.14 4.14-.71-.7A3 3 0 0 1 10 15a3 3 0 0 1-3-3 3 3 0 0 1 .29-1.26l-.7-.71A4.5 4.5 0 0 0 10 16.5a4.5 4.5 0 0 0 3.14-1.09z';
 
-  function openModal(){
+  function openDeleteModal() {
     modal.classList.add('open');
     delPwInput.value = '';
     delError.classList.remove('show');
     delSubmitBtn.disabled = false;
     delBtnLabel.textContent = 'Yes, Delete Forever';
-    setTimeout(()=>delPwInput.focus(), 120);
+    setTimeout(() => delPwInput.focus(), 120);
   }
+  function closeDeleteModal() { modal.classList.remove('open'); }
 
-  function closeModal(){
-    modal.classList.remove('open');
-  }
-
-  if (openBtn)  openBtn.addEventListener('click', openModal);
-  if (closeBtn) closeBtn.addEventListener('click', closeModal);
-
-  // Close on backdrop click
-  modal.addEventListener('click', function(e){
-    if (e.target === modal) closeModal();
+  if (openBtn)  openBtn.addEventListener('click', openDeleteModal);
+  if (closeBtn) closeBtn.addEventListener('click', closeDeleteModal);
+  modal.addEventListener('click', function(e) { if (e.target === modal) closeDeleteModal(); });
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape' && modal.classList.contains('open')) closeDeleteModal();
   });
 
-  // Close on Escape
-  document.addEventListener('keydown', function(e){
-    if (e.key === 'Escape' && modal.classList.contains('open')) closeModal();
-  });
-
-  // Show/hide password toggle
-  delPwToggle.addEventListener('click', function(){
+  delPwToggle.addEventListener('click', function() {
     const isPass = delPwInput.type === 'password';
     delPwInput.type = isPass ? 'text' : 'password';
     delEyeIcon.querySelector('path').setAttribute('d', isPass ? eyeClosed : eyeOpen);
     delPwInput.focus();
   });
 
-  // Form submit guard
-  delForm.addEventListener('submit', function(e){
-    if (!delPwInput.value.trim()) {
-      e.preventDefault();
-      delError.classList.add('show');
-      delPwInput.focus();
-      return;
-    }
-    delError.classList.remove('show');
-    delSubmitBtn.disabled = true;
-    delBtnLabel.textContent = 'Deleting…';
-  });
-
-  // Clear error on typing
-  delPwInput.addEventListener('input', function(){
-    if (this.value.trim()) delError.classList.remove('show');
-  });
-
-  /* ── TOAST ──────────────────────────────────────────────────────────── */
-  function showToast(msg, type){
-    toast.textContent = msg;
-    toast.className = 'toast ' + type + ' show';
-    setTimeout(()=>toast.classList.remove('show'), 3500);
+  if (delForm) {
+    delForm.addEventListener('submit', function(e) {
+      if (!delPwInput.value.trim()) {
+        e.preventDefault();
+        delError.classList.add('show');
+        delPwInput.focus();
+        return;
+      }
+      delError.classList.remove('show');
+      delSubmitBtn.disabled = true;
+      delBtnLabel.textContent = 'Deleting…';
+    });
   }
+
+  if (delPwInput) {
+    delPwInput.addEventListener('input', function() {
+      if (this.value.trim()) delError.classList.remove('show');
+    });
+  }
+
 })();
 </script>
+
+<!-- Sherpa AI chatbot widget (floating, for all tabs) -->
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script src="/Nepal-Travel/assets/js/chatbot.js"></script>
 </body>
 </html>

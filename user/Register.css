@@ -1,197 +1,269 @@
-html,
-body {
-  height: 100%;
+/* =============================================
+   NEPAL TRAVEL — REGISTER PAGE
+   Fully Responsive: Mobile → Tablet → Desktop → Mac/4K
+   ============================================= */
+
+/* ---------- RESET & BASE ---------- */
+*, *::before, *::after {
+  box-sizing: border-box;
   margin: 0;
+  padding: 0;
+}
+
+html, body {
+  height: 100%;
+  min-height: 100%;
 }
 
 body {
-  font-family: Arial, sans-serif;
+  font-family: 'Georgia', 'Times New Roman', serif;
   background-image: url("mountain.jpg");
   background-position: center;
   background-repeat: no-repeat;
   background-size: cover;
+  background-attachment: fixed;
+  min-height: 100vh;
 }
 
+/* ---------- MAIN CONTAINER ---------- */
 .container {
   display: flex;
-  height: 100%;
+  min-height: 100vh;
   width: 100%;
-  background: transparent;
+  position: relative;
 }
 
-/* MAIN CONTAINER */
-.container {
-  display: flex;
-  height: 100vh;
-}
-
-/* LEFT SIDE (GLASS EFFECT) */
+/* ---------- LEFT PANEL (GLASS FORM) ---------- */
 .left-panel {
-  width: 35%;
-  background: rgba(255, 255, 255, 0.08);
-  backdrop-filter: blur(15px);
-  -webkit-backdrop-filter: blur(15px);
+  width: 38%;
+  min-width: 320px;
+  max-width: 520px;
+  background: rgba(255, 255, 255, 0.10);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   display: flex;
   justify-content: center;
-  align-items: center;
+  align-items: flex-start;
+  padding: 40px 20px;
+  overflow-y: auto;
+  z-index: 10;
+  border-right: 1px solid rgba(255, 255, 255, 0.15);
 }
 
-/* FORM BOX */
+/* ---------- FORM BOX ---------- */
 .form-box {
-  width: 300px;
-  color: #000;
+  width: 100%;
+  max-width: 340px;
+  color: #111;
+  padding: 0 8px;
 }
 
-/* TITLE */
+/* ---------- TITLE ---------- */
 .form-box h1 {
   color: wheat;
-  font-size: 40px;
-  margin-bottom: 10px;
+  font-size: clamp(28px, 4vw, 44px);
+  font-weight: 700;
+  letter-spacing: 1px;
+  margin-bottom: 8px;
+  text-shadow: 0 2px 12px rgba(0,0,0,0.3);
+  font-family: 'Times New Roman', Georgia, serif;
 }
 
-/* LOGIN TEXT */
+/* ---------- LOGIN TEXT ---------- */
 .login-text {
-  font-size: 14px;
-  margin-bottom: 20px;
+  font-size: 13px;
+  margin-bottom: 22px;
+  color: rgba(255,255,255,0.85);
 }
 
 .login-text a {
   color: wheat;
   font-weight: bold;
   text-decoration: none;
+  transition: color 0.2s;
+}
+.login-text a:hover {
+  color: #fff;
+  text-decoration: underline;
 }
 
-/* FORM BOX */
-.form-box {
-  width: 320px;
-  color: #000;
-}
-
+/* ---------- SOCIAL BUTTONS ---------- */
 .social-buttons {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  margin-bottom: 20px;
+  margin-bottom: 18px;
   width: 100%;
 }
 
 #googleButtonContainer {
   width: 100%;
 }
-
 #googleButtonContainer > div {
   width: 100% !important;
 }
-
 #googleButtonContainer iframe {
   width: 100% !important;
 }
 
 .social-btn {
-  width: 300px;
-  height: 40px;
+  width: 100%;
+  height: 44px;
   padding: 0 16px;
-  border-radius: 4px;
+  border-radius: 6px;
   border: 1px solid #dadce0;
   background: blueviolet;
-  color: #3c4043;
+  color: white;
   cursor: pointer;
   font-size: 14px;
   font-weight: 500;
   text-align: center;
-  box-sizing: border-box;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 10px;
+  transition: background 0.2s, opacity 0.2s;
+}
+.social-btn:hover {
+  opacity: 0.88;
 }
 
 .facebook {
-  background: rgba(59, 89, 152, 0.8);
+  background: rgba(59, 89, 152, 0.85);
   color: white;
-  border: 1px solid #dadce0;
+  border: 1px solid rgba(255,255,255,0.2);
+}
+.facebook:hover {
+  background: rgba(59, 89, 152, 1);
 }
 
-/* DIVIDER */
+/* ---------- DIVIDER ---------- */
 .divider {
   text-align: center;
-  margin: 20px 0;
-  color: #555;
+  margin: 16px 0;
+  color: rgba(255,255,255,0.6);
+  font-size: 13px;
+  position: relative;
+}
+.divider::before,
+.divider::after {
+  content: '';
+  display: inline-block;
+  width: 38%;
+  height: 1px;
+  background: rgba(255,255,255,0.25);
+  vertical-align: middle;
+  margin: 0 8px;
 }
 
-/* INPUT FIELDS */
+/* ---------- INPUT FIELDS ---------- */
 form input[type="text"],
 form input[type="email"],
 form input[type="password"] {
   width: 100%;
-  padding: 16px 18px;
-  margin-bottom: 15px;
-  font-size: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.6);
+  padding: 13px 16px;
+  margin-bottom: 12px;
+  font-size: 15px;
+  border: 1px solid rgba(255, 255, 255, 0.5);
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.3);
-  color: #000;
+  background: rgba(255, 255, 255, 0.28);
+  color: #111;
   outline: none;
-  box-sizing: border-box;
+  transition: border-color 0.2s, background 0.2s;
+  font-family: inherit;
 }
-form input[type="text"]::placeholder,
-form input[type="email"]::placeholder,
-form input[type="password"]::placeholder {
-  color: #555;
+form input[type="text"]:focus,
+form input[type="email"]:focus,
+form input[type="password"]:focus {
+  border-color: rgba(255, 255, 255, 0.85);
+  background: rgba(255, 255, 255, 0.38);
+}
+form input::placeholder {
+  color: rgba(0,0,0,0.45);
 }
 
-/* TERMS CHECKBOX — fixed alignment */
+small {
+  display: block;
+  font-size: 11px;
+  color: #f87171;
+  margin-top: -8px;
+  margin-bottom: 8px;
+  min-height: 14px;
+}
+
+/* ---------- TERMS ---------- */
 .terms {
   display: flex;
-  align-items: center;
-  gap: 10px;
-  font-size: 13px;
-  margin-bottom: 15px;
-  color: #333;
-  cursor: pointer;
-  line-height: 1.4;
+  align-items: flex-start;
+  gap: 8px;
+  flex-wrap: wrap;
+  font-size: 12.5px;
+  color: rgba(255,255,255,0.85);
+  margin: 10px 0 14px;
+  line-height: 1.5;
 }
-
+.terms a {
+  color: wheat;
+  text-decoration: underline;
+  white-space: nowrap;
+}
+.terms a:hover {
+  color: #fff;
+}
 .terms input[type="checkbox"] {
-  width: 16px;
-  height: 16px;
-  min-width: 16px;
-  min-height: 16px;
-  margin: 0;
-  padding: 0;
   flex-shrink: 0;
+  width: 15px;
+  height: 15px;
   cursor: pointer;
+  margin-top: 2px;
   accent-color: #0e4d1d;
-  border-radius: 3px;
-  box-sizing: border-box;
 }
 
-.terms span {
-  line-height: 1.4;
-}
-
-/* BUTTON */
+/* ---------- SUBMIT BUTTON ---------- */
 .create-btn {
   width: 100%;
-  height: 52px;
+  height: 50px;
   padding: 0;
-  font-size: 16px;
+  font-size: 15px;
+  font-weight: 600;
   border-radius: 8px;
   background: #0e4d1d;
   color: white;
   border: none;
   cursor: pointer;
-  box-sizing: border-box;
-  display: block;
+  letter-spacing: 0.5px;
+  transition: background 0.2s, transform 0.1s;
+  font-family: inherit;
 }
-
 .create-btn:hover {
   background: #0a3a15;
 }
+.create-btn:active {
+  transform: scale(0.98);
+}
 
-/* RIGHT SIDE */
+/* ---------- SPINNER ---------- */
+.spinner-box {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 14px;
+}
+.spinner {
+  width: 32px;
+  height: 32px;
+  border: 4px solid rgba(255,255,255,0.25);
+  border-top: 4px solid #fff;
+  border-radius: 50%;
+  animation: spin 0.75s linear infinite;
+}
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ---------- RIGHT PANEL ---------- */
 .right-panel {
-  width: 100%;
+  flex: 1;
   background: transparent;
   position: relative;
   display: flex;
@@ -199,11 +271,11 @@ form input[type="password"]::placeholder {
   align-items: center;
 }
 
-/* TEXT OVER IMAGE */
+/* ---------- OVERLAY TEXT ---------- */
 .overlay-text {
   position: absolute;
   top: 50%;
-  left: 69%;
+  left: 55%;
   transform: translate(-50%, -50%);
   display: flex;
   flex-direction: column;
@@ -211,84 +283,242 @@ form input[type="password"]::placeholder {
   justify-content: center;
   color: white;
   text-align: center;
-  text-shadow: 2px 2px 15px rgba(0, 0, 0, 0.7);
+  text-shadow: 2px 2px 20px rgba(0, 0, 0, 0.65);
+  pointer-events: none;
+  white-space: nowrap;
 }
 
 .small-text {
-  font-size: 18px;
-  letter-spacing: 3px;
+  font-size: clamp(13px, 1.5vw, 20px);
+  letter-spacing: clamp(3px, 0.5vw, 5px);
   font-weight: 500;
   animation: floatText 3s ease-in-out infinite;
+  font-family: Arial, sans-serif;
+  text-transform: uppercase;
 }
 
 .big-text {
-  font-size: 70px;
+  font-size: clamp(42px, 7vw, 88px);
   font-weight: bold;
-  letter-spacing: 5px;
-  margin-top: 5px;
-  font-family: "Times New Roman", serif;
+  letter-spacing: clamp(4px, 1vw, 8px);
+  margin-top: 6px;
+  font-family: 'Times New Roman', serif;
   animation: zoomPulse 4s ease-in-out infinite;
 }
 
-@keyframes fadeZoom {
-  from {
-    opacity: 0;
-    transform: scale(0.95);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-
+/* ---------- ANIMATIONS ---------- */
 @keyframes floatText {
-  0% {
-    transform: translateY(0px);
-  }
-  50% {
-    transform: translateY(-8px);
-  }
-  100% {
-    transform: translateY(0px);
-  }
+  0%, 100% { transform: translateY(0); }
+  50%       { transform: translateY(-8px); }
 }
 
 @keyframes zoomPulse {
-  0% {
+  0%, 100% {
     transform: scale(1);
     text-shadow: 2px 2px 15px rgba(0, 0, 0, 0.7);
   }
   50% {
     transform: scale(1.05);
-    text-shadow: 0 0 25px rgba(255, 255, 255, 0.8);
-  }
-  100% {
-    transform: scale(1);
-    text-shadow: 2px 2px 15px rgba(0, 0, 0, 0.7);
+    text-shadow: 0 0 28px rgba(255, 255, 255, 0.85);
   }
 }
 
-.spinner-box {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  margin-top: 12px;
-}
+/* =============================================
+   RESPONSIVE BREAKPOINTS
+   ============================================= */
 
-.spinner {
-  width: 35px;
-  height: 35px;
-  border: 5px solid #d9d9d9;
-  border-top: 5px solid #222;
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
-}
-
-@keyframes spin {
-  from {
-    transform: rotate(0deg);
+/* ---------- LARGE DESKTOPS / IMAC (≥1600px) ---------- */
+@media (min-width: 1600px) {
+  .left-panel {
+    width: 32%;
+    max-width: 580px;
+    padding: 60px 40px;
   }
-  to {
-    transform: rotate(360deg);
+  .form-box {
+    max-width: 380px;
+  }
+  .form-box h1 {
+    font-size: 48px;
+    margin-bottom: 12px;
+  }
+  form input[type="text"],
+  form input[type="email"],
+  form input[type="password"] {
+    padding: 15px 18px;
+    font-size: 16px;
+    margin-bottom: 14px;
+  }
+  .create-btn {
+    height: 54px;
+    font-size: 16px;
+  }
+}
+
+/* ---------- STANDARD DESKTOP (1024px – 1599px) ---------- */
+@media (min-width: 1024px) and (max-width: 1599px) {
+  .left-panel {
+    width: 36%;
+    padding: 48px 30px;
+  }
+}
+
+/* ---------- SMALL LAPTOP / LARGE TABLET LANDSCAPE (768px – 1023px) ---------- */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .left-panel {
+    width: 46%;
+    max-width: none;
+    padding: 36px 24px;
+  }
+  .right-panel {
+    flex: 1;
+  }
+  .overlay-text {
+    left: 60%;
+  }
+  .big-text {
+    font-size: clamp(36px, 6vw, 60px);
+  }
+}
+
+/* ---------- TABLET PORTRAIT (600px – 767px) ---------- */
+@media (min-width: 600px) and (max-width: 767px) {
+  .container {
+    flex-direction: column;
+    min-height: 100vh;
+  }
+  .left-panel {
+    width: 100%;
+    max-width: 100%;
+    min-width: unset;
+    padding: 36px 24px 28px;
+    border-right: none;
+    border-bottom: 1px solid rgba(255,255,255,0.15);
+    align-items: center;
+  }
+  .form-box {
+    max-width: 480px;
+    width: 100%;
+  }
+  .right-panel {
+    flex: 1;
+    min-height: 220px;
+  }
+  .overlay-text {
+    position: relative;
+    top: unset;
+    left: unset;
+    transform: none;
+    padding: 28px 0 24px;
+  }
+  .big-text {
+    font-size: 52px;
+  }
+  .small-text {
+    font-size: 15px;
+  }
+}
+
+/* ---------- MOBILE (< 600px) ---------- */
+@media (max-width: 599px) {
+  body {
+    background-attachment: scroll; /* fixed bg causes bugs on iOS */
+  }
+  .container {
+    flex-direction: column;
+    min-height: 100vh;
+  }
+
+  /* Hero strip at top on mobile */
+  .right-panel {
+    order: -1;
+    width: 100%;
+    min-height: 160px;
+    flex: none;
+  }
+  .overlay-text {
+    position: relative;
+    top: unset;
+    left: unset;
+    transform: none;
+    padding: 28px 16px 20px;
+    white-space: normal;
+  }
+  .big-text {
+    font-size: clamp(36px, 12vw, 52px);
+    letter-spacing: 4px;
+  }
+  .small-text {
+    font-size: 13px;
+    letter-spacing: 3px;
+  }
+
+  /* Form full width */
+  .left-panel {
+    width: 100%;
+    max-width: 100%;
+    min-width: unset;
+    border-right: none;
+    padding: 28px 18px 40px;
+    align-items: center;
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+  }
+  .form-box {
+    max-width: 100%;
+    width: 100%;
+    padding: 0;
+  }
+  .form-box h1 {
+    font-size: 32px;
+  }
+  form input[type="text"],
+  form input[type="email"],
+  form input[type="password"] {
+    padding: 12px 14px;
+    font-size: 16px; /* 16px prevents iOS zoom-in on focus */
+    margin-bottom: 10px;
+  }
+  .social-btn {
+    height: 46px;
+    font-size: 14px;
+  }
+  .create-btn {
+    height: 50px;
+    font-size: 16px;
+  }
+  .terms {
+    font-size: 12px;
+  }
+  .divider {
+    margin: 14px 0;
+  }
+}
+
+/* ---------- SMALL PHONES (< 380px) ---------- */
+@media (max-width: 379px) {
+  .form-box h1 {
+    font-size: 26px;
+  }
+  .left-panel {
+    padding: 20px 14px 36px;
+  }
+  form input[type="text"],
+  form input[type="email"],
+  form input[type="password"] {
+    padding: 11px 12px;
+  }
+  .big-text {
+    font-size: 34px;
+    letter-spacing: 3px;
+  }
+}
+
+/* ---------- PRINT (optional safety) ---------- */
+@media print {
+  .right-panel { display: none; }
+  .left-panel {
+    width: 100%;
+    backdrop-filter: none;
+    background: #fff;
   }
 }

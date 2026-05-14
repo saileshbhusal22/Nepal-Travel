@@ -64,6 +64,13 @@
 
 <body>
 
+<!-- Sherpa AI user session meta (read by chatbot.js) -->
+<span id="sherpa-user-meta" style="display:none"
+  data-logged-in="<?php echo isset($_SESSION['user_id']) ? '1' : '0'; ?>"
+  data-user-id="<?php echo isset($_SESSION['user_id']) ? (int)$_SESSION['user_id'] : ''; ?>"
+  data-user-name="<?php echo isset($_SESSION['user_name']) ? htmlspecialchars($_SESSION['user_name']) : ''; ?>"
+></span>
+
 <?php
     $current_page = basename($_SERVER['PHP_SELF']);
     $is_home      = ($current_page == 'index.php' || $current_page == '');
@@ -175,6 +182,9 @@
     </div>
 </header>
 
+<!-- Markdown library -->
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
 <!-- Markdown configuration -->
 <script>
     marked.setOptions({
@@ -182,9 +192,6 @@
         gfm: true
     });
 </script>
-
-<!-- Markdown library -->
-<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 
 <!-- Chatbot script -->
 <script src="../assets/js/chatbot.js"></script>
