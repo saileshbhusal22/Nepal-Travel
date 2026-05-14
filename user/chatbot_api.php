@@ -58,12 +58,23 @@ try {
         'temperature' => OPENROUTER_TEMPERATURE,
         'max_tokens' => OPENROUTER_MAX_TOKENS,
         'top_p' => 0.9,
-        'frequency_penalty' => 0.5
+        'frequency_penalty' => 0.5,
+        'stream' => true // Enable streaming
     ];
+
+    // Clear output buffer for streaming
+    while (ob_get_level() > 0) {
+        ob_end_clean();
+    }
+
+    // Set streaming headers
+    header('Content-Type: text/event-stream');
+    header('Cache-Control: no-cache');
+    header('Connection: keep-alive');
 
     $ch = curl_init(OPENROUTER_API_URL);
 
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, false); // Important: stream directly to client
     curl_setopt($ch, CURLOPT_TIMEOUT, 180);
     curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 50);
     curl_setopt($ch, CURLOPT_HTTPHEADER, [
@@ -73,61 +84,33 @@ try {
     ]);
     curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($requestData));
 
-    $response = curl_exec($ch);
-    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    // Handle incoming stream chunks and push to client immediately
+    curl_setopt($ch, CURLOPT_WRITEFUNCTION, function($curl, $data) {
+        echo $data;
+        flush(); // Push the data to the browser
+        return strlen($data);
+    });
+
+    curl_exec($ch);
     $curlError = curl_error($ch);
     curl_close($ch);
 
-    // Handle curl errors
+    // Handle curl errors mid-stream
     if ($curlError) {
-        throw new Exception('API Connection Error: ' . $curlError);
+        echo "data: " . json_encode(['error' => 'API Connection Error: ' . $curlError]) . "\n\n";
     }
 
-    // Handle empty response
-    if (empty($response)) {
-        throw new Exception('Empty API response');
-    }
-
-    $result = json_decode($response, true);
-
-    // Handle API errors
-    if ($httpCode !== 200) {
-        $errorMsg = 'API Error (HTTP ' . $httpCode . ')';
-        
-        if (isset($result['error'])) {
-            if (is_array($result['error'])) {
-                $errorMsg = $result['error']['message'] ?? $errorMsg;
-            } else {
-                $errorMsg = $result['error'];
-            }
-        }
-        
-        throw new Exception($errorMsg);
-    }
-
-    // Validate response structure
-    if (!isset($result['choices'][0]['message']['content'])) {
-        throw new Exception('Invalid API response format');
-    }
-
-    $reply = trim($result['choices'][0]['message']['content']);
-
-    // Return successful response
-    ob_end_clean();
-    echo json_encode([
-        'success' => true,
-        'message' => $reply,
-        'conversation_id' => $conversationId,
-        'language' => $language,
-        'timestamp' => date('Y-m-d H:i:s')
-    ]);
+    exit;
 
 } catch (Exception $e) {
-    ob_end_clean();
-    http_response_code(500);
-    echo json_encode([
-        'success' => false,
-        'error' => $e->getMessage(),
-        'timestamp' => date('Y-m-d H:i:s')
-    ]);
+    if (!headers_sent()) {
+        header('Content-Type: application/json');
+        http_response_code(500);
+        echo json_encode([
+            'success' => false,
+            'error' => $e->getMessage()
+        ]);
+    } else {
+        echo "data: " . json_encode(['error' => $e->getMessage()]) . "\n\n";
+    }
 }

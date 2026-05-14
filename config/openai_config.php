@@ -1,10 +1,10 @@
 <?php
 define('OPENROUTER_API_KEY', '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');
 define('OPENROUTER_API_URL', 'https://openrouter.ai/api/v1/chat/completions');
-define('OPENROUTER_MODEL', 'openai/gpt-oss-120b:free');
+define('OPENROUTER_MODEL', 'inclusionai/ring-2.6-1t:free');
 
 define('OPENROUTER_TEMPERATURE', 0.8);
-define('OPENROUTER_MAX_TOKENS', 1200);
+define('OPENROUTER_MAX_TOKENS', 4000);
 
 define('SYSTEM_PROMPT', "
 You are Sherpa 🇳🇵 - Premium Nepal Travel AI Assistant

@@ -10,6 +10,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,400..900;1,400..900&family=Great+Vibes&family=Playfair+Display:wght@700;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="../assets/css/styles.css">
     <link rel="stylesheet" href="../assets/css/chatbot.css">
+    <link rel="stylesheet" href="../assets/css/support_chat.css">
 
     <style>
         /* ---- Header Profile Avatar ---- */
@@ -187,6 +188,9 @@
 
 <!-- Chatbot script -->
 <script src="../assets/js/chatbot.js"></script>
+
+<!-- Live Support Chat Widget -->
+<script src="../assets/js/support_chat.js"></script>
 
 <!-- Discovery Portal Modal -->
 <div class="discovery-portal-wrapper" id="discoveryPortal">
