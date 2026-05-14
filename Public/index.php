@@ -1,6 +1,6 @@
 <?php 
-include 'includes/header.php'; 
-require_once 'user/db.php';
+include '../includes/header.php';   // ✅
+require_once '../config/db.php';    // ✅
 
 // Fetch the 8 latest community posts for the home page feed
 $community_posts_query = "
