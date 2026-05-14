@@ -382,11 +382,21 @@ $display_facts = array_slice($all_facts, 0, 4);
             <h2 class="section-title" style="margin-top: 10px;">Traveler <span class="script-font" style="font-size:48px;">Stories</span></h2>
         </div>
 
-        <div id="travelerStoriesGrid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 40px; min-height: 300px;">
-            <!-- Populated by stories.js -->
+        <div class="stories-slider-container" style="position: relative; padding: 0 50px;">
+            <div class="swiper travelerStoriesSwiper">
+                <div class="swiper-wrapper" id="travelerStoriesGrid">
+                    <!-- Populated by stories.js -->
+                </div>
+                <!-- Pagination -->
+                <div class="swiper-pagination" style="bottom: -30px;"></div>
+            </div>
+
+            <!-- Navigation Buttons -->
+            <div class="swiper-button-next" style="color: var(--primary-yellow); right: 0;"></div>
+            <div class="swiper-button-prev" style="color: var(--primary-yellow); left: 0;"></div>
         </div>
 
-        <div style="text-align: center; margin-top: 50px;">
+        <div style="text-align: center; margin-top: 80px;">
             <button id="postStoryBtn" style="padding: 16px 45px; background: var(--primary-yellow); color: #111; border: none; border-radius: 50px; font-size: 13px; font-weight: 800; letter-spacing: 2px; cursor: pointer; transition: all 0.3s; box-shadow: 0 4px 15px rgba(245, 166, 35, 0.2);">SHARE YOUR STORY</button>
         </div>
     </div>
@@ -422,6 +432,8 @@ $display_facts = array_slice($all_facts, 0, 4);
     </div>
 </div>
 
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
+<script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
 <script src="assets/js/stories.js"></script>
 
 <style>
