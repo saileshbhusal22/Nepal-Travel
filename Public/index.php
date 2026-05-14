@@ -382,43 +382,52 @@ $display_facts = array_slice($all_facts, 0, 4);
             <h2 class="section-title" style="margin-top: 10px;">Traveler <span class="script-font" style="font-size:48px;">Stories</span></h2>
         </div>
 
-        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 40px;">
-            <div style="padding: 40px; background: #fcfcfc; border-radius: 20px; border: 1px solid #eee; position: relative;">
-                <div style="font-size: 60px; color: var(--primary-yellow); opacity: 0.2; position: absolute; top: 20px; left: 20px; line-height: 1;">“</div>
-                <p style="color: #555; font-style: italic; margin-bottom: 30px; position: relative; z-index: 2;">Nepal exceeded every expectation. The Sherpa people's hospitality is as high as the mountains they live in. EBC was life-changing!</p>
-                <div style="display: flex; align-items: center; gap: 15px;">
-                    <div style="width: 50px; height: 50px; border-radius: 50%; background: url('images/annapurna_trek.png') center/cover;"></div>
-                    <div>
-                        <h5 style="margin: 0; font-weight: 800; color: var(--primary-blue);">Sarah Jenkins</h5>
-                        <span style="font-size: 12px; color: #999;">Australia</span>
-                    </div>
-                </div>
-            </div>
-            <div style="padding: 40px; background: #fcfcfc; border-radius: 20px; border: 1px solid #eee; position: relative;">
-                <div style="font-size: 60px; color: var(--primary-yellow); opacity: 0.2; position: absolute; top: 20px; left: 20px; line-height: 1;">“</div>
-                <p style="color: #555; font-style: italic; margin-bottom: 30px; position: relative; z-index: 2;">The food in Kathmandu and the peace in Pokhara — Nepal is a perfect blend of chaos and serenity. Can't wait to go back!</p>
-                <div style="display: flex; align-items: center; gap: 15px;">
-                    <div style="width: 50px; height: 50px; border-radius: 50%; background: url('images/pokhara_lake.png') center/cover;"></div>
-                    <div>
-                        <h5 style="margin: 0; font-weight: 800; color: var(--primary-blue);">Marco Rossi</h5>
-                        <span style="font-size: 12px; color: #999;">Italy</span>
-                    </div>
-                </div>
-            </div>
-            <div style="padding: 40px; background: #fcfcfc; border-radius: 20px; border: 1px solid #eee; position: relative;">
-                <div style="font-size: 60px; color: var(--primary-yellow); opacity: 0.2; position: absolute; top: 20px; left: 20px; line-height: 1;">“</div>
-                <p style="color: #555; font-style: italic; margin-bottom: 30px; position: relative; z-index: 2;">Seeing a tiger in Chitwan was the highlight of my year. Nepal is truly a wildlife lover's paradise.</p>
-                <div style="display: flex; align-items: center; gap: 15px;">
-                    <div style="width: 50px; height: 50px; border-radius: 50%; background: url('images/chitwan_rhino.png') center/cover;"></div>
-                    <div>
-                        <h5 style="margin: 0; font-weight: 800; color: var(--primary-blue);">Liam O'Connell</h5>
-                        <span style="font-size: 12px; color: #999;">Ireland</span>
-                    </div>
-                </div>
-            </div>
+        <div id="travelerStoriesGrid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 40px; min-height: 300px;">
+            <!-- Populated by stories.js -->
+        </div>
+
+        <div style="text-align: center; margin-top: 50px;">
+            <button id="postStoryBtn" style="padding: 16px 45px; background: var(--primary-yellow); color: #111; border: none; border-radius: 50px; font-size: 13px; font-weight: 800; letter-spacing: 2px; cursor: pointer; transition: all 0.3s; box-shadow: 0 4px 15px rgba(245, 166, 35, 0.2);">SHARE YOUR STORY</button>
         </div>
     </div>
 </section>
+
+<!-- Story Submission Modal -->
+<div id="storyModal" class="admin-modal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 9999; align-items: center; justify-content: center; backdrop-filter: blur(8px);">
+    <div style="background: white; width: 90%; max-width: 500px; border-radius: 24px; overflow: hidden; animation: zoomIn 0.3s ease;">
+        <div style="background: var(--primary-blue); padding: 30px; text-align: center; position: relative;">
+            <h3 style="color: white; font-family: 'Playfair Display', serif; margin: 0;">Share Your Voice</h3>
+            <p style="color: rgba(255,255,255,0.7); font-size: 13px; margin-top: 5px;">Help others discover the magic of Nepal</p>
+            <button class="closeStoryModal" style="position: absolute; top: 20px; right: 20px; background: rgba(255,255,255,0.1); border: none; color: white; width: 30px; height: 30px; border-radius: 50%; cursor: pointer;">×</button>
+        </div>
+        <form id="storyForm" style="padding: 30px;" enctype="multipart/form-data">
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; font-size: 11px; font-weight: 800; color: #1b3a5a; margin-bottom: 8px; text-transform: uppercase;">Your Name</label>
+                <input type="text" name="name" required placeholder="e.g. Sarah Jenkins" style="width: 100%; padding: 12px; border: 1px solid #eee; border-radius: 12px; font-family: inherit;">
+            </div>
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; font-size: 11px; font-weight: 800; color: #1b3a5a; margin-bottom: 8px; text-transform: uppercase;">Country</label>
+                <input type="text" name="country" placeholder="e.g. Australia" style="width: 100%; padding: 12px; border: 1px solid #eee; border-radius: 12px; font-family: inherit;">
+            </div>
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; font-size: 11px; font-weight: 800; color: #1b3a5a; margin-bottom: 8px; text-transform: uppercase;">Your Experience (Quote)</label>
+                <textarea name="quote" required placeholder="Nepal exceeded every expectation..." rows="4" style="width: 100%; padding: 12px; border: 1px solid #eee; border-radius: 12px; font-family: inherit; resize: none;"></textarea>
+            </div>
+            <div style="margin-bottom: 25px;">
+                <label style="display: block; font-size: 11px; font-weight: 800; color: #1b3a5a; margin-bottom: 8px; text-transform: uppercase;">Profile Picture</label>
+                <input type="file" name="image" accept="image/*" style="width: 100%; font-size: 12px;">
+            </div>
+            <button type="submit" style="width: 100%; padding: 16px; background: var(--primary-yellow); color: #111; border: none; border-radius: 12px; font-weight: 800; cursor: pointer; transition: 0.3s;">PUBLISH STORY</button>
+        </form>
+    </div>
+</div>
+
+<script src="assets/js/stories.js"></script>
+
+<style>
+#storyModal.active { display: flex !important; }
+@keyframes zoomIn { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
+</style>
 
 <!-- Interactive Map Section -->
 <section class="interactive-map-section" id="map-section" style="margin-top: 40px; padding-top: 60px; padding-bottom: 60px;">
