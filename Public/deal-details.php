@@ -4,7 +4,7 @@ include '../includes/header.php';
 
 // ── Admin deals only — user deals go to Ud_deal_details.php ──
 $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
-if ($id <= 0) { header("Location: deals.php"); exit; }
+if ($id <= 0) { header("Location: deals-and-packages.php"); exit; }
 
 $stmt = $conn->prepare("SELECT * FROM deals WHERE id = ?");
 $stmt->bind_param("i", $id);
@@ -12,7 +12,7 @@ $stmt->execute();
 $deal = $stmt->get_result()->fetch_assoc();
 $stmt->close();
 
-if (!$deal) { header("Location: deals.php"); exit; }
+if (!$deal) { header("Location: deals-and-packages.php"); exit; }
 
 // ── Check if the logged-in user already booked this deal ────
 $already_booked    = false;
@@ -52,9 +52,13 @@ while ($row = $rev_result->fetch_assoc()) {
 $rev_stmt->close();
 
 $total_reviews = count($reviews);
-$avg_rating    = $total_reviews > 0
+
+// ── FIX: Only calculate avg_rating from actual reviews.
+//         Never fall back to $deal['rating'] so the widget
+//         stays hidden when there are no reviews.
+$avg_rating = $total_reviews > 0
     ? array_sum(array_column($reviews, 'rating')) / $total_reviews
-    : ($deal['rating'] ?? 0);
+    : 0;  // ← was: ($deal['rating'] ?? 0)  — that caused the ghost rating
 
 // Rating breakdown
 $breakdown = [5=>0,4=>0,3=>0,2=>0,1=>0];
@@ -309,7 +313,7 @@ $galleryImgs = array_slice($allImages, 1);
     .book-btn:hover  { background: #1d4ed8; }
     .book-btn:active { transform: scale(0.98); }
 
-    /* Already booked state — replaces Book Now */
+    /* Already booked state */
     .booked-badge {
       display: flex; align-items: center; justify-content: center;
       gap: 8px; width: 100%; margin-top: 1.2rem;
@@ -326,10 +330,6 @@ $galleryImgs = array_slice($allImages, 1);
       background: #f4b942; flex-shrink: 0;
       box-shadow: 0 0 0 3px rgba(244,185,66,0.25);
       animation: pulse 1.8s infinite;
-    }
-    @keyframes pulse {
-      0%,100% { opacity: 1; transform: scale(1); }
-      50%      { opacity: 0.5; transform: scale(1.5); }
     }
     .booked-sub {
       display: block; text-align: center;
@@ -441,7 +441,7 @@ $galleryImgs = array_slice($allImages, 1);
     <?php endif; ?>
     <div class="hero-grad"></div>
     <div class="hero-top">
-      <a href="deals.php" class="back-btn">&#8592;&nbsp; All Deals</a>
+      <a href="deals-and-packages.php" class="back-btn">&#8592;&nbsp; All Deals</a>
       <div class="hero-badges">
         <?php if (!empty($deal['category'])): ?>
           <span class="badge-cat"><?= htmlspecialchars($deal['category']) ?></span>
@@ -469,14 +469,14 @@ $galleryImgs = array_slice($allImages, 1);
         <?php if (!empty($deal['season'])): ?>
           <span class="hero-meta-item">🗓 <?= htmlspecialchars($deal['season']) ?></span>
         <?php endif; ?>
-        <?php if ($avg_rating > 0): ?>
+        <?php
+        // ── FIX: Only show rating pill when there are actual reviews ──
+        if ($total_reviews > 0 && $avg_rating > 0): ?>
           <span class="hero-meta-item">
             <span class="rating-clickable" onclick="openReviews()" title="See all reviews">
               <span class="star-gold">★</span>
               <?= number_format($avg_rating, 1) ?>
-              <?php if ($total_reviews > 0): ?>
-                <span style="color:rgba(255,255,255,0.40); font-size:11px">(<?= $total_reviews ?> reviews)</span>
-              <?php endif; ?>
+              <span style="color:rgba(255,255,255,0.40); font-size:11px">(<?= $total_reviews ?> reviews)</span>
               <span class="pulse-dot"></span>
             </span>
           </span>
@@ -597,14 +597,14 @@ $galleryImgs = array_slice($allImages, 1);
             <div class="stat-lbl">Days</div>
           </div>
           <?php endif; ?>
-          <?php if ($avg_rating > 0): ?>
+          <?php
+          // ── FIX: Stat cards for rating/reviews only when reviews exist ──
+          if ($total_reviews > 0 && $avg_rating > 0): ?>
           <div class="stat-card" style="cursor:pointer" onclick="openReviews()">
             <div class="stat-icon">⭐</div>
             <div class="stat-val"><?= number_format($avg_rating, 1) ?></div>
             <div class="stat-lbl">Rating</div>
           </div>
-          <?php endif; ?>
-          <?php if ($total_reviews > 0): ?>
           <div class="stat-card" style="cursor:pointer" onclick="openReviews()">
             <div class="stat-icon">💬</div>
             <div class="stat-val"><?= $total_reviews ?></div>
@@ -619,15 +619,15 @@ $galleryImgs = array_slice($allImages, 1);
           </div>
           <?php endif; ?>
         </div>
-        <?php if ($avg_rating > 0): ?>
+        <?php
+        // ── FIX: Rating row only when reviews exist ──
+        if ($total_reviews > 0 && $avg_rating > 0): ?>
         <div class="rating-row">
           <?php $r = round($avg_rating); ?>
           <span class="stars-disp"><?= str_repeat('★',$r) . str_repeat('☆', 5-$r) ?></span>
           <span class="rating-num"><?= number_format($avg_rating, 1) ?></span>
-          <?php if ($total_reviews > 0): ?>
-            <span class="review-cnt">(<?= $total_reviews ?> reviews)</span>
-            <button class="see-reviews-link" onclick="openReviews()">See all reviews →</button>
-          <?php endif; ?>
+          <span class="review-cnt">(<?= $total_reviews ?> reviews)</span>
+          <button class="see-reviews-link" onclick="openReviews()">See all reviews →</button>
         </div>
         <?php endif; ?>
       </div>
@@ -657,7 +657,16 @@ $galleryImgs = array_slice($allImages, 1);
           <?php if (!empty($deal['location'])): ?><tr><td class="lbl">Location</td><td class="val"><?= htmlspecialchars($deal['location']) ?></td></tr><?php endif; ?>
           <?php if (!empty($deal['days'])): ?><tr><td class="lbl">Duration</td><td class="val"><?= (int)$deal['days'] ?> days</td></tr><?php endif; ?>
           <?php if (!empty($deal['season'])): ?><tr><td class="lbl">Best Season</td><td class="val"><?= htmlspecialchars($deal['season']) ?></td></tr><?php endif; ?>
-          <?php if ($avg_rating > 0): ?><tr><td class="lbl">Rating</td><td class="val">⭐ <?= number_format($avg_rating, 1) ?> / 5 <button class="see-reviews-link" onclick="openReviews()" style="margin-left:6px">(<?= $total_reviews ?> reviews)</button></td></tr><?php endif; ?>
+          <?php
+          // ── FIX: Rating row in table only when reviews exist ──
+          if ($total_reviews > 0 && $avg_rating > 0): ?>
+          <tr>
+            <td class="lbl">Rating</td>
+            <td class="val">⭐ <?= number_format($avg_rating, 1) ?> / 5
+              <button class="see-reviews-link" onclick="openReviews()" style="margin-left:6px">(<?= $total_reviews ?> reviews)</button>
+            </td>
+          </tr>
+          <?php endif; ?>
           <?php if (!empty($deal['created_at'])): ?><tr><td class="lbl">Listed On</td><td class="val"><?= date('F j, Y', strtotime($deal['created_at'])) ?></td></tr><?php endif; ?>
         </table>
       </div>
@@ -682,7 +691,9 @@ $galleryImgs = array_slice($allImages, 1);
           <?php if (!empty($deal['location'])): ?><div class="s-row"><span class="lbl">Location</span><span class="val"><?= htmlspecialchars($deal['location']) ?></span></div><?php endif; ?>
           <?php if (!empty($deal['season'])): ?><div class="s-row"><span class="lbl">Season</span><span class="val"><?= htmlspecialchars($deal['season']) ?></span></div><?php endif; ?>
           <?php if (!empty($deal['category'])): ?><div class="s-row"><span class="lbl">Category</span><span class="val"><?= htmlspecialchars($deal['category']) ?></span></div><?php endif; ?>
-          <?php if ($avg_rating > 0): ?>
+          <?php
+          // ── FIX: Rating in sidebar only when reviews exist ──
+          if ($total_reviews > 0 && $avg_rating > 0): ?>
           <div class="s-row">
             <span class="lbl">Rating</span>
             <span class="val" style="cursor:pointer" onclick="openReviews()">⭐ <?= number_format($avg_rating,1) ?> / 5</span>
@@ -690,14 +701,12 @@ $galleryImgs = array_slice($allImages, 1);
           <?php endif; ?>
 
           <?php if ($already_booked): ?>
-            <!-- ── Already booked: show ticket link + sub-text ── -->
             <a href="ticket.php?id=<?= $existing_book_id ?>" class="booked-badge">
               <span class="bb-dot"></span>
               🎫 &nbsp; View My Booking
             </a>
             <span class="booked-sub">You already have an active booking for this deal</span>
           <?php else: ?>
-            <!-- ── Normal: show Book Now ── -->
             <a href="booking.php?id=<?= (int)$deal['id'] ?>" class="book-btn">Book Now</a>
           <?php endif; ?>
 
