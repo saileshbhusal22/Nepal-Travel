@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nepal Vibes | Land of the Himalayas</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Inter:wght@300;400;500;600&display=swap');
+
+    body { font-family: 'Inter', sans-serif; }
+    .heading-font { font-family: 'Playfair Display', serif; }
+
+    .hero-bg {
+      background-image: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.75)), 
+                        url('https://images.unsplash.com/photo-1540979388789-6cee28a1cdc9?ixlib=rb-4.0.3&auto=format&fit=crop&q=80');
+      background-size: cover;
+      background-position: center 30%;
+      background-attachment: fixed;
+    }
+
+    .card-hover {
+      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .card-hover:hover {
+      transform: translateY(-15px);
+      box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.4);
+    }
+
+    .nav-link {
+      position: relative;
+    }
+    .nav-link:after {
+      content: '';
+      position: absolute;
+      width: 0;
+      height: 2px;
+      bottom: -2px;
+      left: 0;
+      background-color: #e63939;
+      transition: width 0.3s ease;
+    }
+    .nav-link:hover:after { width: 100%; }
+  </style>
+</head>
+<body class="bg-zinc-950 text-zinc-200">
+
+  <!-- Navbar -->
+  <nav class="bg-black/90 backdrop-blur-lg fixed w-full z-50 border-b border-zinc-800">
+    <div class="max-w-7xl mx-auto px-6 py-5 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <i class="fa-solid fa-mountain text-3xl text-orange-500"></i>
+        <div>
+          <h1 class="text-2xl font-bold heading-font tracking-tight">NEPAL VIBES</h1>
+          <p class="text-xs text-zinc-500 -mt-1">Land of the Himalayas</p>
+        </div>
+      </div>
+      
+      <div class="hidden md:flex items-center gap-8 text-sm font-medium">
+        <a href="#" class="nav-link">Home</a>
+        <a href="#mountains" class="nav-link">Himalayas</a>
+        <a href="#culture" class="nav-link">Culture</a>
+        <a href="#wildlife" class="nav-link">Wildlife</a>
+        <a href="#festivals" class="nav-link">Festivals</a>
+        <a href="#travel" class="nav-link">Travel Tips</a>
+      </div>
+
+      <div class="flex items-center gap-4">
+        <button class="px-6 py-2 text-sm font-medium border border-zinc-700 hover:border-orange-500 rounded-full transition-colors">
+          Subscribe
+        </button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Hero Section -->
+  <section class="hero-bg h-screen flex items-center pt-20">
+    <div class="max-w-7xl mx-auto px-6 text-center">
+      <div class="inline-flex items-center gap-2 bg-white/10 backdrop-blur-md px-6 py-2 rounded-full mb-6">
+        <span class="text-orange-400 text-sm font-medium">✦ NEPAL 2026 ✦</span>
+      </div>
+      <h1 class="text-7xl md:text-8xl heading-font font-bold leading-none mb-6">
+        Welcome to the<br>Roof of the World
+      </h1>
+      <p class="text-xl text-zinc-300 max-w-2xl mx-auto mb-10">
+        Home to the world's highest mountains, ancient temples, diverse cultures, and the warmest people on Earth.
+      </p>
+      <button onclick="document.getElementById('mountains').scrollIntoView({ behavior: 'smooth' })" 
+              class="px-10 py-4 bg-orange-600 hover:bg-orange-700 font-semibold rounded-xl text-lg transition-all inline-flex items-center gap-3">
+        Discover Nepal
+        <i class="fa-solid fa-arrow-down"></i>
+      </button>
+    </div>
+  </section>
+
+  <!-- Introduction -->
+  <section class="max-w-7xl mx-auto px-6 py-20 border-b border-zinc-800">
+    <div class="prose prose-invert max-w-none text-lg text-zinc-300 leading-relaxed">
+      <p class="text-2xl">
+        Nepal is a land of breathtaking contrasts. From the towering peaks of the Himalayas (including Mount Everest) to the lush Terai plains, from ancient Hindu and Buddhist kingdoms to vibrant ethnic diversity — this small country packs an incredible amount of natural beauty, cultural richness, and spiritual depth.
+      </p>
+      <p class="mt-6">
+        With 8 of the world's 14 highest mountains above 8,000 meters, over 125 ethnic groups, and more than 120 languages, Nepal is one of the most culturally and geographically diverse nations on the planet.
+      </p>
+    </div>
+  </section>
+
+  <!-- Himalayas Section -->
+  <section id="mountains" class="bg-zinc-900 py-20">
+    <div class="max-w-7xl mx-auto px-6">
+      <h2 class="text-5xl heading-font font-semibold mb-12 text-center">The Majestic Himalayas</h2>
+      
+      <div class="grid md:grid-cols-12 gap-12 items-center">
+        <div class="md:col-span-7">
+          <img src="https://images.unsplash.com/photo-1540979388789-6cee28a1cdc9?ixlib=rb-4.0.3&auto=format&fit=crop&q=80" 
+               class="w-full h-[520px] object-cover rounded-3xl" alt="Everest">
+        </div>
+        <div class="md:col-span-5 space-y-8">
+          <div class="text-orange-400 font-medium">WORLD'S HIGHEST PEAKS</div>
+          <h3 class="text-4xl heading-font font-bold leading-tight">Mount Everest (Sagarmatha)</h3>
+          <p class="text-zinc-300 text-lg">
+            Standing at 8,848.86 meters, Everest is the crown jewel of Nepal. Known locally as Sagarmatha ("Forehead in the Sky"), it draws adventurers from around the world.
+          </p>
+          <div class="grid grid-cols-2 gap-6 text-sm">
+            <div>
+              <strong class="block text-orange-400">Popular Treks</strong>
+              <ul class="mt-3 space-y-2 text-zinc-400">
+                <li>• Everest Base Camp Trek</li>
+                <li>• Annapurna Circuit</li>
+                <li>• Langtang Valley</li>
+                <li>• Manaslu Circuit</li>
+              </ul>
+            </div>
+            <div>
+              <strong class="block text-orange-400">Best Seasons</strong>
+              <p class="mt-3 text-zinc-400">Spring (March–May) and Autumn (September–November) for clear skies and safer climbing conditions.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Culture & Heritage -->
+  <section id="culture" class="max-w-7xl mx-auto px-6 py-20">
+    <h2 class="text-5xl heading-font font-semibold mb-12 text-center">Rich Cultural Tapestry</h2>
+    
+    <div class="grid md:grid-cols-3 gap-10">
+      <div class="bg-zinc-800 rounded-3xl overflow-hidden card-hover">
+        <img src="https://images.unsplash.com/photo-1583417319070-4a13d8a5d9e3?ixlib=rb-4.0.3&auto=format&fit=crop&q=80" 
+             class="w-full h-64 object-cover" alt="Temples">
+        <div class="p-8">
+          <div class="text-amber-400 text-sm mb-3">HERITAGE</div>
+          <h3 class="heading-font text-2xl font-semibold mb-4">UNESCO World Heritage Sites</h3>
+          <p class="text-zinc-400">Kathmandu Valley (7 sites), Lumbini (birthplace of Buddha), Chitwan National Park, and the sacred Sagarmatha National Park.</p>
+        </div>
+      </div>
+
+      <div class="bg-zinc-800 rounded-3xl overflow-hidden card-hover">
+        <img src="https://images.unsplash.com/photo-1518548419970-58e3b4079ab2?ixlib=rb-4.0.3&auto=format&fit=crop&q=80" 
+             class="w-full h-64 object-cover" alt="Buddha">
+        <div class="p-8">
+          <div class="text-sky-400 text-sm mb-3">SPIRITUALITY</div>
+          <h3 class="heading-font text-2xl font-semibold mb-4">Birthplace of Buddha</h3>
+          <p class="text-zinc-400">Lumbini in southern Nepal is where Siddhartha Gautama (Lord Buddha) was born around 623 BC. A major pilgrimage site for Buddhists worldwide.</p>
+        </div>
+      </div>
+
+      <div class="bg-zinc-800 rounded-3xl overflow-hidden card-hover">
+        <img src="https://images.unsplash.com/photo-1590077428593-a55bb07c5f4c?ixlib=rb-4.0.3&auto=format&fit=crop&q=80" 
+             class="w-full h-64 object-cover" alt="Diversity">
+        <div class="p-8">
+          <div class="text-red-400 text-sm mb-3">DIVERSITY</div>
+          <h3 class="heading-font text-2xl font-semibold mb-4">125+ Ethnic Groups</h3>
+          <p class="text-zinc-400">From Sherpas and Gurungs in the mountains to Tharus and Maithilis in the Terai, Nepal celebrates incredible ethnic and linguistic diversity.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Wildlife -->
+  <section id="wildlife" class="bg-zinc-900 py-20">
+    <div class="max-w-7xl mx-auto px-6">
+      <h2 class="text-5xl heading-font font-semibold mb-12 text-center">Wildlife & Biodiversity</h2>
+      <div class="grid md:grid-cols-2 gap-12">
+        <div>
+          <h3 class="text-3xl font-semibold mb-6">Chitwan National Park</h3>
+          <p class="text-zinc-300">A UNESCO World Heritage Site and one of Asia’s best wildlife destinations. Home to the endangered One-horned Rhinoceros, Bengal Tiger, and over 500 species of birds.</p>
+          <ul class="mt-8 space-y-4">
+            <li class="flex gap-4"><span class="text-green-400">🦏</span> Greater One-horned Rhinoceros</li>
+            <li class="flex gap-4"><span class="text-orange-400">🐅</span> Royal Bengal Tiger</li>
+            <li class="flex gap-4"><span class="text-amber-400">🐊</span> Gharial Crocodile</li>
+          </ul>
+        </div>
+        <div class="bg-zinc-800 p-10 rounded-3xl">
+          <p class="italic text-lg">"Nepal protects 23.39% of its land as national parks and conservation areas — one of the highest proportions in the world."</p>
+          <p class="mt-8 text-sm text-orange-400">- Department of National Parks, Nepal</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Festivals -->
+  <section id="festivals" class="max-w-7xl mx-auto px-6 py-20">
+    <h2 class="text-5xl heading-font font-semibold mb-12 text-center">Vibrant Festivals of Nepal 2026</h2>
+    <div class="grid md:grid-cols-3 gap-8">
+      <div class="bg-zinc-800 p-8 rounded-3xl card-hover">
+        <div class="text-red-400 font-medium">March–April 2026</div>
+        <h3 class="heading-font text-2xl mt-4 mb-3">Bisket Jatra & Nepali New Year</h3>
+        <p class="text-zinc-400">Grand chariot festivals and celebrations marking the start of Bikram Sambat 2083.</p>
+      </div>
+      <div class="bg-zinc-800 p-8 rounded-3xl card-hover">
+        <div class="text-purple-400 font-medium">October–November 2026</div>
+        <h3 class="heading-font text-2xl mt-4 mb-3">Dashain & Tihar</h3>
+        <p class="text-zinc-400">Nepal’s biggest and most joyful festivals. Dashain celebrates victory of good over evil; Tihar honors animals and siblings.</p>
+      </div>
+      <div class="bg-zinc-800 p-8 rounded-3xl card-hover">
+        <div class="text-amber-400 font-medium">May 2026</div>
+        <h3 class="heading-font text-2xl mt-4 mb-3">Buddha Jayanti</h3>
+        <p class="text-zinc-400">Celebration of Lord Buddha’s birth, enlightenment, and passing — especially grand in Lumbini and Boudhanath.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Travel Tips -->
+  <section id="travel" class="bg-black py-20">
+    <div class="max-w-7xl mx-auto px-6">
+      <h2 class="text-4xl heading-font text-center mb-12">Essential Travel Tips for Nepal 2026</h2>
+      <div class="grid md:grid-cols-4 gap-8">
+        <div class="bg-zinc-900 p-8 rounded-3xl text-center">
+          <i class="fa-solid fa-passport text-4xl text-orange-500 mb-6"></i>
+          <h4 class="font-semibold mb-3">Visa</h4>
+          <p class="text-sm text-zinc-400">On-arrival visa available at Tribhuvan International Airport for most nationalities.</p>
+        </div>
+        <div class="bg-zinc-900 p-8 rounded-3xl text-center">
+          <i class="fa-solid fa-plane text-4xl text-orange-500 mb-6"></i>
+          <h4 class="font-semibold mb-3">Best Time to Visit</h4>
+          <p class="text-sm text-zinc-400">March–May (Spring) and September–November (Autumn) for trekking and mountain views.</p>
+        </div>
+        <div class="bg-zinc-900 p-8 rounded-3xl text-center">
+          <i class="fa-solid fa-heart text-4xl text-orange-500 mb-6"></i>
+          <h4 class="font-semibold mb-3">People</h4>
+          <p class="text-sm text-zinc-400">"Namaste" is the universal greeting. Nepalese people are known for their genuine hospitality.</p>
+        </div>
+        <div class="bg-zinc-900 p-8 rounded-3xl text-center">
+          <i class="fa-solid fa-utensils text-4xl text-orange-500 mb-6"></i>
+          <h4 class="font-semibold mb-3">Cuisine</h4>
+          <p class="text-sm text-zinc-400">Try Dal Bhat (national dish), Momos, Newari Samay Baji, and Thukpa in the mountains.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="bg-black py-16 border-t border-zinc-800">
+    <div class="max-w-7xl mx-auto px-6 text-center text-zinc-500 text-sm">
+      <p class="text-2xl heading-font text-orange-400 mb-4">Nepal Vibes</p>
+      <p>Atithi Devo Bhava — Guest is God</p>
+      <p class="mt-8">Explore responsibly • Support local communities • Preserve the Himalayas</p>
+      <p class="mt-6">© 2026 Nepal Vibes • Made with love for the Land of Everest</p>
+    </div>
+  </footer>
+
+</body>
+</html>

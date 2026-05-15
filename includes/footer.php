@@ -99,12 +99,11 @@
                             target="_blank">
                             Travel Advisory
                         </a>
-                    </li>
-
-                    <li>
-                        <a href="https://www.selectiveasia.com/nepal-holidays/weather"
-                            target="_blank">
-                            Weather & Best Time
+                        <a href="https://www.instagram.com/_sanopaila.np/" target="_blank" class="social-icon" aria-label="Instagram">
+                            <svg viewBox="0 0 24 24">
+                                <path
+                                    d="M7 2h10a5 5 0 015 5v10a5 5 0 01-5 5H7a5 5 0 01-5-5V7a5 5 0 015-5zm10.5 4a1.5 1.5 0 100 3 1.5 1.5 0 000-3zM12 7a5 5 0 100 10 5 5 0 000-10zm0 2a3 3 0 110 6 3 3 0 010-6z" />
+                            </svg>
                         </a>
                     </li>
                 </ul>
@@ -121,17 +120,25 @@
                         </a>
                     </li>
 
-                    <li>
-                        <a href="travel-ideas.php?search=pokhara">
-                            Pokhara
-                        </a>
-                    </li>
+                <div class="footer-col">
+                    <h4>Quick Links</h4>
+                    <ul>
+                        <li><a href="../Blogs/nepal.html">About Nepal</a></li>
+                        <li><a href="#">Visa Information</a></li>
+                        <li><a href="#">Travel Advisory</a></li>
+                        <li><a href="#">Weather & Best Time</a></li>
+                    </ul>
+                </div>
 
-                    <li>
-                        <a href="travel-ideas.php?search=chitwan">
-                            Chitwan
-                        </a>
-                    </li>
+                <div class="footer-col">
+                    <h4>Destinations</h4>
+                    <ul>
+                    <li><a href="../Blogs/kathmandu.html">Kathmandu</a></li>
+                        <li><a href="#">Pokhara</a></li>
+                        <li><a href="#">Chitwan</a></li>
+                        <li><a href="#">Lumbini</a></li>
+                    </ul>
+                </div>
 
                     <li>
                         <a href="travel-ideas.php?search=lumbini">
@@ -180,17 +187,8 @@
 
         </div>
 
-        <!-- Footer Bottom -->
-        <div class="footer-bottom">
-            <p>
-                &copy; <?php echo date('Y'); ?>
-                Nepal Tourism Board. All Rights Reserved.
-            </p>
-        </div>
-    </div>
-</footer>
-
-<script src="assets/js/script.js"></script>
+    <script src="../assets/js/script.js"></script>
+</body>
 
 </body>
 </html>

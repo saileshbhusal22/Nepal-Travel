@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Kathmandu Vibes | The Soul of the Valley</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css"
+    />
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Inter:wght@300;400;500;600&display=swap");
+
+      body {
+        font-family: "Inter", sans-serif;
+      }
+      .heading-font {
+        font-family: "Playfair Display", serif;
+      }
+
+      .hero-bg {
+        background-image: linear-gradient(
+            rgba(0, 0, 0, 0.65),
+            rgba(0, 0, 0, 0.75)
+          ),
+          url("https://images.unsplash.com/photo-1540979388789-6cee28a1cdc9?ixlib=rb-4.0.3&auto=format&fit=crop&q=80");
+        background-size: cover;
+        background-position: center;
+        background-attachment: fixed;
+      }
+
+      .card-hover {
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      .card-hover:hover {
+        transform: translateY(-15px);
+        box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.4);
+      }
+
+      .nav-link {
+        position: relative;
+      }
+      .nav-link:after {
+        content: "";
+        position: absolute;
+        width: 0;
+        height: 2px;
+        bottom: -2px;
+        left: 0;
+        background-color: #e63939;
+        transition: width 0.3s ease;
+      }
+      .nav-link:hover:after {
+        width: 100%;
+      }
+    </style>
+  </head>
+  <body class="bg-zinc-950 text-zinc-200">
+    <!-- Navbar -->
+    <nav
+      class="bg-black/90 backdrop-blur-lg fixed w-full z-50 border-b border-zinc-800"
+    >
+      <div
+        class="max-w-7xl mx-auto px-6 py-5 flex items-center justify-between"
+      >
+        <div class="flex items-center gap-3">
+          <i class="fa-solid fa-mountain text-3xl text-orange-500"></i>
+          <div>
+            <h1 class="text-2xl font-bold heading-font tracking-tight">
+              KATHMANDU VIBES
+            </h1>
+            <p class="text-xs text-zinc-500 -mt-1">
+              Stories from Nepal's Eternal Valley
+            </p>
+          </div>
+        </div>
+
+        <div class="hidden md:flex items-center gap-8 text-sm font-medium">
+          <a href="#" class="nav-link">Home</a>
+          <a href="#history" class="nav-link">History</a>
+          <a href="#places" class="nav-link">Must Visit</a>
+          <a href="#food" class="nav-link">Newari Food</a>
+          <a href="#festivals" class="nav-link">Festivals 2026</a>
+        </div>
+
+        <div class="flex items-center gap-4">
+          <button
+            class="px-6 py-2 text-sm font-medium border border-zinc-700 hover:border-orange-500 rounded-full transition-colors"
+          >
+            Subscribe
+          </button>
+        </div>
+      </div>
+    </nav>
+
+    <!-- Hero -->
+    <section class="hero-bg h-screen flex items-center pt-20">
+      <div class="max-w-7xl mx-auto px-6 text-center">
+        <div
+          class="inline-flex items-center gap-2 bg-white/10 backdrop-blur-md px-6 py-2 rounded-full mb-6"
+        >
+          <span class="text-orange-400 text-sm font-medium"
+            >✦ KATHMANDU VALLEY • NEPAL ✦</span
+          >
+        </div>
+        <h1
+          class="text-7xl md:text-8xl heading-font font-bold leading-none mb-6"
+        >
+          The City Where<br />Gods Still Walk
+        </h1>
+        <p class="text-xl text-zinc-300 max-w-2xl mx-auto mb-10">
+          A living fusion of Hindu and Buddhist heritage, ancient Newari
+          architecture, chaotic alleys, divine temples, and the warmest smiles
+          in the Himalayas.
+        </p>
+        <button
+          onclick="document.getElementById('places').scrollIntoView({ behavior: 'smooth' })"
+          class="px-10 py-4 bg-orange-600 hover:bg-orange-700 font-semibold rounded-xl text-lg transition-all inline-flex items-center gap-3"
+        >
+          Begin Your Journey
+          <i class="fa-solid fa-arrow-down"></i>
+        </button>
+      </div>
+    </section>
+
+    <!-- Brief Intro -->
+    <section class="max-w-7xl mx-auto px-6 py-20 border-b border-zinc-800">
+      <div class="prose prose-invert max-w-none text-lg text-zinc-300">
+        <p class="text-2xl leading-relaxed">
+          Kathmandu, the capital of Nepal, is far more than just a gateway to
+          the Himalayas. Nestled in the Kathmandu Valley at about 1,400 meters,
+          this ancient city is a vibrant mosaic of over 2,000 years of history,
+          art, spirituality, and resilient culture. Home to seven UNESCO World
+          Heritage Sites, it blends chaotic energy with profound peace — from
+          the prayer wheels of Boudhanath to the sacred flames of Pashupatinath.
+        </p>
+      </div>
+    </section>
+
+    <!-- History Section -->
+    <section id="history" class="bg-zinc-900 py-20">
+      <div class="max-w-7xl mx-auto px-6">
+        <h2 class="text-5xl heading-font font-semibold mb-12 text-center">
+          A Living History
+        </h2>
+        <div class="grid md:grid-cols-2 gap-12 items-center">
+          <div>
+            <img
+              src="https://images.unsplash.com/photo-1583417319070-4a13d8a5d9e3?ixlib=rb-4.0.3&auto=format&fit=crop&q=80"
+              class="rounded-3xl shadow-2xl"
+              alt="Kathmandu Durbar Square"
+            />
+          </div>
+          <div class="space-y-6 text-zinc-300">
+            <p>
+              The Kathmandu Valley was once a vast lake, according to legend.
+              The bodhisattva Manjushri drained it with his sword, creating the
+              fertile land we see today.
+            </p>
+            <p>
+              The city itself dates back to the Licchavi period (400–750 AD),
+              flourishing under the Malla kings (12th–18th century) who built
+              the magnificent Durbar Squares. In 1769, Prithvi Narayan Shah
+              unified Nepal and made Kathmandu the capital.
+            </p>
+            <p>
+              Today, despite the 2015 earthquake and ongoing challenges, the
+              valley remains a testament to Newari craftsmanship, with
+              intricately carved wooden windows, pagoda-style temples, and a
+              deep syncretic tradition where Hindus and Buddhists worship side
+              by side.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Must Visit Places -->
+    <section id="places" class="max-w-7xl mx-auto px-6 py-20">
+      <h2 class="text-5xl heading-font font-semibold mb-12 text-center">
+        Iconic Places to Explore
+      </h2>
+
+      <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-10">
+        <!-- Swayambhunath -->
+        <div class="bg-zinc-800 rounded-3xl overflow-hidden card-hover">
+          <img
+            src="https://images.unsplash.com/photo-1540979388789-6cee28a1cdc9?ixlib=rb-4.0.3&auto=format&fit=crop&q=80"
+            class="w-full h-64 object-cover"
+            alt="Swayambhunath"
+          />
+          <div class="p-8">
+            <div class="text-orange-400 text-sm font-medium mb-2">
+              UNESCO SITE • MONKEY TEMPLE
+            </div>
+            <h3 class="text-3xl heading-font font-semibold mb-4">
+              Swayambhunath Stupa
+            </h3>
+            <p class="text-zinc-400">
+              Perched on a hill west of Kathmandu, this ancient Buddhist stupa
+              (dating back to the 5th century) offers panoramic views of the
+              valley. Known for its iconic Buddha eyes and resident monkeys, it
+              symbolizes self-existent enlightenment.
+            </p>
+            <p class="text-xs text-zinc-500 mt-6">
+              Climb 365 steps at sunrise for the best experience.
+            </p>
+          </div>
+        </div>
+
+        <!-- Boudhanath -->
+        <div class="bg-zinc-800 rounded-3xl overflow-hidden card-hover">
+          <img
+            src="https://images.unsplash.com/photo-1518548419970-58e3b4079ab2?ixlib=rb-4.0.3&auto=format&fit=crop&q=80"
+            class="w-full h-64 object-cover"
+            alt="Boudhanath"
+          />
+          <div class="p-8">
+            <div class="text-sky-400 text-sm font-medium mb-2">
+              LARGEST STUPA IN NEPAL
+            </div>
+            <h3 class="text-3xl heading-font font-semibold mb-4">
+              Boudhanath Stupa
+            </h3>
+            <p class="text-zinc-400">
+              One of the largest spherical stupas in the world, surrounded by
+              Tibetan monasteries and prayer flags. Walk the kora
+              (circumambulation) with monks and locals — a deeply meditative
+              experience.
+            </p>
+          </div>
+        </div>
+
+        <!-- Pashupatinath -->
+        <div class="bg-zinc-800 rounded-3xl overflow-hidden card-hover">
+          <img
+            src="https://images.unsplash.com/photo-1590077428593-a55bb07c5f4c?ixlib=rb-4.0.3&auto=format&fit=crop&q=80"
+            class="w-full h-64 object-cover"
+            alt="Pashupatinath"
+          />
+          <div class="p-8">
+            <div class="text-red-400 text-sm font-medium mb-2">
+              HINDU PILGRIMAGE SITE
+            </div>
+            <h3 class="text-3xl heading-font font-semibold mb-4">
+              Pashupatinath Temple
+            </h3>
+            <p class="text-zinc-400">
+              Dedicated to Lord Shiva, this sacred complex on the banks of the
+              Bagmati River is one of the most important Hindu temples in South
+              Asia. Witness the evening aarti for an unforgettable spiritual
+              moment.
+            </p>
+          </div>
+        </div>
+
+        <!-- Durbar Squares (combined) -->
+        <div
+          class="bg-zinc-800 rounded-3xl overflow-hidden card-hover col-span-1 md:col-span-2 lg:col-span-1"
+        >
+          <img
+            src="https://images.unsplash.com/photo-1580130684518-4a9d2c3d9a0d?ixlib=rb-4.0.3&auto=format&fit=crop&q=80"
+            class="w-full h-64 object-cover"
+            alt="Durbar Square"
+          />
+          <div class="p-8">
+            <div class="text-amber-400 text-sm font-medium mb-2">
+              LIVING HERITAGE
+            </div>
+            <h3 class="text-3xl heading-font font-semibold mb-4">
+              Kathmandu, Patan & Bhaktapur Durbar Squares
+            </h3>
+            <p class="text-zinc-400">
+              These medieval royal plazas showcase exquisite Newari
+              architecture, temples, and palaces. Patan is famous for its art,
+              Bhaktapur for its pottery and preserved medieval feel.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Newari Food Section -->
+    <section id="food" class="bg-zinc-900 py-20">
+      <div class="max-w-7xl mx-auto px-6">
+        <h2 class="text-5xl heading-font font-semibold mb-12 text-center">
+          Flavors of Kathmandu: Newari Cuisine
+        </h2>
+        <div class="grid md:grid-cols-2 gap-12">
+          <div>
+            <h3 class="text-2xl font-semibold mb-6">Must-Try Dishes</h3>
+            <ul class="space-y-8 text-zinc-300">
+              <li>
+                <strong>Samay Baji</strong> — The ultimate Newari platter with
+                beaten rice, choila (spiced meat), eggs, black soybeans, and
+                more.
+              </li>
+              <li>
+                <strong>Chatamari</strong> — Nepali-style rice crepe, often
+                called "Newari pizza."
+              </li>
+              <li>
+                <strong>Yomari</strong> — Sweet or savory dumplings filled with
+                molasses and sesame, traditionally eaten during winter.
+              </li>
+              <li>
+                <strong>Juju Dhau</strong> — "King of Yogurts" from Bhaktapur —
+                creamy, sweet, and legendary.
+              </li>
+              <li>
+                <strong>Bara & Choila</strong> — Lentil pancakes and spicy
+                grilled buffalo meat.
+              </li>
+              <li>
+                <strong>Sapu Mhicha</strong> — Fried buffalo leaf tripe stuffed
+                with bone marrow (for the adventurous!).
+              </li>
+            </ul>
+          </div>
+          <div class="bg-zinc-800 p-10 rounded-3xl">
+            <p class="italic text-lg">
+              "Newari food is not just about taste — it's a celebration of
+              community, seasons, and centuries-old traditions. Best enjoyed in
+              a bhoye (feast) sitting on the floor with family and friends."
+            </p>
+            <p class="mt-8 text-sm text-orange-400">
+              — Local food lovers in Kathmandu
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Festivals 2026 -->
+    <section id="festivals" class="max-w-7xl mx-auto px-6 py-20">
+      <h2 class="text-5xl heading-font font-semibold mb-12 text-center">
+        Festivals in Kathmandu 2026
+      </h2>
+      <div class="grid md:grid-cols-3 gap-8">
+        <div class="bg-zinc-800 p-8 rounded-3xl">
+          <div class="text-red-400 font-medium">April 2026</div>
+          <h3 class="text-2xl heading-font mt-3 mb-4">
+            Bisket Jatra & Nepali New Year
+          </h3>
+          <p class="text-zinc-400">
+            Massive chariot processions in Bhaktapur. Celebrates the start of
+            Bikram Sambat 2083.
+          </p>
+        </div>
+        <div class="bg-zinc-800 p-8 rounded-3xl">
+          <div class="text-purple-400 font-medium">February 2026</div>
+          <h3 class="text-2xl heading-font mt-3 mb-4">Maha Shivaratri</h3>
+          <p class="text-zinc-400">
+            Thousands gather at Pashupatinath Temple for all-night prayers and
+            rituals dedicated to Lord Shiva.
+          </p>
+        </div>
+        <div class="bg-zinc-800 p-8 rounded-3xl">
+          <div class="text-amber-400 font-medium">September 2026</div>
+          <h3 class="text-2xl heading-font mt-3 mb-4">Indra Jatra</h3>
+          <p class="text-zinc-400">
+            Kathmandu's grandest street festival with the Living Goddess Kumari
+            procession.
+          </p>
+        </div>
+      </div>
+      <p class="text-center text-zinc-500 mt-12">
+        Other highlights: Dashain (biggest festival), Tihar, Buddha Jayanti, and
+        Holi.
+      </p>
+    </section>
+
+    <!-- Practical Tips -->
+    <section class="bg-black py-20">
+      <div class="max-w-7xl mx-auto px-6">
+        <h2 class="text-4xl heading-font text-center mb-12">
+          Travel Tips for Kathmandu 2026
+        </h2>
+        <div class="grid md:grid-cols-4 gap-6 text-center">
+          <div class="p-6 bg-zinc-900 rounded-3xl">
+            <i class="fa-solid fa-plane text-4xl text-orange-500 mb-4"></i>
+            <h4 class="font-semibold">Best Time</h4>
+            <p class="text-sm text-zinc-400">
+              March–May or October–November for clear Himalayan views.
+            </p>
+          </div>
+          <div class="p-6 bg-zinc-900 rounded-3xl">
+            <i class="fa-solid fa-utensils text-4xl text-orange-500 mb-4"></i>
+            <h4 class="font-semibold">Food Safety</h4>
+            <p class="text-sm text-zinc-400">
+              Stick to bottled water and well-cooked street food in Thamel.
+            </p>
+          </div>
+          <div class="p-6 bg-zinc-900 rounded-3xl">
+            <i
+              class="fa-solid fa-shoe-prints text-4xl text-orange-500 mb-4"
+            ></i>
+            <h4 class="font-semibold">Getting Around</h4>
+            <p class="text-sm text-zinc-400">
+              Use taxis, ride-sharing apps, or walk in Thamel and Durbar areas.
+            </p>
+          </div>
+          <div class="p-6 bg-zinc-900 rounded-3xl">
+            <i class="fa-solid fa-heart text-4xl text-orange-500 mb-4"></i>
+            <h4 class="font-semibold">Respect</h4>
+            <p class="text-sm text-zinc-400">
+              Dress modestly at temples. Remove shoes before entering sacred
+              spaces.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-black py-16 border-t border-zinc-800">
+      <div class="max-w-7xl mx-auto px-6 text-center text-zinc-500 text-sm">
+        <p>Made with passion for Kathmandu Valley • April 2026</p>
+        <p class="mt-4">
+          Explore responsibly. Support local communities and heritage
+          preservation.
+        </p>
+      </div>
+    </footer>
+  </body>
+</html>
