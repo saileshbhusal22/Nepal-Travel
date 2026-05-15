@@ -125,7 +125,16 @@ $confirmed      = $conn->query("SELECT COUNT(*) FROM bookings WHERE status='conf
 $cancelled      = $conn->query("SELECT COUNT(*) FROM bookings WHERE status='booking cancel' OR status='cancelled'")->fetch_row()[0];
 $pending        = $conn->query("SELECT COUNT(*) FROM bookings WHERE status='active'")->fetch_row()[0];
 
+<<<<<<< HEAD
+// ── Support Chat stats ───────────────────────────────────────────
+$support_table_exists = $conn->query("SHOW TABLES LIKE 'support_sessions'")->num_rows > 0;
+$open_support   = $support_table_exists ? $conn->query("SELECT COUNT(*) FROM support_sessions WHERE status='open'")->fetch_row()[0] : 0;
+$unread_support = $support_table_exists ? $conn->query("SELECT COALESCE(SUM(unread_admin),0) FROM support_sessions WHERE status='open'")->fetch_row()[0] : 0;
+
+// ── Fetch users ──────────────────────────────────────────────────
+=======
 // ── Users ────────────────────────────────────────────────────────
+>>>>>>> 718bb33f6b0b736bbd4b29b2f92b8a593cad3e26
 $users_result = $conn->query("SELECT id, full_name, username, email, phone, email_verified, phone_verified, created_at, profile_image FROM users ORDER BY id DESC");
 $users = $users_result ? $users_result->fetch_all(MYSQLI_ASSOC) : [];
 
@@ -247,9 +256,20 @@ button,input,select,textarea{font-family:var(--ff-b)}
 .sec-hd-count{font-family:var(--ff-m);font-size:11px;color:var(--muted2);letter-spacing:1px}
 
 /* ── STAT CARDS ── */
+<<<<<<< HEAD
+.stats-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:16px;margin-bottom:36px}
+@keyframes support-slide-up{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.stat-card{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:14px;padding:22px 20px;
+  position:relative;overflow:hidden;
+  transition:border-color 0.2s,transform 0.2s;
+}
+=======
 .stats-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:16px;margin-bottom:36px}
 .stats-grid-sub{grid-template-columns:repeat(4,1fr)}
 .stat-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:22px 20px;position:relative;overflow:hidden;transition:border-color 0.2s,transform 0.2s}
+>>>>>>> 718bb33f6b0b736bbd4b29b2f92b8a593cad3e26
 .stat-card:hover{border-color:var(--border2);transform:translateY(-2px)}
 .stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--accent,var(--gold))}
 .stat-card-n{font-family:var(--ff-d);font-size:38px;font-weight:800;color:var(--text);line-height:1;margin-bottom:6px}
@@ -348,6 +368,20 @@ tbody tr:hover td{background:rgba(255,255,255,0.02)}
 .mini-table tbody td{padding:10px 16px;font-size:12px}
 .mini-table thead th{padding:10px 16px}
 
+<<<<<<< HEAD
+/* responsive */
+@media(max-width:1400px){.stats-grid{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:1024px){.sidebar{width:200px}.ov-grid{grid-template-columns:1fr}}
+@media(max-width:768px){
+  .sidebar{display:none}
+  .stats-grid{grid-template-columns:repeat(2,1fr)}
+  .content{padding:20px}
+  .topbar{padding:0 20px}
+  .tcard-search{flex-direction:column;align-items:stretch}
+  .filter-btns{justify-content:flex-start}
+  #support-inbox-wrap{grid-template-columns:1fr!important;height:auto!important}
+}
+=======
 /* ── EMPTY ── */
 .empty{padding:50px;text-align:center;color:var(--muted2)}
 .empty-ico{font-size:40px;opacity:0.2;margin-bottom:12px}
@@ -379,6 +413,7 @@ tbody tr:hover td{background:rgba(255,255,255,0.02)}
 @media(max-width:1200px){.stats-grid{grid-template-columns:repeat(3,1fr)}}
 @media(max-width:1024px){.sidebar{width:200px}.ov-grid{grid-template-columns:1fr}}
 @media(max-width:768px){.sidebar{display:none}.stats-grid{grid-template-columns:repeat(2,1fr)}.content{padding:20px}.topbar{padding:0 20px}.tcard-search{flex-direction:column;align-items:stretch}.ov-grid{grid-template-columns:1fr}}
+>>>>>>> 718bb33f6b0b736bbd4b29b2f92b8a593cad3e26
 </style>
 </head>
 <body>
@@ -415,6 +450,13 @@ tbody tr:hover td{background:rgba(255,255,255,0.02)}
         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17 12h-5v5h5v-5zM16 1v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2h-1V1h-2zm3 18H5V8h14v11z"/></svg>
         Bookings
         <span class="sb-badge"><?= $total_bookings ?></span>
+      </a>
+      <a href="?tab=support" class="sb-link <?= $activeTab==='support'?'on':'' ?>">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>
+        Support Chat
+        <?php if($unread_support > 0): ?>
+        <span class="sb-badge" style="background:rgba(224,85,85,0.2);color:var(--red2);border:1px solid rgba(224,85,85,0.25)"><?= $unread_support ?></span>
+        <?php endif; ?>
       </a>
 
       <a href="?tab=subscriptions" class="sb-link <?= $activeTab==='subscriptions'?'on':'' ?>">
@@ -519,6 +561,18 @@ tbody tr:hover td{background:rgba(255,255,255,0.02)}
             <div class="stat-card-n"><?= $cancelled ?></div>
             <div class="stat-card-l">Cancelled</div>
           </div>
+          <a href="?tab=support" style="text-decoration:none">
+          <div class="stat-card" style="--accent:#E05555;cursor:pointer">
+            <div class="stat-card-ico">💬</div>
+            <div class="stat-card-n" style="font-size:28px;display:flex;align-items:baseline;gap:6px">
+              <?= $open_support ?>
+              <?php if($unread_support > 0): ?>
+              <span style="font-size:14px;color:var(--red2);font-family:var(--ff-mono)"><?= $unread_support ?> new</span>
+              <?php endif; ?>
+            </div>
+            <div class="stat-card-l">Open Chats</div>
+          </div>
+          </a>
         </div>
 
         <!-- Subscription quick-stats row -->
@@ -844,6 +898,76 @@ tbody tr:hover td{background:rgba(255,255,255,0.02)}
           </div>
         </div>
 
+<<<<<<< HEAD
+      <!-- ════════════════════════════════
+           SUPPORT CHAT TAB
+      ════════════════════════════════ -->
+      <?php elseif ($activeTab === 'support'): ?>
+
+        <div class="sec-hd">
+          <h1 class="sec-hd-title">Support Inbox</h1>
+          <div class="sec-hd-rule"></div>
+          <span class="sec-hd-count" id="support-open-count"><?= $open_support ?> OPEN</span>
+        </div>
+
+        <?php if (!$support_table_exists): ?>
+        <div class="tcard" style="padding:40px;text-align:center">
+          <div class="empty-ico">⚠️</div>
+          <p style="color:var(--muted2);margin-top:12px">Support tables not yet created. <a href="/Nepal-Travel/config/create_support_tables.php" style="color:var(--gold)">Click here to run migration →</a></p>
+        </div>
+        <?php else: ?>
+
+        <div id="support-inbox-wrap" style="display:grid;grid-template-columns:320px 1fr;gap:0;border:1px solid var(--border);border-radius:14px;overflow:hidden;height:600px">
+
+          <!-- Sessions List -->
+          <div style="background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;">
+            <div style="padding:14px 16px;background:var(--surface2);border-bottom:1px solid var(--border);display:flex;gap:8px;align-items:center;flex-shrink:0">
+              <button class="filter-btn f-all active" data-filter="open" id="sf-open" onclick="setSupportFilter('open',this)">Open</button>
+              <button class="filter-btn" data-filter="closed" id="sf-closed" onclick="setSupportFilter('closed',this)">Closed</button>
+              <button class="filter-btn" data-filter="all" id="sf-all" onclick="setSupportFilter('all',this)">All</button>
+              <button onclick="loadSessions()" title="Refresh" style="margin-left:auto;background:none;border:none;cursor:pointer;color:var(--muted2);font-size:16px">⟳</button>
+            </div>
+            <div id="support-sessions-list" style="flex:1;overflow-y:auto;">
+              <div style="padding:40px;text-align:center;color:var(--muted2)">Loading…</div>
+            </div>
+          </div>
+
+          <!-- Chat Panel -->
+          <div style="display:flex;flex-direction:column;background:var(--bg);" id="support-chat-panel">
+            <!-- Empty state -->
+            <div id="support-empty-state" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--muted2);gap:12px">
+              <div style="font-size:48px;opacity:0.15">💬</div>
+              <div style="font-size:13px">Select a conversation to reply</div>
+            </div>
+
+            <!-- Active chat (hidden until session selected) -->
+            <div id="support-active-chat" style="display:none;flex-direction:column;height:100%">
+              <!-- Chat header -->
+              <div style="padding:16px 20px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0" id="support-chat-header">
+                <div>
+                  <div style="font-weight:700;font-size:14px" id="sc-guest-name">—</div>
+                  <div style="font-size:11px;color:var(--muted2);font-family:var(--ff-mono)" id="sc-guest-email">—</div>
+                </div>
+                <div style="display:flex;gap:8px;align-items:center">
+                  <span id="sc-status-pill" class="pill"></span>
+                  <button id="sc-close-session-btn" onclick="closeSession()" class="act-btn act-btn-del" style="font-size:11px">Close Chat</button>
+                </div>
+              </div>
+              <!-- Messages -->
+              <div id="support-admin-messages" style="flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:12px;background:#0a0c10"></div>
+              <!-- Reply box -->
+              <div id="support-reply-area" style="padding:14px 16px;background:var(--surface);border-top:1px solid var(--border);display:flex;gap:10px;align-items:flex-end;flex-shrink:0">
+                <textarea id="admin-reply-input" placeholder="Type your reply…" rows="2"
+                  style="flex:1;background:var(--surface2);border:1px solid var(--border2);border-radius:10px;padding:10px 14px;color:var(--text);font-size:13px;resize:none;outline:none;font-family:var(--ff-body);max-height:100px"
+                  onkeydown="handleReplyKey(event)"></textarea>
+                <button onclick="sendAdminReply()" class="save-btn" style="padding:10px 20px;border-radius:10px;font-size:13px">Send ↑</button>
+              </div>
+            </div>
+          </div>
+
+        </div>
+        <?php endif; ?>
+=======
 
       <!-- ════════════════════════════════
            SUBSCRIPTIONS TAB
@@ -1038,6 +1162,7 @@ tbody tr:hover td{background:rgba(255,255,255,0.02)}
             </div>
           </div>
         </div>
+>>>>>>> 718bb33f6b0b736bbd4b29b2f92b8a593cad3e26
 
       <?php endif; ?>
 
@@ -1195,6 +1320,168 @@ function viewDealDetail(d){
     + `<div style="margin-top:12px;font-size:13px;color:rgba(255,255,255,0.55);line-height:1.7">${d.description||''}</div>`;
   openM('dealDetailModal');
 }
+
+// ══════════════════════════════════════════════════════════
+// SUPPORT CHAT ADMIN LOGIC
+// ══════════════════════════════════════════════════════════
+const ADMIN_API = '/Nepal-Travel/admin/support_chat_admin_api.php';
+let currentSessionId = null;
+let adminLastMsgId   = 0;
+let adminPollTimer   = null;
+let supportFilter    = 'open';
+
+function setSupportFilter(f, btn) {
+  supportFilter = f;
+  document.querySelectorAll('[data-filter]').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  loadSessions();
+}
+
+async function loadSessions() {
+  const listEl = document.getElementById('support-sessions-list');
+  if (!listEl) return;
+  try {
+    const res  = await fetch(`${ADMIN_API}?action=list_sessions&filter=${supportFilter}`);
+    const data = await res.json();
+    if (!data.success) return;
+    if (data.sessions.length === 0) {
+      listEl.innerHTML = '<div style="padding:40px;text-align:center;color:var(--muted2);font-size:13px">No conversations found.</div>';
+      return;
+    }
+    listEl.innerHTML = data.sessions.map(s => {
+      const name    = s.guest_name || 'Guest';
+      const initial = name.charAt(0).toUpperCase();
+      const time    = s.last_message_at ? new Date(s.last_message_at).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}) : '';
+      const preview = s.last_message ? s.last_message.substring(0,45) + (s.last_message.length>45?'…':'') : 'No messages';
+      const unread  = parseInt(s.unread_admin) > 0 ? `<span style="background:var(--red2);color:#fff;border-radius:50%;width:18px;height:18px;font-size:10px;font-weight:700;display:inline-flex;align-items:center;justify-content:center">${s.unread_admin}</span>` : '';
+      const statusDot = s.status==='open' ? '#4CAF7D' : '#666';
+      const isActive  = s.id == currentSessionId ? 'background:var(--surface2);border-left:3px solid var(--gold)' : 'border-left:3px solid transparent';
+      return `<div onclick="openSession(${s.id})" style="padding:14px 16px;cursor:pointer;border-bottom:1px solid var(--border);${isActive};display:flex;gap:10px;align-items:flex-start;transition:background 0.15s" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background=${s.id==currentSessionId?"'var(--surface2)'":"'transparent'"};">
+        <div style="width:36px;height:36px;border-radius:50%;background:rgba(201,162,39,0.15);border:1px solid rgba(201,162,39,0.2);display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--gold);font-size:14px;flex-shrink:0">${initial}</div>
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <span style="font-size:13px;font-weight:600">${name}</span>
+            <span style="font-size:10px;color:var(--muted2);font-family:var(--ff-mono)">${time}</span>
+          </div>
+          <div style="font-size:11px;color:var(--muted2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:3px">${preview}</div>
+        </div>
+        ${unread}
+      </div>`;
+    }).join('');
+  } catch(e) { console.error(e); }
+}
+
+async function openSession(sid) {
+  currentSessionId = sid;
+  adminLastMsgId   = 0;
+  document.getElementById('support-empty-state').style.display = 'none';
+  document.getElementById('support-active-chat').style.display = 'flex';
+  document.getElementById('support-admin-messages').innerHTML = '';
+  clearInterval(adminPollTimer);
+  await fetchAdminMessages();
+  adminPollTimer = setInterval(fetchAdminMessages, 3000);
+  loadSessions(); // refresh session list to clear unread badge
+}
+
+async function fetchAdminMessages() {
+  if (!currentSessionId) return;
+  try {
+    const res  = await fetch(`${ADMIN_API}?action=get_session_messages&session_id=${currentSessionId}&last_id=${adminLastMsgId}`);
+    const data = await res.json();
+    if (!data.success) return;
+
+    // Update header
+    if (data.session) {
+      document.getElementById('sc-guest-name').textContent  = data.session.guest_name || 'Guest';
+      document.getElementById('sc-guest-email').textContent = data.session.guest_email || 'No email';
+      const pill = document.getElementById('sc-status-pill');
+      pill.className = 'pill ' + (data.session.status==='open' ? 'pill-confirmed' : 'pill-cancelled');
+      pill.innerHTML = `<span class="dot"></span>${data.session.status.toUpperCase()}`;
+      const closeBtn = document.getElementById('sc-close-session-btn');
+      if (closeBtn) closeBtn.style.display = data.session.status==='open' ? '' : 'none';
+    }
+
+    data.messages.forEach(msg => {
+      if (parseInt(msg.id) <= adminLastMsgId) return;
+      adminLastMsgId = parseInt(msg.id);
+      appendAdminMessage(msg);
+    });
+  } catch(e) { console.error(e); }
+}
+
+function appendAdminMessage(msg) {
+  const el    = document.getElementById('support-admin-messages');
+  const isAdmin = msg.sender === 'admin';
+  const time    = new Date(msg.sent_at).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+  const wrap    = document.createElement('div');
+  wrap.style.cssText = `display:flex;flex-direction:column;align-items:${isAdmin?'flex-end':'flex-start'};gap:4px;animation:support-slide-up 0.3s ease`;
+  wrap.innerHTML = `
+    <div style="max-width:75%;padding:10px 14px;border-radius:16px;font-size:13px;line-height:1.55;word-break:break-word;
+      background:${isAdmin?'linear-gradient(135deg,#C9A227,#a07818)':'var(--surface)'};
+      color:${isAdmin?'#000':'var(--text)'};
+      border-bottom-${isAdmin?'right':'left'}-radius:4px;
+      box-shadow:0 2px 8px rgba(0,0,0,0.2);">
+      ${msg.message.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>')}
+    </div>
+    <div style="font-size:10px;color:var(--muted2);padding:0 4px;font-family:var(--ff-mono)">${isAdmin?'You':'User'} · ${time}</div>
+  `;
+  el.appendChild(wrap);
+  el.scrollTop = el.scrollHeight;
+}
+
+async function sendAdminReply() {
+  const input = document.getElementById('admin-reply-input');
+  const text  = input.value.trim();
+  if (!text || !currentSessionId) return;
+  input.value = '';
+  input.style.height = 'auto';
+
+  // Optimistic render
+  appendAdminMessage({ sender:'admin', message:text, sent_at:new Date().toISOString(), id:'tmp' });
+
+  try {
+    await fetch(`${ADMIN_API}?action=send_reply`, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({session_id:currentSessionId, message:text})
+    });
+    loadSessions();
+  } catch(e) { console.error(e); }
+}
+
+async function closeSession() {
+  if (!currentSessionId) return;
+  if (!confirm('Close this support conversation?')) return;
+  try {
+    await fetch(`${ADMIN_API}?action=close_session`, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({session_id:currentSessionId})
+    });
+    clearInterval(adminPollTimer);
+    currentSessionId = null;
+    document.getElementById('support-empty-state').style.display = 'flex';
+    document.getElementById('support-active-chat').style.display = 'none';
+    loadSessions();
+    showToast('✓ Conversation closed');
+  } catch(e) {}
+}
+
+function handleReplyKey(e) {
+  if (e.key==='Enter' && !e.shiftKey) { e.preventDefault(); sendAdminReply(); }
+}
+
+// Auto-resize reply textarea
+document.addEventListener('DOMContentLoaded', () => {
+  const ta = document.getElementById('admin-reply-input');
+  if (ta) ta.addEventListener('input', () => { ta.style.height='auto'; ta.style.height=Math.min(ta.scrollHeight,120)+'px'; });
+
+  // Load sessions if on support tab
+  if (window.location.search.includes('tab=support')) {
+    loadSessions();
+    setInterval(loadSessions, 10000); // refresh list every 10s
+  }
+});
 </script>
 </body>
 </html>
