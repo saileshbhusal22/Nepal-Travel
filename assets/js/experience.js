@@ -515,7 +515,7 @@ document.addEventListener("DOMContentLoaded", () => {
                                 <span class="action-stats like-count">${post.like_count}</span>
                             </button>
                             
-                            <button class="action-btn comment-btn" onclick="document.getElementById('comment-input-${post.id}').focus()">
+                            <button class="action-btn comment-btn" data-id="${post.id}" onclick="document.getElementById('comment-input-${post.id}').focus()">
                                 💬 <span class="action-stats">${post.comment_count}</span>
                             </button>
                             
@@ -731,13 +731,16 @@ document.addEventListener("DOMContentLoaded", () => {
                 }
                 const postId = this.dataset.id;
                 const input = document.getElementById(`comment-input-${postId}`);
-                const text = input.value;
+                const text = input.value.trim();
+                if (!text) return; // Don't submit empty comments
                 
                 try {
+                    const formData = new FormData();
+                    formData.append('post_id', postId);
+                    formData.append('comment', text);
                     const res = await fetch(BASE_API_PATH + "add_comment.php", {
                         method: "POST",
-                        headers: {"Content-Type": "application/json"},
-                        body: JSON.stringify({post_id: postId, comment: text})
+                        body: formData
                     });
                     const data = await res.json();
                     if(data.success) {
@@ -748,11 +751,26 @@ document.addEventListener("DOMContentLoaded", () => {
                                 <strong>${data.comment.username}</strong> ${escapeHtml(data.comment.comment_text)}
                             </div>
                         `;
+                        // Update comment count
+                        const commentBtn = document.querySelector(`.comment-btn[data-id="${postId}"] .action-stats`);
+                        if (commentBtn) {
+                            const currentCount = parseInt(commentBtn.textContent) || 0;
+                            commentBtn.textContent = currentCount + 1;
+                        }
                         showToast("Comment posted!", "success");
                     } else {
                         showToast(data.message || "Failed to post comment.", "error");
                     }
                 } catch(err) { console.error(err); }
+            });
+            
+            // Also handle Enter key on the input
+            const input = form.querySelector('input[type="text"]');
+            input.addEventListener("keypress", function(e) {
+                if (e.key === "Enter") {
+                    e.preventDefault();
+                    form.dispatchEvent(new Event('submit'));
+                }
             });
         });
     }
