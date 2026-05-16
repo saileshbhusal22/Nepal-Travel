@@ -94,50 +94,7 @@ $initials    = strtoupper(substr($user['full_name'], 0, 2));
 $memberSince = date('F Y', strtotime($user['created_at']));
 $activeTab   = $_GET['tab'] ?? 'overview';
 
-// ── AJAX: Delete document ────────────────────────────────────────────────
-if (
-    isset($_SERVER['HTTP_X_REQUESTED_WITH']) &&
-    strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest' &&
-    $_SERVER['REQUEST_METHOD'] === 'POST' &&
-    isset($_POST['doc_action']) && $_POST['doc_action'] === 'delete'
-) {
-    header('Content-Type: application/json');
-    $did = (int)($_POST['doc_id'] ?? 0);
-    
-    // Get file path first
-    $stmt = $conn->prepare("SELECT file_path FROM user_documents WHERE id = ? AND user_id = ?");
-    $stmt->bind_param("ii", $did, $_SESSION['user_id']);
-    $stmt->execute();
-    $res = $stmt->get_result()->fetch_assoc();
-    $stmt->close();
 
-    if ($res) {
-        $fullPath = $_SERVER['DOCUMENT_ROOT'] . $res['file_path'];
-        if (file_exists($fullPath)) unlink($fullPath);
-        
-        $del = $conn->prepare("DELETE FROM user_documents WHERE id = ?");
-        $del->bind_param("i", $did);
-        $del->execute();
-        $del->close();
-        echo json_encode(['success' => true]);
-    } else {
-        echo json_encode(['success' => false, 'message' => 'Document not found.']);
-    }
-    exit;
-}
-
-// ── POST: Update Portfolio ────────────────────────────────────────────────
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_portfolio'])) {
-    $bio = trim($_POST['bio'] ?? '');
-    $loc = trim($_POST['location'] ?? '');
-    $upd = $conn->prepare("UPDATE users SET bio = ?, location = ? WHERE id = ?");
-    $upd->bind_param("ssi", $bio, $loc, $_SESSION['user_id']);
-    if ($upd->execute()) {
-        $settings_message = "Portfolio updated successfully!";
-        $settings_msg_type = "success";
-    }
-    $upd->close();
-}
 $stmt = $conn->prepare("SELECT COUNT(*) FROM bookings WHERE user_id = ?");
 $stmt->bind_param("i", $_SESSION['user_id']);
 $stmt->execute();
@@ -624,14 +581,6 @@ table.bkt tr.cancelling td{transition:opacity 0.4s, background 0.4s;opacity:0.4;
     <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17 3H7c-1.1 0-1.99.9-1.99 2L5 21l7-3 7 3V5c0-1.1-.9-2-2-2z"/></svg>
     Saved Places
   </a>
-  <a href="?tab=portfolio" class="tab <?php echo $activeTab==='portfolio'?'on':''; ?>">
-    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
-    Portfolio
-  </a>
-  <a href="?tab=documents" class="tab <?php echo $activeTab==='documents'?'on':''; ?>">
-    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>
-    Documents
-  </a>
   <a href="?tab=settings" class="tab <?php echo $activeTab==='settings'?'on':''; ?>">
     <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
     Settings
@@ -918,76 +867,6 @@ table.bkt tr.cancelling td{transition:opacity 0.4s, background 0.4s;opacity:0.4;
     </div>
   <?php endif; ?>
 
-<?php elseif ($activeTab === 'portfolio'): ?>
-  <div class="sh" style="margin-top:0"><span class="sh-title">Professional Portfolio</span><div class="sh-rule"></div></div>
-  <div class="stg-card">
-    <div class="stg-hd"><h3>Bio & Details</h3><p>Showcase your expertise and travel history</p></div>
-    <div class="stg-body">
-      <form method="POST" action="?tab=portfolio">
-        <div class="fg"><label class="flbl">Professional Bio</label>
-          <textarea name="bio" class="fin" style="height:120px; resize:vertical; padding:12px;"><?php echo htmlspecialchars($user['bio'] ?? ''); ?></textarea>
-        </div>
-        <div class="fg"><label class="flbl">Location</label>
-          <input type="text" name="location" class="fin" value="<?php echo htmlspecialchars($user['location'] ?? ''); ?>">
-        </div>
-        <button type="submit" name="update_portfolio" class="btn-sv">Save Portfolio</button>
-      </form>
-    </div>
-  </div>
-
-<?php elseif ($activeTab === 'documents'): ?>
-  <div class="sh" style="margin-top:0"><span class="sh-title">Document Management</span><div class="sh-rule"></div></div>
-  
-  <!-- Upload Form -->
-  <div class="stg-card">
-    <div class="stg-hd"><h3>Upload New Document</h3><p>Upload your research certifications, IDs, or trekking permits (PDF, JPG, PNG)</p></div>
-    <div class="stg-body">
-      <form id="docUploadForm" enctype="multipart/form-data">
-        <div class="fg"><label class="flbl">Document Name</label><input type="text" name="document_name" id="docName" class="fin" placeholder="e.g. Passport, Everest Permit" required></div>
-        <div class="fg"><label class="flbl">File</label><input type="file" name="document_file" id="docFile" class="fin" accept=".pdf,.jpg,.jpeg,.png" required></div>
-        <button type="submit" class="btn-sv" id="docUploadBtn">Upload Document</button>
-      </form>
-    </div>
-  </div>
-
-  <!-- Document List -->
-  <div class="sh"><span class="sh-title">My Documents</span><div class="sh-rule"></div></div>
-  <div id="docListContainer" style="display:grid; grid-template-columns:repeat(auto-fill,minmax(250px,1fr)); gap:20px; margin-bottom:40px;">
-    <!-- Populated via JS/PHP -->
-    <?php
-      $docStmt = $conn->prepare("SELECT id, document_name, document_type, file_path, uploaded_at FROM user_documents WHERE user_id = ? ORDER BY uploaded_at DESC");
-      $docStmt->bind_param("i", $_SESSION['user_id']);
-      $docStmt->execute();
-      $docs = $docStmt->get_result()->fetch_all(MYSQLI_ASSOC);
-      $docStmt->close();
-      
-      if (empty($docs)): ?>
-        <p style="color:#888; grid-column:1/-1; text-align:center; padding:40px; background:var(--snow); border-radius:12px; border:1px dashed var(--mist);">No documents uploaded yet.</p>
-      <?php else:
-        foreach ($docs as $doc): ?>
-          <div class="stg-card" style="margin-bottom:0; display:flex; flex-direction:column;">
-            <div style="padding:15px; border-bottom:1px solid var(--mist); display:flex; align-items:center; gap:12px;">
-              <div style="width:40px; height:40px; background:rgba(245,166,35,0.1); border-radius:8px; display:flex; align-items:center; justify-content:center; color:var(--ember);">
-                <?php if ($doc['document_type'] === 'pdf'): ?>
-                  <svg style="width:20px; height:20px;" viewBox="0 0 24 24" fill="currentColor"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>
-                <?php else: ?>
-                  <svg style="width:20px; height:20px;" viewBox="0 0 24 24" fill="currentColor"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>
-                <?php endif; ?>
-              </div>
-              <div style="overflow:hidden;">
-                <h4 style="margin:0; font-size:14px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;"><?php echo htmlspecialchars($doc['document_name']); ?></h4>
-                <small style="color:#888; font-size:11px;"><?php echo strtoupper($doc['document_type']); ?> • <?php echo date('M d, Y', strtotime($doc['uploaded_at'])); ?></small>
-              </div>
-            </div>
-            <div style="padding:12px; display:flex; gap:10px; margin-top:auto;">
-              <a href="<?php echo htmlspecialchars($doc['file_path']); ?>" target="_blank" class="btn-sv" style="flex:1; padding:8px; font-size:12px; text-align:center; text-decoration:none;">View</a>
-              <button onclick="deleteDoc(<?php echo $doc['id']; ?>)" class="btn-sv" style="background:#fde8e8; color:#e02424; border-color:#f8b4b4; flex:1; padding:8px; font-size:12px;">Delete</button>
-            </div>
-          </div>
-        <?php endforeach;
-      endif;
-    ?>
-  </div>
 
 <?php elseif ($activeTab === 'settings'): ?>
 
@@ -1331,54 +1210,6 @@ table.bkt tr.cancelling td{transition:opacity 0.4s, background 0.4s;opacity:0.4;
     });
   }
 
-  /* ── DOCUMENT MANAGEMENT ─────────────────────────────────────────── */
-  window.deleteDoc = function(id) {
-    if (!confirm('Are you sure you want to delete this document?')) return;
-    const fd = new FormData();
-    fd.append('doc_action', 'delete');
-    fd.append('doc_id', id);
-    fetch('?tab=documents', {
-      method: 'POST',
-      headers: { 'X-Requested-With': 'XMLHttpRequest' },
-      body: fd
-    })
-    .then(r => r.json())
-    .then(d => {
-      if (d.success) window.location.reload();
-      else alert(d.message);
-    });
-  };
-
-  const docForm = document.getElementById('docUploadForm');
-  if (docForm) {
-    docForm.addEventListener('submit', function(e) {
-      e.preventDefault();
-      const btn = document.getElementById('docUploadBtn');
-      btn.disabled = true;
-      btn.innerText = 'Uploading...';
-
-      fetch('upload_document.php', {
-        method: 'POST',
-        body: new FormData(docForm)
-      })
-      .then(r => r.json())
-      .then(d => {
-        if (d.success) {
-          showToast('Document uploaded successfully!', 'success');
-          setTimeout(() => window.location.reload(), 1000);
-        } else {
-          alert(d.message);
-          btn.disabled = false;
-          btn.innerText = 'Upload Document';
-        }
-      })
-      .catch(err => {
-        console.error(err);
-        btn.disabled = false;
-        btn.innerText = 'Upload Document';
-      });
-    });
-  }
 
 })();
 </script>

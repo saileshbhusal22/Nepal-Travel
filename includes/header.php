@@ -154,25 +154,28 @@ if (session_status() === PHP_SESSION_NONE) {
         <div class="container" style="display: flex; justify-content: space-between; align-items: center; max-width: 85%; padding: 0 40px;">
             
             <!-- Logo -->
-            <div class="logo-wrapper">
-                <a href="index.php" style="display: flex; flex-direction: column; text-decoration: none; line-height: 1.1; margin-top: -2px;">
-                    <div style="display: flex; align-items: baseline; margin-left: 15px;">
-                        <span style="font-family: 'Montserrat', sans-serif; font-size: 10px; color: #fbbf24; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; text-shadow: <?php echo $text_shadow; ?>;">Experience</span>
+            <div class="logo-wrapper" style="display: flex; align-items: center; z-index: 1000;">
+                <a href="/Nepal-Travel/Public/index.php" style="display: flex; flex-direction: column; text-decoration: none; line-height: 1; position: relative; transition: transform 0.3s ease;">
+                    <div style="margin-left: 45px; margin-bottom: -8px; z-index: 1;">
+                        <span style="font-family: 'Montserrat', sans-serif; font-size: 14px; color: #e31c25; font-weight: 900; text-transform: uppercase; letter-spacing: 1px; text-shadow: <?php echo $text_shadow; ?>;">Visit</span>
                     </div>
-                    <div style="display: flex; align-items: baseline;">
-                        <span style="font-family: 'Playfair Display', serif; font-size: 32px; color: <?php echo $text_main; ?>; font-weight: 700; letter-spacing: -0.5px; text-shadow: <?php echo $text_shadow; ?>;">Nepal</span>
-                        <span style="font-family: 'Great Vibes', cursive; color: <?php echo $script_color; ?>; font-size: 22px; margin-left: 5px; text-shadow: <?php echo $text_shadow; ?>;">Travel 2026</span>
+                    <div style="display: flex; align-items: baseline; position: relative;">
+                        <span style="font-family: 'Playfair Display', serif; font-size: 48px; color: <?php echo $text_main; ?>; font-weight: 900; letter-spacing: -1.5px; text-shadow: <?php echo $text_shadow; ?>;">Nepal</span>
+                        <span style="font-family: 'Montserrat', sans-serif; font-size: 18px; color: #e31c25; font-weight: 900; margin-left: 2px; text-shadow: <?php echo $text_shadow; ?>;">2026</span>
+                    </div>
+                    <div style="margin-top: -18px; margin-left: 18px; z-index: 2;">
+                        <span style="font-family: 'Great Vibes', cursive; color: #f5a623; font-size: 32px; text-shadow: 2px 2px 4px rgba(0,0,0,0.3);">Truly Authentic</span>
                     </div>
                 </a>
             </div>
 
             <!-- Navigation Links -->
             <nav class="nav-links" style="display: flex; gap: 40px; align-items: center; margin-left: auto;">
-                <a href="about.php" class="<?php echo $current_page == 'about.php' ? 'active' : ''; ?>">ABOUT NEPAL</a>
-                <a href="experience.php" class="<?php echo $current_page == 'experience.php' ? 'active' : ''; ?>">EXPERIENCE</a>
-                <a href="travel-ideas.php" class="<?php echo $current_page == 'travel-ideas.php' ? 'active' : ''; ?>">TRAVEL IDEAS</a>
-                <a href="deals-and-packages.php" class="<?php echo $current_page == 'deals-and-packages.php' ? 'active' : ''; ?>">DEALS & PACKAGES</a>
-                <a href="events.php" class="<?php echo $current_page == 'events.php' ? 'active' : ''; ?>">EVENTS & HAPPENINGS</a>
+                <a href="/Nepal-Travel/Public/about.php" class="<?php echo $current_page == 'about.php' ? 'active' : ''; ?>">ABOUT NEPAL</a>
+                <a href="/Nepal-Travel/Public/experience.php" class="<?php echo $current_page == 'experience.php' ? 'active' : ''; ?>">EXPERIENCE</a>
+                <a href="/Nepal-Travel/Public/travel-ideas.php" class="<?php echo $current_page == 'travel-ideas.php' ? 'active' : ''; ?>">TRAVEL IDEAS</a>
+                <a href="/Nepal-Travel/Public/deals-and-packages.php" class="<?php echo $current_page == 'deals-and-packages.php' ? 'active' : ''; ?>">DEALS & PACKAGES</a>
+                <a href="/Nepal-Travel/Public/events.php" class="<?php echo $current_page == 'events.php' ? 'active' : ''; ?>">EVENTS & HAPPENINGS</a>
             </nav>
         </div>
     </div>

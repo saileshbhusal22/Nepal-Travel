@@ -129,9 +129,14 @@ if ($udTableCheck && $udTableCheck->num_rows > 0) {
         });
     </script>
     
-    <div class="mh-content" style="padding-top: 100px;">
-        <div class="mh-subtitle" style="text-shadow: 0 2px 4px rgba(0,0,0,0.5); color: var(--primary-yellow);">THE ULTIMATE</div>
-        <h1 class="mh-title" style="text-shadow: 0 4px 10px rgba(0,0,0,0.4); font-size: 110px;">NEPAL TRAVEL</h1>
+    <div class="mh-content" style="padding-top: 80px; display: flex; flex-direction: column; align-items: center;">
+        <!-- Hero Logo Style -->
+        <div style="display: flex; flex-direction: column; align-items: center; line-height: 1; position: relative; margin-bottom: 20px;">
+            <div style="margin-right: -60px; margin-bottom: -20px; z-index: 1;">
+                <span style="font-family: 'Montserrat', sans-serif; font-size: 32px; color: #e31c25; font-weight: 900; text-transform: uppercase; letter-spacing: 4px; text-shadow: 0 4px 8px rgba(0,0,0,0.5);">Nepal Unforgettable  journey</span>
+            </div>
+            
+        </div>
         
         <form id="heroAjaxForm" action="deals-and-packages.php" method="GET" class="box-glass" style="margin-top: 40px; padding: 20px 40px; border-radius: 50px; display: flex; gap: 30px; align-items: center;">
             <div style="text-align: left;">

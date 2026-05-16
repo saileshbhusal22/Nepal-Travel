@@ -200,7 +200,7 @@ $payload = json_encode([
     'return_url'          => SITE_URL . '/khalti_booking_callback.php',
     'website_url'         => SITE_URL,
     'amount'              => (int)($amount * 100),
-    'purchase_order_id'   => 'BOOK-' . $booking_id,
+    'purchase_order_id'   => 'BOOK-' . $booking_id . '-' . time(),
     'purchase_order_name' => 'Booking: ' . $destination,
     'customer_info'       => [
         'name'  => $user['full_name'] ?? 'Customer',
@@ -219,6 +219,8 @@ curl_setopt_array($ch, [
         'Authorization: Key ' . KHALTI_SECRET_KEY,
         'Content-Type: application/json',
     ],
+    CURLOPT_TIMEOUT        => 30,
+    CURLOPT_CONNECTTIMEOUT => 10,
 ]);
 $response  = curl_exec($ch);
 $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
