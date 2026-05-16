@@ -13,6 +13,13 @@ function getDurationRange($durationStr) {
     if ($days <= 7) return 'medium';
     return 'long';
 }
+
+$initialSearch = '';
+if (isset($_GET['search']) && trim($_GET['search']) !== '') {
+    $initialSearch = trim($_GET['search']);
+} elseif (isset($_GET['destination']) && trim($_GET['destination']) !== '') {
+    $initialSearch = trim($_GET['destination']);
+}
 ?>
 
 <style>
@@ -438,11 +445,15 @@ document.addEventListener('DOMContentLoaded', function() {
     const searchInput = document.getElementById('searchInput');
     const cards = document.querySelectorAll('.idea-card');
     const noResults = document.getElementById('noResults');
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const searchInputValue = (urlParams.get('destination') || urlParams.get('search') || '').trim();
+    const initialSearchQuery = searchInputValue.toLowerCase();
     
     let activeProvince = 'all';
     let activeType = 'all';
     let activeDuration = 'all';
-    let searchQuery = '';
+    let searchQuery = initialSearchQuery || '';
 
     function applyFilters() {
         let visibleCount = 0;
@@ -505,6 +516,12 @@ document.addEventListener('DOMContentLoaded', function() {
         searchQuery = this.value.toLowerCase().trim();
         applyFilters();
     });
+
+    if (searchInputValue) {
+        searchInput.value = searchInputValue;
+        applyFilters();
+        document.getElementById('ideasGrid').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
 
     document.getElementById('resetProvince').addEventListener('click', () => {
         document.querySelector('[data-province="all"]').click();
