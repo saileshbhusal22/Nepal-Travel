@@ -1,6 +1,9 @@
 <?php
 ob_start();
-if (session_status() === PHP_SESSION_NONE) { session_start(); }
+if (session_status() === PHP_SESSION_NONE) {
+
+    session_start();
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -139,8 +142,8 @@ if (session_status() === PHP_SESSION_NONE) { session_start(); }
                     </a>
                     <a href="/Nepal-Travel/user/logout.php" style="color: #fff; text-decoration: none;">Logout</a>
                 <?php else: ?>
-                    <a href="/Nepal-Travel/user/login.php" style="color: #fff; text-decoration: none;">Login</a>
-                    <a href="/Nepal-Travel/user/Register.php" style="color: #fff; text-decoration: none;">Signup</a>
+                    <a href="/Nepal-Travel/user/login.php" style="color: #fff; text-decoration: none; font-weight: 600;">Login</a>
+                    <a href="/Nepal-Travel/user/Register.php" style="background-color: #fbbf24; color: #0f172a; padding: 6px 16px; border-radius: 20px; text-decoration: none; font-weight: 800; font-family: 'Montserrat', sans-serif; box-shadow: 0 4px 10px rgba(251,191,36,0.3); transition: all 0.3s ease;">Signup</a>
                 <?php endif; ?>
             </div>
         </div>
@@ -152,15 +155,14 @@ if (session_status() === PHP_SESSION_NONE) { session_start(); }
             
             <!-- Logo -->
             <div class="logo-wrapper">
-                <a href="index.php" style="display: flex; flex-direction: column; text-decoration: none; line-height: 1; margin-top: -5px;">
-                    <div style="display: flex; align-items: baseline; justify-content: center; margin-left: 20px;">
-                        <span style="font-family: 'Montserrat', sans-serif; font-size: 11px; color: #d32f2f; font-weight: 800; letter-spacing: 0.5px; text-shadow: <?php echo $text_shadow; ?>;">Visit</span>
+                <a href="index.php" style="display: flex; flex-direction: column; text-decoration: none; line-height: 1.1; margin-top: -2px;">
+                    <div style="display: flex; align-items: baseline; margin-left: 15px;">
+                        <span style="font-family: 'Montserrat', sans-serif; font-size: 10px; color: #fbbf24; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; text-shadow: <?php echo $text_shadow; ?>;">Experience</span>
                     </div>
                     <div style="display: flex; align-items: baseline;">
-                        <span style="font-family: 'Playfair Display', serif; font-size: 38px; color: <?php echo $text_main; ?>; font-weight: 700; letter-spacing: -1px; margin-top: -4px; text-shadow: <?php echo $text_shadow; ?>;">Nepal</span>
-                        <span style="font-family: 'Montserrat', sans-serif; font-size: 12px; color: #d32f2f; font-weight: 800; margin-left: 2px; text-shadow: <?php echo $text_shadow; ?>;">2026</span>
+                        <span style="font-family: 'Playfair Display', serif; font-size: 32px; color: <?php echo $text_main; ?>; font-weight: 700; letter-spacing: -0.5px; text-shadow: <?php echo $text_shadow; ?>;">Nepal</span>
+                        <span style="font-family: 'Great Vibes', cursive; color: <?php echo $script_color; ?>; font-size: 22px; margin-left: 5px; text-shadow: <?php echo $text_shadow; ?>;">Travel 2026</span>
                     </div>
-                    <span style="font-family: 'Great Vibes', cursive; color: <?php echo $script_color; ?>; font-size: 24px; margin-left: 25px; margin-top: -8px; text-shadow: <?php echo $text_shadow; ?>;">Truly Authentic</span>
                 </a>
             </div>
 

@@ -1,4 +1,5 @@
 <?php
+
 session_start();
 
 require __DIR__ . '/../vendor/autoload.php';
@@ -249,12 +250,9 @@ function old(string $key, array $old): string {
 <script src="https://accounts.google.com/gsi/client?hl=en" async defer></script>
 
 <script>
-    // Re-enable the button immediately if the page loaded with an error message.
-    // This counteracts register.js disabling the button after a submit attempt.
     (function () {
         var hasError = <?php echo (!empty($message)) ? 'true' : 'false'; ?>;
         if (hasError) {
-            // Run after DOM + register.js have both finished
             window.addEventListener('load', function () {
                 var btn     = document.getElementById('createBtn');
                 var spinner = document.getElementById('spinnerBox');
@@ -264,20 +262,12 @@ function old(string $key, array $old): string {
         }
     })();
 
-    // Also guard the form itself: if register.js attaches a submit listener that
-    // disables the button, this ensures it gets re-enabled if validation fails.
     document.addEventListener('DOMContentLoaded', function () {
         var form = document.querySelector('form');
         var btn  = document.getElementById('createBtn');
-
         if (!form || !btn) return;
-
         form.addEventListener('submit', function () {
-            // Give register.js time to run its own handler first (it may cancel),
-            // then check after a tick whether the form is actually submitting.
             setTimeout(function () {
-                // If the page is NOT navigating away, re-enable the button.
-                // (A real submit will navigate; only client-side cancellation stays.)
                 btn.disabled = false;
                 btn.style.opacity = '';
             }, 800);

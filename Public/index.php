@@ -1,6 +1,9 @@
 <?php 
+
 ini_set('display_errors', 1);
 error_reporting(E_ALL);
+
+session_start();
 
 include '../includes/header.php';
 require_once __DIR__ . '/../config/db.php';
@@ -102,10 +105,10 @@ if ($udTableCheck && $udTableCheck->num_rows > 0) {
 <!-- Modern Hero Section -->
 <section class="malaysia-hero" style="height: 100vh; position: relative; margin-bottom: 0;">
     <div class="mh-slideshow">
-        <div class="mh-bg active" style="background-image: url('images/pokhara_lake.png');"></div>
-        <div class="mh-bg" style="background-image: url('images/everest_trek.png');"></div>
-        <div class="mh-bg" style="background-image: url('images/chitwan_rhino.png');"></div>
-        <div class="mh-bg" style="background-image: url('images/kathmandu_night_hero.png');"></div>
+        <div class="mh-bg active" style="background-image: url('../images/pokhara_lake.png');"></div>
+        <div class="mh-bg" style="background-image: url('../images/everest_trek.png');"></div>
+        <div class="mh-bg" style="background-image: url('../images/chitwan_rhino.png');"></div>
+        <div class="mh-bg" style="background-image: url('../images/kathmandu_night_hero.png');"></div>
     </div>
     <div class="mh-overlay"></div>
     
@@ -127,8 +130,8 @@ if ($udTableCheck && $udTableCheck->num_rows > 0) {
     </script>
     
     <div class="mh-content" style="padding-top: 100px;">
-        <div class="mh-subtitle" style="text-shadow: 0 2px 4px rgba(0,0,0,0.5);">DISCOVER</div>
-        <h1 class="mh-title" style="text-shadow: 0 4px 10px rgba(0,0,0,0.4); font-size: 130px;">NEPAL</h1>
+        <div class="mh-subtitle" style="text-shadow: 0 2px 4px rgba(0,0,0,0.5); color: var(--primary-yellow);">THE ULTIMATE</div>
+        <h1 class="mh-title" style="text-shadow: 0 4px 10px rgba(0,0,0,0.4); font-size: 110px;">NEPAL TRAVEL</h1>
         
         <form id="heroAjaxForm" action="deals-and-packages.php" method="GET" class="box-glass" style="margin-top: 40px; padding: 20px 40px; border-radius: 50px; display: flex; gap: 30px; align-items: center;">
             <div style="text-align: left;">
@@ -199,35 +202,35 @@ $display_facts = array_slice($all_facts, 0, 4);
         </div>
         <div class="bento-grid">
             <a href="travel-ideas.php" class="bento-item large">
-                <img src="images/annapurna_trek.png" alt="Annapurna">
+                <img src="../images/annapurna_trek.png" alt="Annapurna">
                 <div class="bento-overlay"><span class="bento-category">Mountains</span><h3 class="bento-title">Annapurna Circuit Expedition</h3></div>
             </a>
             <a href="travel-ideas.php" class="bento-item">
-                <img src="images/bhaktapur_temple.png" alt="Bhaktapur">
+                <img src="../images/bhaktapur_temple.png" alt="Bhaktapur">
                 <div class="bento-overlay"><span class="bento-category">Culture</span><h3 class="bento-title">Bhaktapur Heritage Walk</h3></div>
             </a>
             <a href="travel-ideas.php" class="bento-item">
-                <img src="images/food_drinks_nepal.png" alt="Food">
+                <img src="../images/food_drinks_nepal.png" alt="Food">
                 <div class="bento-overlay"><span class="bento-category">Cuisine</span><h3 class="bento-title">Authentic Newari Taste</h3></div>
             </a>
             <a href="travel-ideas.php" class="bento-item wide">
-                <img src="images/chitwan_rhino.png" alt="Chitwan">
+                <img src="../images/chitwan_rhino.png" alt="Chitwan">
                 <div class="bento-overlay"><span class="bento-category">Adventure</span><h3 class="bento-title">Chitwan National Park Safari</h3></div>
             </a>
             <a href="travel-ideas.php" class="bento-item">
-                <img src="images/lumbini_temple.png" alt="Lumbini">
+                <img src="../images/lumbini_temple.png" alt="Lumbini">
                 <div class="bento-overlay"><span class="bento-category">Heritage</span><h3 class="bento-title">Birthplace of Buddha</h3></div>
             </a>
             <a href="travel-ideas.php" class="bento-item">
-                <img src="images/city_excitement_nepal.png" alt="City">
+                <img src="../images/city_excitement_nepal.png" alt="City">
                 <div class="bento-overlay"><span class="bento-category">City Life</span><h3 class="bento-title">Thamel Night Market</h3></div>
             </a>
             <a href="travel-ideas.php" class="bento-item">
-                <img src="images/sarangkot_sunrise.png" alt="Sunrise">
+                <img src="../images/sarangkot_sunrise.png" alt="Sunrise">
                 <div class="bento-overlay"><span class="bento-category">Nature</span><h3 class="bento-title">Sarangkot Sunrise View</h3></div>
             </a>
             <a href="travel-ideas.php" class="bento-item">
-                <img src="images/pashupatinath_aarti.png" alt="Aarti">
+                <img src="../images/pashupatinath_aarti.png" alt="Aarti">
                 <div class="bento-overlay"><span class="bento-category">Spirituality</span><h3 class="bento-title">Pashupatinath Evening Aarti</h3></div>
             </a>
         </div>
@@ -245,7 +248,7 @@ $display_facts = array_slice($all_facts, 0, 4);
         </div>
         <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 30px;">
             <div class="season-card" style="background: white; border-radius: 20px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.05); transition: transform 0.3s;">
-                <div style="height: 200px; background: url('images/annapurna_trek.png') center/cover;"></div>
+                <div style="height: 200px; background: url('../images/annapurna_trek.png') center/cover;"></div>
                 <div style="padding: 25px;">
                     <span style="color: #4caf50; font-weight: 800; font-size: 11px; letter-spacing: 1px; text-transform: uppercase;">MAR - MAY</span>
                     <h4 style="margin: 10px 0; font-size: 20px; font-weight: 800; color: var(--primary-blue);">Spring Bloom</h4>
@@ -253,7 +256,7 @@ $display_facts = array_slice($all_facts, 0, 4);
                 </div>
             </div>
             <div class="season-card" style="background: white; border-radius: 20px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.05); transition: transform 0.3s;">
-                <div style="height: 200px; background: url('images/chitwan_rhino.png') center/cover;"></div>
+                <div style="height: 200px; background: url('../images/chitwan_rhino.png') center/cover;"></div>
                 <div style="padding: 25px;">
                     <span style="color: #2196f3; font-weight: 800; font-size: 11px; letter-spacing: 1px; text-transform: uppercase;">JUN - AUG</span>
                     <h4 style="margin: 10px 0; font-size: 20px; font-weight: 800; color: var(--primary-blue);">Lush Monsoon</h4>
@@ -261,7 +264,7 @@ $display_facts = array_slice($all_facts, 0, 4);
                 </div>
             </div>
             <div class="season-card" style="background: white; border-radius: 20px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.05); transition: transform 0.3s;">
-                <div style="height: 200px; background: url('images/everest_trek.png') center/cover;"></div>
+                <div style="height: 200px; background: url('../images/everest_trek.png') center/cover;"></div>
                 <div style="padding: 25px;">
                     <span style="color: #ff9800; font-weight: 800; font-size: 11px; letter-spacing: 1px; text-transform: uppercase;">SEP - NOV</span>
                     <h4 style="margin: 10px 0; font-size: 20px; font-weight: 800; color: var(--primary-blue);">Golden Autumn</h4>
@@ -269,7 +272,7 @@ $display_facts = array_slice($all_facts, 0, 4);
                 </div>
             </div>
             <div class="season-card" style="background: white; border-radius: 20px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.05); transition: transform 0.3s;">
-                <div style="height: 200px; background: url('images/kathmandu_night_hero.png') center/cover;"></div>
+                <div style="height: 200px; background: url('../images/kathmandu_night_hero.png') center/cover;"></div>
                 <div style="padding: 25px;">
                     <span style="color: #9c27b0; font-weight: 800; font-size: 11px; letter-spacing: 1px; text-transform: uppercase;">DEC - FEB</span>
                     <h4 style="margin: 10px 0; font-size: 20px; font-weight: 800; color: var(--primary-blue);">Quiet Winter</h4>
@@ -516,465 +519,6 @@ $display_facts = array_slice($all_facts, 0, 4);
     </div>
 </section>
 
-<!-- ══════════════════════════════════════════════════════════
-     LIVE CHAT WIDGET — shown only to logged-in non-admin users
-════════════════════════════════════════════════════════════ -->
-<?php
-$chat_logged_in = isset($_SESSION['user_id']) && (!isset($_SESSION['role']) || $_SESSION['role'] !== 'admin');
-$chat_user_name = htmlspecialchars($_SESSION['full_name'] ?? 'Traveller');
-?>
-
-<?php if ($chat_logged_in): ?>
-<style>
-/* ── Widget shell ────────────────────────────────────────────── */
-#nt-chat-fab {
-    position: fixed; bottom: 28px; right: 28px; z-index: 9990;
-    width: 60px; height: 60px; border-radius: 50%;
-    background: var(--primary-blue, #285da1);
-    border: none; cursor: pointer;
-    box-shadow: 0 4px 20px rgba(40,93,161,0.45);
-    display: flex; align-items: center; justify-content: center;
-    transition: transform 0.25s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.2s;
-}
-#nt-chat-fab:hover { transform: scale(1.1); box-shadow: 0 8px 28px rgba(40,93,161,0.55); }
-#nt-chat-fab svg  { width: 28px; height: 28px; fill: #fff; transition: transform 0.3s; }
-#nt-chat-fab.open svg { transform: rotate(90deg); }
-
-#nt-chat-unread {
-    position: absolute; top: -2px; right: -2px;
-    background: #e84040; color: #fff;
-    min-width: 20px; height: 20px; border-radius: 10px;
-    font-size: 11px; font-weight: 800; padding: 0 5px;
-    display: none; align-items: center; justify-content: center;
-    border: 2px solid #fff; font-family: monospace;
-}
-
-#nt-chat-box {
-    position: fixed; bottom: 100px; right: 28px; z-index: 9991;
-    width: 360px;
-    background: #fff; border-radius: 20px;
-    box-shadow: 0 16px 50px rgba(0,0,0,0.18);
-    display: flex; flex-direction: column; overflow: hidden;
-    font-family: 'DM Sans', sans-serif;
-    transform: scale(0.9) translateY(20px);
-    opacity: 0; pointer-events: none;
-    transition: all 0.28s cubic-bezier(0.34,1.56,0.64,1);
-    max-height: 520px;
-}
-#nt-chat-box.open {
-    transform: scale(1) translateY(0);
-    opacity: 1; pointer-events: all;
-}
-
-/* ── Header ─────────────────────────────────────────────────── */
-#nt-chat-hd {
-    background: linear-gradient(135deg, #285da1, #1a3f72);
-    padding: 16px 18px; display: flex; align-items: center; gap: 12px;
-    color: #fff; flex-shrink: 0;
-}
-#nt-chat-hd .nt-av {
-    width: 38px; height: 38px; border-radius: 50%;
-    background: rgba(255,255,255,0.2);
-    display: flex; align-items: center; justify-content: center;
-    font-weight: 800; font-size: 15px; flex-shrink: 0;
-}
-#nt-chat-hd .nt-name  { font-weight: 700; font-size: 14px; }
-#nt-chat-hd .nt-sub   { font-size: 11px; opacity: 0.75; margin-top: 2px; display: flex; align-items: center; gap: 5px; }
-#nt-chat-hd .nt-online-dot {
-    width: 7px; height: 7px; border-radius: 50%;
-    background: #4cdb8a; display: inline-block;
-    animation: ntPulse 2s infinite;
-}
-@keyframes ntPulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
-#nt-chat-close {
-    margin-left: auto; background: rgba(255,255,255,0.15); border: none;
-    color: #fff; width: 30px; height: 30px; border-radius: 50%;
-    cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center;
-    transition: background 0.15s; flex-shrink: 0;
-}
-#nt-chat-close:hover { background: rgba(255,255,255,0.3); }
-
-/* ── Messages ───────────────────────────────────────────────── */
-#nt-chat-msgs {
-    flex: 1; overflow-y: auto; padding: 16px 14px;
-    display: flex; flex-direction: column; gap: 10px;
-    background: #f5f7fb; scroll-behavior: smooth;
-    min-height: 200px;
-}
-#nt-chat-msgs::-webkit-scrollbar { width: 4px; }
-#nt-chat-msgs::-webkit-scrollbar-thumb { background: #ccc; border-radius: 4px; }
-
-.nt-bubble-wrap { display: flex; flex-direction: column; }
-.nt-bubble-wrap.user { align-items: flex-end; }
-.nt-bubble-wrap.admin { align-items: flex-start; }
-
-.nt-bubble {
-    max-width: 80%; padding: 10px 14px; border-radius: 16px;
-    font-size: 13px; line-height: 1.5; word-break: break-word;
-    position: relative; animation: ntBubble 0.2s ease;
-}
-@keyframes ntBubble { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:none} }
-.nt-bubble.user {
-    background: linear-gradient(135deg, #285da1, #1a4a8a);
-    color: #fff; border-bottom-right-radius: 4px;
-}
-.nt-bubble.admin {
-    background: #fff; color: #222;
-    border: 1px solid #e4e8f0; border-bottom-left-radius: 4px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-}
-.nt-time {
-    font-size: 10px; color: rgba(0,0,0,0.35); margin-top: 3px;
-    padding: 0 4px;
-}
-.nt-bubble.user + .nt-time { text-align: right; }
-
-.nt-empty {
-    text-align: center; color: #aaa; font-size: 13px;
-    margin: auto; padding: 30px 20px; line-height: 1.8;
-}
-.nt-empty-icon { font-size: 36px; margin-bottom: 10px; display: block; }
-
-/* ── Typing indicator ──────────────────────────────────────── */
-.nt-typing {
-    display: flex; align-items: center; gap: 4px; padding: 10px 14px;
-    background: #fff; border: 1px solid #e4e8f0;
-    border-radius: 16px; border-bottom-left-radius: 4px;
-    width: fit-content; display: none;
-}
-.nt-typing span {
-    width: 6px; height: 6px; border-radius: 50%;
-    background: #aaa; animation: ntDot 1.2s infinite;
-}
-.nt-typing span:nth-child(2){animation-delay:0.2s}
-.nt-typing span:nth-child(3){animation-delay:0.4s}
-@keyframes ntDot{ 0%,60%,100%{transform:translateY(0)} 30%{transform:translateY(-5px)} }
-
-/* ── Input ──────────────────────────────────────────────────── */
-#nt-chat-footer {
-    padding: 12px 14px; border-top: 1px solid #eaeef5;
-    display: flex; gap: 8px; align-items: flex-end;
-    background: #fff; flex-shrink: 0;
-}
-#nt-chat-input {
-    flex: 1; border: 1.5px solid #e0e5ef; border-radius: 12px;
-    padding: 10px 13px; font-size: 13px; font-family: inherit;
-    resize: none; outline: none; max-height: 100px; overflow-y: auto;
-    transition: border-color 0.2s; background: #f8fafd; line-height: 1.4;
-}
-#nt-chat-input:focus { border-color: #285da1; background: #fff; }
-#nt-chat-input::placeholder { color: #b0b8c9; }
-#nt-chat-send {
-    background: linear-gradient(135deg, #285da1, #1a3f72);
-    border: none; width: 40px; height: 40px; border-radius: 50%;
-    cursor: pointer; display: flex; align-items: center; justify-content: center;
-    flex-shrink: 0; transition: transform 0.15s, box-shadow 0.15s;
-    box-shadow: 0 3px 10px rgba(40,93,161,0.35);
-}
-#nt-chat-send:hover { transform: scale(1.08); box-shadow: 0 5px 15px rgba(40,93,161,0.5); }
-#nt-chat-send:active { transform: scale(0.95); }
-#nt-chat-send svg  { width: 18px; height: 18px; fill: #fff; }
-
-/* ── Chat intro banner ──────────────────────────────────────── */
-.nt-intro-banner {
-    background: linear-gradient(135deg, rgba(40,93,161,0.08), rgba(40,93,161,0.03));
-    border-bottom: 1px solid #eaeef5;
-    padding: 12px 16px; font-size: 12px; color: #666; line-height: 1.5;
-    flex-shrink: 0;
-}
-
-/* ── Mobile responsive ──────────────────────────────────────── */
-@media (max-width: 420px) {
-    #nt-chat-box { width: calc(100vw - 20px); right: 10px; bottom: 90px; }
-    #nt-chat-fab { right: 16px; bottom: 20px; }
-}
-</style>
-
-<!-- FAB Button -->
-<button id="nt-chat-fab" onclick="ntChatToggle()" title="Chat with Nepal Travel Support" aria-label="Open chat">
-    <svg viewBox="0 0 24 24" id="nt-fab-icon-chat">
-        <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/>
-    </svg>
-    <span id="nt-chat-unread" aria-label="Unread messages"></span>
-</button>
-
-<!-- Chat Panel -->
-<div id="nt-chat-box" role="dialog" aria-label="Live Chat">
-    <!-- Header -->
-    <div id="nt-chat-hd">
-        <div class="nt-av">🏔️</div>
-        <div>
-            <div class="nt-name">Nepal Travel Support</div>
-            <div class="nt-sub">
-                <span class="nt-online-dot"></span>
-                We typically reply within a few hours
-            </div>
-        </div>
-        <button id="nt-chat-close" onclick="ntChatToggle()" aria-label="Close chat">✕</button>
-    </div>
-
-    <!-- Intro Banner -->
-    <div class="nt-intro-banner">
-        👋 Hi, <strong><?= $chat_user_name ?></strong>! Ask us anything about Nepal travel — treks, packages, visas, or bookings.
-    </div>
-
-    <!-- Messages Area -->
-    <div id="nt-chat-msgs" aria-live="polite">
-        <div class="nt-empty" id="nt-empty-state">
-            <span class="nt-empty-icon">💬</span>
-            Start the conversation — we're here to help you plan your Nepal adventure!
-        </div>
-    </div>
-
-    <!-- Input Footer -->
-    <div id="nt-chat-footer">
-        <textarea
-            id="nt-chat-input"
-            rows="1"
-            placeholder="Type your message…"
-            aria-label="Chat message"
-            onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();ntSend();}"
-            oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,100)+'px';"
-        ></textarea>
-        <button id="nt-chat-send" onclick="ntSend()" aria-label="Send message" title="Send">
-            <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
-        </button>
-    </div>
-</div>
-
-<script>
-(function () {
-    // ── Config ────────────────────────────────────────────────────
-    const AJAX_URL      = 'chat_ajax.php';
-    const POLL_MS_OPEN  = 3000;   // poll when chat is open
-    const POLL_MS_BG    = 10000;  // poll when chat is closed
-
-    // ── State ─────────────────────────────────────────────────────
-    let pollTimer       = null;
-    let lastMsgCount    = 0;
-    let isOpen          = false;
-    let isLoading       = false;
-
-    // ── Toggle open/close ─────────────────────────────────────────
-    function ntChatToggle() {
-        isOpen = !isOpen;
-        const box = document.getElementById('nt-chat-box');
-        const fab = document.getElementById('nt-chat-fab');
-        
-        box.classList.toggle('open', isOpen);
-        fab.classList.toggle('open', isOpen);
-
-        if (isOpen) {
-            clearInterval(pollTimer);
-            ntLoad();
-            pollTimer = setInterval(ntLoad, POLL_MS_OPEN);
-            document.getElementById('nt-chat-unread').style.display = 'none';
-            setTimeout(() => document.getElementById('nt-chat-input').focus(), 300);
-        } else {
-            clearInterval(pollTimer);
-            pollTimer = setInterval(ntBgPoll, POLL_MS_BG);
-        }
-    }
-    window.ntChatToggle = ntChatToggle;
-
-    // ── Background poll (unread badge) ──────────────────────────
-    async function ntBgPoll() {
-        try {
-            const fd = new FormData();
-            fd.append('action', 'unread_count');
-            
-            const r = await fetch(AJAX_URL, {
-                method: 'POST',
-                body: fd,
-                headers: { 'X-Requested-With': 'XMLHttpRequest' }
-            });
-            
-            if (!r.ok) return;
-            const d = await r.json();
-            
-            if (d.ok && d.data && d.data.count > 0) {
-                const badge = document.getElementById('nt-chat-unread');
-                badge.textContent = d.data.count;
-                badge.style.display = 'flex';
-            }
-        } catch (e) {
-            console.error('Unread poll error:', e);
-        }
-    }
-
-    // ── Load/fetch messages ───────────────────────────────────────
-    async function ntLoad() {
-        if (isLoading) return;
-        isLoading = true;
-        
-        try {
-            const fd = new FormData();
-            fd.append('action', 'fetch');
-            
-            const r = await fetch(AJAX_URL, {
-                method: 'POST',
-                body: fd,
-                headers: { 'X-Requested-With': 'XMLHttpRequest' }
-            });
-            
-            if (!r.ok) {
-                isLoading = false;
-                return;
-            }
-            
-            const d = await r.json();
-            if (d.ok && d.data && d.data.messages) {
-                renderMessages(d.data.messages);
-            }
-        } catch (e) {
-            console.error('Load messages error:', e);
-        } finally {
-            isLoading = false;
-        }
-    }
-
-    // ── Render messages to DOM ────────────────────────────────────
-    function renderMessages(msgs) {
-        const container = document.getElementById('nt-chat-msgs');
-        const emptyEl   = document.getElementById('nt-empty-state');
-
-        if (!msgs || msgs.length === 0) {
-            if (emptyEl) emptyEl.style.display = 'block';
-            return;
-        }
-        
-        if (emptyEl) emptyEl.style.display = 'none';
-
-        // Only re-render if count changed
-        if (msgs.length === lastMsgCount) return;
-        lastMsgCount = msgs.length;
-
-        // Clear old bubbles
-        container.querySelectorAll('.nt-bubble-wrap').forEach(el => el.remove());
-
-        // Build and insert new bubbles
-        const frag = document.createDocumentFragment();
-        
-        msgs.forEach(m => {
-            const wrap = document.createElement('div');
-            wrap.className = 'nt-bubble-wrap ' + m.sender;
-
-            const bubble = document.createElement('div');
-            bubble.className = 'nt-bubble ' + m.sender;
-            bubble.textContent = m.message;
-
-            const timeEl = document.createElement('div');
-            timeEl.className = 'nt-time';
-            timeEl.textContent = formatTime(m.created_at);
-
-            wrap.appendChild(bubble);
-            wrap.appendChild(timeEl);
-            frag.appendChild(wrap);
-        });
-
-        container.appendChild(frag);
-
-        // Scroll to bottom
-        setTimeout(() => {
-            container.scrollTop = container.scrollHeight;
-        }, 0);
-    }
-
-    // ── Send message ──────────────────────────────────────────────
-    async function ntSend() {
-        const inp = document.getElementById('nt-chat-input');
-        const msg = inp.value.trim();
-        
-        if (!msg) return;
-
-        // Clear input immediately
-        inp.value = '';
-        inp.style.height = 'auto';
-
-        // Show optimistic bubble
-        const container = document.getElementById('nt-chat-msgs');
-        const emptyEl   = document.getElementById('nt-empty-state');
-        
-        if (emptyEl) emptyEl.style.display = 'none';
-
-        const wrap = document.createElement('div');
-        wrap.className = 'nt-bubble-wrap user';
-        
-        const bubble = document.createElement('div');
-        bubble.className = 'nt-bubble user';
-        bubble.textContent = msg;
-        
-        const timeEl = document.createElement('div');
-        timeEl.className = 'nt-time';
-        timeEl.textContent = 'just now';
-        
-        wrap.appendChild(bubble);
-        wrap.appendChild(timeEl);
-        container.appendChild(wrap);
-        
-        lastMsgCount++;
-        container.scrollTop = container.scrollHeight;
-
-        // Send to server
-        try {
-            const fd = new FormData();
-            fd.append('action', 'send');
-            fd.append('message', msg);
-            
-            const r = await fetch(AJAX_URL, {
-                method: 'POST',
-                body: fd,
-                headers: { 'X-Requested-With': 'XMLHttpRequest' }
-            });
-            
-            if (r.ok) {
-                const d = await r.json();
-                if (!d.ok) {
-                    console.error('Server error:', d.error);
-                }
-            }
-        } catch (e) {
-            console.error('Send error:', e);
-        }
-
-        // Reload after delay to sync timestamps
-        setTimeout(ntLoad, 500);
-    }
-    window.ntSend = ntSend;
-
-    // ── Format time display ───────────────────────────────────────
-    function formatTime(str) {
-        if (!str) return '';
-        
-        const d = new Date(str.replace(' ', 'T'));
-        const now = new Date();
-        const diff = (now - d) / 1000;
-        
-        if (diff < 60) return 'just now';
-        if (diff < 3600) return Math.floor(diff / 60) + 'm ago';
-        if (diff < 86400) {
-            const hours = Math.floor(diff / 3600);
-            return hours + 'h ago';
-        }
-        
-        return d.toLocaleDateString([], { month: 'short', day: 'numeric' });
-    }
-
-    // ── Initialize ─────────────────────────────────────────────────
-    window.addEventListener('load', () => {
-        ntBgPoll();
-        pollTimer = setInterval(ntBgPoll, POLL_MS_BG);
-    });
-
-    // ── Close on Escape ───────────────────────────────────────────
-    document.addEventListener('keydown', e => {
-        if (e.key === 'Escape' && isOpen) ntChatToggle();
-    });
-})();
-</script>
-<?php endif; ?>
-
-
 <!-- Instagram Social Feed Section -->
 <section class="instagram-feed-section" style="padding: 100px 0; background: #fafafa; border-top: 1px solid #eee;">
     <div class="container">
@@ -993,10 +537,10 @@ $chat_user_name = htmlspecialchars($_SESSION['full_name'] ?? 'Traveller');
             <?php if (empty($community_posts)): ?>
                 <?php 
                 $fallback_images = [
-                    ['src' => 'images/annapurna_trek.png', 'title' => 'Annapurna Trek', 'user' => 'travelnepal'],
-                    ['src' => 'images/chitwan_rhino.png', 'title' => 'Chitwan Rhino', 'user' => 'wildlife_tm'],
-                    ['src' => 'images/pokhara_lake.png', 'title' => 'Pokhara Lake', 'user' => 'nepal_diaries'],
-                    ['src' => 'images/bhaktapur_temple.png', 'title' => 'Bhaktapur', 'user' => 'heritage_lover']
+                    ['src' => '../images/annapurna_trek.png', 'title' => 'Annapurna Trek', 'user' => 'travelnepal'],
+                    ['src' => '../images/chitwan_rhino.png', 'title' => 'Chitwan Rhino', 'user' => 'wildlife_tm'],
+                    ['src' => '../images/pokhara_lake.png', 'title' => 'Pokhara Lake', 'user' => 'nepal_diaries'],
+                    ['src' => '../images/bhaktapur_temple.png', 'title' => 'Bhaktapur', 'user' => 'heritage_lover']
                 ];
                 foreach($fallback_images as $img): ?>
                 <a href="experience.php" class="community-item">
@@ -1011,7 +555,7 @@ $chat_user_name = htmlspecialchars($_SESSION['full_name'] ?? 'Traveller');
                 <?php foreach($community_posts as $post): 
                     $img_path = htmlspecialchars($post['image_path']);
                     if (strpos(strtolower($img_path), 'logo') !== false || empty($img_path)) {
-                        $img_path = 'images/sarangkot_sunrise.png';
+                        $img_path = '../images/sarangkot_sunrise.png';
                     }
                 ?>
                 <a href="experience.php" class="community-item">
@@ -1085,7 +629,7 @@ $chat_user_name = htmlspecialchars($_SESSION['full_name'] ?? 'Traveller');
 
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
 <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
-<script src="assets/js/stories.js"></script>
+<script src="../assets/js/stories.js"></script>
 
 <style>
 #storyModal.active { display: flex !important; }
@@ -1146,6 +690,433 @@ $chat_user_name = htmlspecialchars($_SESSION['full_name'] ?? 'Traveller');
             path.addEventListener('mouseleave', () => { path.style.fill = ''; });
         });
     });
+</script>
+
+
+<!-- ═══════════════════════════════════════════════════════════════
+     LIVE CHAT WIDGET
+═══════════════════════════════════════════════════════════════ -->
+<style>
+/* ── Chat toggle button ── */
+#nt-chat-toggle {
+    position: fixed;
+    bottom: 28px;
+    right: 28px;
+    width: 58px;
+    height: 58px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #1b3a5a, #285da1);
+    border: none;
+    cursor: pointer;
+    box-shadow: 0 6px 24px rgba(40,93,161,0.45);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9990;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+#nt-chat-toggle:hover { transform: scale(1.08); box-shadow: 0 8px 30px rgba(40,93,161,0.55); }
+#nt-chat-toggle svg   { width: 26px; height: 26px; fill: white; transition: opacity 0.2s; }
+#nt-chat-toggle .ico-close { display: none; }
+#nt-chat-toggle.open .ico-open  { display: none; }
+#nt-chat-toggle.open .ico-close { display: block; }
+
+/* Unread badge on toggle */
+#nt-chat-badge {
+    position: absolute;
+    top: -4px; right: -4px;
+    background: #e84393;
+    color: white;
+    font-size: 10px;
+    font-weight: 800;
+    min-width: 18px;
+    height: 18px;
+    border-radius: 9px;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 0 4px;
+    border: 2px solid white;
+    font-family: monospace;
+}
+#nt-chat-badge.show { display: flex; }
+
+/* ── Chat window ── */
+#nt-chat-window {
+    position: fixed;
+    bottom: 100px;
+    right: 28px;
+    width: 360px;
+    max-width: calc(100vw - 40px);
+    height: 500px;
+    background: white;
+    border-radius: 20px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.18);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    z-index: 9989;
+    transform: scale(0.92) translateY(20px);
+    opacity: 0;
+    pointer-events: none;
+    transition: transform 0.25s cubic-bezier(0.34,1.56,0.64,1), opacity 0.2s;
+}
+#nt-chat-window.open {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+    pointer-events: all;
+}
+
+/* Header */
+.nch-header {
+    background: linear-gradient(135deg, #1b3a5a, #285da1);
+    padding: 16px 18px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-shrink: 0;
+}
+.nch-avatar {
+    width: 38px; height: 38px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.15);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+    flex-shrink: 0;
+    border: 2px solid rgba(255,255,255,0.25);
+}
+.nch-header-info { flex: 1; }
+.nch-header-name { font-size: 14px; font-weight: 800; color: white; }
+.nch-header-status { font-size: 11px; color: rgba(255,255,255,0.7); display: flex; align-items: center; gap: 5px; margin-top: 2px; }
+.nch-status-dot { width: 6px; height: 6px; border-radius: 50%; background: #4caf50; animation: pulse-green 2s infinite; }
+@keyframes pulse-green { 0%,100%{opacity:1} 50%{opacity:0.5} }
+
+/* Messages area */
+.nch-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    background: #f7f9fc;
+    scroll-behavior: smooth;
+}
+.nch-messages::-webkit-scrollbar { width: 4px; }
+.nch-messages::-webkit-scrollbar-track { background: transparent; }
+.nch-messages::-webkit-scrollbar-thumb { background: #cdd6e0; border-radius: 2px; }
+
+/* Bubble */
+.nch-bubble {
+    max-width: 82%;
+    padding: 10px 14px;
+    border-radius: 16px;
+    font-size: 13.5px;
+    line-height: 1.5;
+    word-break: break-word;
+    animation: bubbleIn 0.2s ease;
+}
+@keyframes bubbleIn { from { opacity:0; transform:translateY(6px) } to { opacity:1; transform:none } }
+.nch-bubble.user {
+    align-self: flex-end;
+    background: linear-gradient(135deg, #285da1, #1b3a5a);
+    color: white;
+    border-bottom-right-radius: 4px;
+}
+.nch-bubble.admin {
+    align-self: flex-start;
+    background: white;
+    color: #222;
+    border-bottom-left-radius: 4px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+}
+.nch-time {
+    font-size: 10px;
+    opacity: 0.55;
+    margin-top: 3px;
+    text-align: right;
+}
+.nch-bubble.admin .nch-time { text-align: left; }
+
+/* Welcome message */
+.nch-welcome {
+    text-align: center;
+    padding: 20px 16px;
+    color: #999;
+    font-size: 12.5px;
+    line-height: 1.6;
+}
+.nch-welcome strong { color: #285da1; display: block; font-size: 15px; margin-bottom: 6px; }
+
+/* Typing indicator */
+.nch-typing {
+    display: none;
+    align-self: flex-start;
+    background: white;
+    border-radius: 16px;
+    border-bottom-left-radius: 4px;
+    padding: 10px 14px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+    gap: 4px;
+    align-items: center;
+}
+.nch-typing.show { display: flex; }
+.nch-typing span {
+    width: 7px; height: 7px;
+    background: #b0bec5;
+    border-radius: 50%;
+    animation: typingBounce 1.2s infinite;
+}
+.nch-typing span:nth-child(2) { animation-delay: 0.2s; }
+.nch-typing span:nth-child(3) { animation-delay: 0.4s; }
+@keyframes typingBounce { 0%,60%,100%{transform:translateY(0)} 30%{transform:translateY(-6px)} }
+
+/* Input area */
+.nch-footer {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 14px;
+    border-top: 1px solid #eef0f4;
+    background: white;
+    flex-shrink: 0;
+}
+.nch-input {
+    flex: 1;
+    padding: 10px 14px;
+    border: 1.5px solid #e0e6ef;
+    border-radius: 24px;
+    font-size: 13.5px;
+    font-family: inherit;
+    outline: none;
+    resize: none;
+    max-height: 100px;
+    line-height: 1.4;
+    transition: border-color 0.2s;
+    background: #f7f9fc;
+}
+.nch-input:focus { border-color: #285da1; background: white; }
+.nch-input::placeholder { color: #b0bec5; }
+.nch-send {
+    width: 40px; height: 40px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #285da1, #1b3a5a);
+    border: none;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    transition: transform 0.15s, box-shadow 0.15s;
+}
+.nch-send:hover { transform: scale(1.08); box-shadow: 0 4px 12px rgba(40,93,161,0.35); }
+.nch-send svg { width: 18px; height: 18px; fill: white; }
+.nch-send:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+</style>
+
+<!-- Chat Toggle Button -->
+<button id="nt-chat-toggle" aria-label="Open chat">
+    <svg class="ico-open" viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"/></svg>
+    <svg class="ico-close" viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+    <span id="nt-chat-badge"></span>
+</button>
+
+<!-- Chat Window -->
+<div id="nt-chat-window">
+    <div class="nch-header">
+        <div class="nch-avatar">🏔️</div>
+        <div class="nch-header-info">
+            <div class="nch-header-name">Nepal Travel Support</div>
+            <div class="nch-header-status">
+                <span class="nch-status-dot"></span>
+                We're online — usually reply instantly
+            </div>
+        </div>
+    </div>
+
+    <div class="nch-messages" id="nch-messages">
+        <div class="nch-welcome">
+            <strong>👋 Welcome to Nepal Travel!</strong>
+            Have a question about trekking, bookings, or Nepal in general? Ask us anything!
+        </div>
+        <div class="nch-typing" id="nch-typing">
+            <span></span><span></span><span></span>
+        </div>
+    </div>
+
+    <div class="nch-footer">
+        <textarea
+            id="nch-input"
+            class="nch-input"
+            placeholder="Type your message…"
+            rows="1"
+        ></textarea>
+        <button class="nch-send" id="nch-send" aria-label="Send">
+            <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+        </button>
+    </div>
+</div>
+
+<script>
+(function () {
+    const HANDLER = 'chat_handler.php'; // adjust path if needed
+    const toggle  = document.getElementById('nt-chat-toggle');
+    const win     = document.getElementById('nt-chat-window');
+    const msgBox  = document.getElementById('nch-messages');
+    const input   = document.getElementById('nch-input');
+    const sendBtn = document.getElementById('nch-send');
+    const badge   = document.getElementById('nt-chat-badge');
+    const typing  = document.getElementById('nch-typing');
+
+    let isOpen     = false;
+    let lastMsgId  = 0;
+    let pollTimer  = null;
+    let unreadCnt  = 0;
+
+    // ── Toggle open/close ──────────────────────────────────────
+    toggle.addEventListener('click', () => {
+        isOpen = !isOpen;
+        toggle.classList.toggle('open', isOpen);
+        win.classList.toggle('open', isOpen);
+        if (isOpen) {
+            clearUnread();
+            input.focus();
+            startPolling();
+        } else {
+            stopPolling();
+        }
+    });
+
+    // ── Auto-resize textarea ───────────────────────────────────
+    input.addEventListener('input', () => {
+        input.style.height = 'auto';
+        input.style.height = Math.min(input.scrollHeight, 100) + 'px';
+    });
+
+    // ── Send on Enter (Shift+Enter = newline) ─────────────────
+    input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            sendMessage();
+        }
+    });
+    sendBtn.addEventListener('click', sendMessage);
+
+    // ── Send message ───────────────────────────────────────────
+    function sendMessage() {
+        const txt = input.value.trim();
+        if (!txt) return;
+
+        // Optimistic render
+        appendBubble('user', txt, 'Just now');
+        input.value = '';
+        input.style.height = 'auto';
+        sendBtn.disabled = true;
+
+        fetch(HANDLER, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: 'action=send&message=' + encodeURIComponent(txt)
+        })
+        .then(r => r.json())
+        .then(d => {
+            if (d.ok) lastMsgId = Math.max(lastMsgId, d.id);
+        })
+        .catch(console.error)
+        .finally(() => { sendBtn.disabled = false; });
+    }
+
+    // ── Append bubble ──────────────────────────────────────────
+    function appendBubble(sender, text, time) {
+        // Remove welcome message if still present
+        const welcome = msgBox.querySelector('.nch-welcome');
+        if (welcome) welcome.remove();
+
+        const wrap = document.createElement('div');
+        wrap.style.display = 'flex';
+        wrap.style.flexDirection = 'column';
+        wrap.style.alignItems = sender === 'user' ? 'flex-end' : 'flex-start';
+
+        const bbl = document.createElement('div');
+        bbl.className = `nch-bubble ${sender}`;
+        bbl.textContent = text;
+
+        const t = document.createElement('div');
+        t.className = 'nch-time';
+        t.textContent = time || '';
+
+        wrap.appendChild(bbl);
+        wrap.appendChild(t);
+        // Insert before typing indicator
+        msgBox.insertBefore(wrap, typing);
+        scrollToBottom();
+    }
+
+    function scrollToBottom() {
+        msgBox.scrollTop = msgBox.scrollHeight;
+    }
+
+    function formatTime(dateStr) {
+        if (!dateStr) return '';
+        const d = new Date(dateStr.replace(' ', 'T'));
+        return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
+
+    // ── Polling ────────────────────────────────────────────────
+    function startPolling() {
+        poll();
+        pollTimer = setInterval(poll, 3000);
+    }
+    function stopPolling() {
+        clearInterval(pollTimer);
+    }
+
+    function poll() {
+        fetch(`${HANDLER}?action=poll&since=${lastMsgId}`)
+        .then(r => r.json())
+        .then(d => {
+            if (!d.ok || !d.messages.length) return;
+            d.messages.forEach(m => {
+                if (+m.id <= lastMsgId) return;
+                lastMsgId = +m.id;
+                if (m.sender === 'admin') {
+                    appendBubble('admin', m.message, formatTime(m.created_at));
+                    if (!isOpen) bumpUnread();
+                } else {
+                    // Our own message already rendered optimistically; skip
+                }
+            });
+        })
+        .catch(console.error);
+    }
+
+    // ── Unread badge ───────────────────────────────────────────
+    function bumpUnread() {
+        unreadCnt++;
+        badge.textContent = unreadCnt > 9 ? '9+' : unreadCnt;
+        badge.classList.add('show');
+    }
+    function clearUnread() {
+        unreadCnt = 0;
+        badge.classList.remove('show');
+    }
+
+    // Start polling silently even when closed so badge updates
+    setTimeout(() => {
+        setInterval(() => {
+            if (isOpen) return; // handled by startPolling
+            fetch(`${HANDLER}?action=poll&since=${lastMsgId}`)
+            .then(r => r.json())
+            .then(d => {
+                if (!d.ok || !d.messages.length) return;
+                d.messages.forEach(m => {
+                    if (+m.id <= lastMsgId) return;
+                    lastMsgId = +m.id;
+                    if (m.sender === 'admin') bumpUnread();
+                });
+            })
+            .catch(()=>{});
+        }, 8000);
+    }, 5000);
+})();
 </script>
 
 <?php include '../includes/footer.php'; ?>
