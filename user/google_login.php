@@ -6,9 +6,7 @@ session_start();
 require __DIR__ . '/../vendor/autoload.php';
 require_once __DIR__ . '/../config/db.php';
 
-$client = new Google_Client([
-    'client_id' => '1045079519630-reec2mcusabp0hg13bufjrmnpvm2a0jb.apps.googleusercontent.com'
-]);
+$client_id = '1045079519630-reec2mcusabp0hg13bufjrmnpvm2a0jb.apps.googleusercontent.com';
 
 if (!isset($_POST['id_token'])) {
     http_response_code(400);
@@ -16,16 +14,33 @@ if (!isset($_POST['id_token'])) {
 }
 
 $idToken = $_POST['id_token'];
-$payload = $client->verifyIdToken($idToken);
 
-if (!$payload) {
+// Verify token using Google's tokeninfo endpoint
+$url = 'https://oauth2.googleapis.com/tokeninfo?id_token=' . urlencode($idToken);
+$ch = curl_init($url);
+curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false); // For local XAMPP environments
+$response = curl_exec($ch);
+$http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+curl_close($ch);
+
+if ($http_code !== 200) {
     http_response_code(401);
     exit("Invalid token");
+}
+
+$payload = json_decode($response, true);
+
+// Verify the audience matches our client ID
+if (!isset($payload['aud']) || $payload['aud'] !== $client_id) {
+    http_response_code(401);
+    exit("Invalid client ID");
 }
 
 $email    = $payload['email'] ?? '';
 $fullName = $payload['name']  ?? 'Google User';
 $googleId = $payload['sub']   ?? '';
+
 
 if ($email === '') {
     http_response_code(400);

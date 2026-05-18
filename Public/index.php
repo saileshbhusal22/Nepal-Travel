@@ -158,41 +158,50 @@ if ($udTableCheck && $udTableCheck->num_rows > 0) {
         <div style="margin-top: 20px; display: flex; align-items: center; justify-content: center; gap: 10px; color: rgba(255,255,255,0.9); font-size: 13px; font-weight: 600; text-shadow: 0 2px 4px rgba(0,0,0,0.5);">
             <svg style="width: 18px; height: 18px; fill: var(--primary-yellow);" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
             <span>Best Time to Visit: <span style="color: var(--primary-yellow);">Sept - Nov</span> & <span style="color: var(--primary-yellow);">Mar - May</span></span>
+include __DIR__ . '/../includes/header.php'; 
+require_once __DIR__ . '/../user/db.php';
+<?php include '../includes/header.php'; ?>
+
+<!-- Sanskar Part -->
+<!-- Travel Style Hero Section -->
+<section class="nepal-hero">
+    <div class="mh-bg" style="background-image: url('../images/pokhara_lake.png');"></div>
+    <div class="mh-overlay"></div>
+    
+    <!-- Left/Right Nav Arrows -->
+    <button class="mh-arrow mh-left">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 19l-7-7 7-7"/></svg>
+    </button>
+    <button class="mh-arrow mh-right">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5l7 7-7 7"/></svg>
+    </button>
+
+    <div class="mh-content">
+        <div class="mh-subtitle">WELCOME TO</div>
+        <h1 class="mh-title">NEPAL</h1>
+        <a href="#deals" class="btn mh-btn">LEARN MORE</a>
+    </div>
+
+    <!-- Bottom Category Bar -->
+    <div class="mh-bottom-nav">
+        <div class="container" style="padding: 0;">
+            <ul class="mh-cat-list">
+                <li class="mh-cat-item active">
+                    <a href="#nature" class="mh-cat-link">NATURE & ADVENTURE</a>
+                </li>
+                <li class="mh-cat-item"><a href="#culture" class="mh-cat-link">CULTURE & HERITAGE</a></li>
+                <li class="mh-cat-item"><a href="#food" class="mh-cat-link">FOOD & DRINKS</a></li>
+                <li class="mh-cat-item"><a href="#city" class="mh-cat-link">CITY EXCITEMENT</a></li>
+                <li class="mh-cat-item"><a href="#family" class="mh-cat-link">FAMILY FUN</a></li>
+                <li class="mh-cat-item"><a href="#mountains" class="mh-cat-link">MOUNTAINS & TREKS</a></li>
+                <li class="mh-cat-item"><a href="#deals" class="mh-cat-link">DEALS & PACKAGES</a></li>
+            </ul>
         </div>
     </div>
 </section>
 
-<?php
-$all_facts = [
-    ['val' => '8848m', 'label' => 'Highest Peak'],
-    ['val' => '125+', 'label' => 'Ethnic Groups'],
-    ['val' => '10', 'label' => 'UNESCO Sites'],
-    ['val' => '7000+', 'label' => 'Himalayan Peaks'],
-    ['val' => '123', 'label' => 'Languages'],
-    ['val' => '860+', 'label' => 'Bird Species'],
-    ['val' => '6000+', 'label' => 'Rivers & Rivulets'],
-    ['val' => '20%', 'label' => 'Protected Land'],
-    ['val' => '1st', 'label' => 'Birthplace of Buddha'],
-    ['val' => 'No #1', 'label' => 'Non-Rectangular Flag']
-];
-shuffle($all_facts);
-$display_facts = array_slice($all_facts, 0, 4);
-?>
 
-<!-- Quick Facts Strip -->
-<div class="facts-strip" style="background: var(--primary-blue); color: white; padding: 40px 0; position: relative; z-index: 10;">
-    <div class="container" style="display: flex; justify-content: space-between; align-items: center; gap: 20px; flex-wrap: wrap;">
-        <?php foreach($display_facts as $index => $fact): ?>
-            <div style="text-align: center; flex: 1; min-width: 150px;">
-                <div style="font-size: 32px; font-weight: 800; color: var(--primary-yellow);"><?php echo $fact['val']; ?></div>
-                <div style="font-size: 11px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; margin-top: 5px;"><?php echo $fact['label']; ?></div>
-            </div>
-            <?php if($index < 3): ?>
-                <div style="width: 1px; height: 40px; background: rgba(255,255,255,0.2);" class="fact-divider"></div>
-            <?php endif; ?>
-        <?php endforeach; ?>
-    </div>
-</div>
+<!-- Category Sections -->
 
 <style>
     @media (max-width: 768px) { .fact-divider { display: none; } }
@@ -238,6 +247,22 @@ $display_facts = array_slice($all_facts, 0, 4);
                 <img src="../images/pashupatinath_aarti.png" alt="Aarti">
                 <div class="bento-overlay"><span class="bento-category">Spirituality</span><h3 class="bento-title">Pashupatinath Evening Aarti</h3></div>
             </a>
+<!-- Bijay Part -->
+<!-- 1. Nature & Adventure -->
+<section id="nature" class="container" style="padding-top: 60px;">
+    <h2 class="section-title" style="margin-bottom: 30px;">Nature & <span class="script-font" style="font-size:40px; color:var(--primary-yellow);">Adventure</span></h2>
+    <div class="grid-container">
+        <!-- Card 1 -->
+        <div class="idea-card">
+            <div class="card-badge">3 DAYS 2 NIGHTS</div>
+            <img src="../images/chitwan_rhino.png" alt="Chitwan" class="card-img">
+            <div class="card-overlay"><span class="card-region">Terai Plains</span><h3 class="card-title">Chitwan National Park Jungle Safari</h3></div>
+        </div>
+        <!-- Card 2 -->
+        <div class="idea-card">
+            <div class="card-badge">1 DAY</div>
+            <img src="../images/pokhara_lake.png" alt="Pokhara Lake" class="card-img">
+            <div class="card-overlay"><span class="card-region">Gandaki Zone</span><h3 class="card-title">Phewa Lake Boating River Rafting</h3></div>
         </div>
     </div>
 </section>
@@ -284,6 +309,19 @@ $display_facts = array_slice($all_facts, 0, 4);
                     <p style="font-size: 14px; color: #777;">Lower altitude tours and amazing snow views.</p>
                 </div>
             </div>
+<!-- 2. Culture & Heritage -->
+<section id="culture" class="container" style="padding-top: 60px;">
+    <h2 class="section-title" style="margin-bottom: 30px;">Culture & <span class="script-font" style="font-size:40px; color:var(--primary-yellow);">Heritage</span></h2>
+    <div class="grid-container">
+        <div class="idea-card">
+            <div class="card-badge">HALF DAY</div>
+            <img src="../images/bhaktapur_temple.png" alt="Bhaktapur" class="card-img">
+            <div class="card-overlay"><span class="card-region">Kathmandu Valley</span><h3 class="card-title">Bhaktapur Durbar Square Heritage Walk</h3></div>
+        </div>
+        <div class="idea-card">
+            <div class="card-badge">2 DAYS 1 NIGHT</div>
+            <img src="../images/lumbini_temple.png" alt="Lumbini" class="card-img">
+            <div class="card-overlay"><span class="card-region">Lumbini Province</span><h3 class="card-title">Birthplace of Buddha Spiritual Tour</h3></div>
         </div>
     </div>
 </section>
@@ -405,6 +443,20 @@ $display_facts = array_slice($all_facts, 0, 4);
             .home-deal-price small { display: block; font-size: 11px; color: #aaa; font-weight: 400; text-decoration: line-through; }
             .home-deal-btn { display: inline-block; padding: 10px 20px; background: #285da1; color: white; font-size: 11px; font-weight: 800; border-radius: 30px; letter-spacing: 1px; }
         </style>
+        <?php include __DIR__ . '/../includes/deals-data.php'; ?>
+        
+        <!-- Grid -->
+        <div id="dealsGridContainer" class="deals-options-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 30px; margin-bottom: 60px;">
+            <?php foreach($deals as $deal): ?>
+            <a href="deal.php?id=<?php echo htmlspecialchars($deal['id']); ?>" style="display: flex; flex-direction: column; background: white; text-decoration: none; position: relative; border: 1px solid #eee; transition: all 0.3s ease; border-radius: 12px; overflow: hidden; box-shadow: 0 5px 15px rgba(0,0,0,0.05);">
+                
+                <div style="position: relative;">
+                    <img src="<?php echo htmlspecialchars($deal['image']); ?>" style="width: 100%; height: 260px; object-fit: cover; display: block;">
+                    <div style="position: absolute; top: 15px; right: 15px; display: flex; flex-direction: column; gap: 5px; align-items: flex-end;">
+                        <span style="background: <?php echo htmlspecialchars($deal['badge_color']); ?>; color: white; padding: 6px 14px; font-size: 11px; font-weight: 800; letter-spacing: 1px; border-radius: 4px; text-transform: uppercase; box-shadow: 0 4px 10px rgba(0,0,0,0.2);"><?php echo htmlspecialchars($deal['category_badge']); ?></span>
+                        <span style="background: white; color: #333; padding: 4px 10px; font-size: 10px; font-weight: 800; border-radius: 4px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);"><?php echo htmlspecialchars($deal['duration']); ?></span>
+                    </div>
+                </div>
 
         <?php
         $badge_colors = [
@@ -515,6 +567,14 @@ $display_facts = array_slice($all_facts, 0, 4);
                 </div>
             </a>
             <?php endforeach; ?>
+<!-- 3. Food & Drinks -->
+<section id="food" class="container" style="padding-top: 60px;">
+    <h2 class="section-title" style="margin-bottom: 30px;">Food & <span class="script-font" style="font-size:40px; color:var(--primary-yellow);">Drinks</span></h2>
+    <div class="grid-container">
+        <div class="idea-card">
+            <div class="card-badge">1 DAY</div>
+            <img src="../images/food_drinks_nepal.png" alt="Food" class="card-img">
+            <div class="card-overlay"><span class="card-region">Kathmandu</span><h3 class="card-title">Authentic Newari Cuisine Tasting</h3></div>
         </div>
 
         <div style="text-align: center; margin-top: -20px; margin-bottom: 20px;">
@@ -580,6 +640,15 @@ $display_facts = array_slice($all_facts, 0, 4);
         <div style="text-align: center; display: flex; gap: 15px; justify-content: center; margin-top: 30px;">
             <button type="button" id="loadMoreCommunityBtn" style="padding: 14px 40px; font-weight: 800; cursor: pointer; border-radius: 30px; border: 2px solid #285da1; background: transparent; color: #285da1; font-family: inherit; font-size: 14px; letter-spacing: 1px;">LOAD MORE STORIES</button>
             <a href="experience.php" style="padding: 14px 40px; font-weight: 800; cursor: pointer; border-radius: 30px; background: #285da1; color: white; text-decoration: none; font-family: inherit; font-size: 14px; letter-spacing: 1px;">EXPLORE COMMUNITY</a>
+<!-- Ramal Part -->
+<!-- 4. City Excitement -->
+<section id="city" class="container" style="padding-top: 60px;">
+    <h2 class="section-title" style="margin-bottom: 30px;">City <span class="script-font" style="font-size:40px; color:var(--primary-yellow);">Excitement</span></h2>
+    <div class="grid-container">
+        <div class="idea-card">
+            <div class="card-badge">1 DAY</div>
+            <img src="../images/city_excitement_nepal.png" alt="City" class="card-img">
+            <div class="card-overlay"><span class="card-region">Thamel</span><h3 class="card-title">Thamel Night Market & Live Music</h3></div>
         </div>
     </div>
 </section>
@@ -601,6 +670,14 @@ $display_facts = array_slice($all_facts, 0, 4);
         </div>
         <div style="text-align: center; margin-top: 80px;">
             <button id="postStoryBtn" style="padding: 16px 45px; background: var(--primary-yellow); color: #111; border: none; border-radius: 50px; font-size: 13px; font-weight: 800; letter-spacing: 2px; cursor: pointer; transition: all 0.3s; box-shadow: 0 4px 15px rgba(245, 166, 35, 0.2);">SHARE YOUR STORY</button>
+<!-- 5. Family Fun -->
+<section id="family" class="container" style="padding-top: 60px;">
+    <h2 class="section-title" style="margin-bottom: 30px;">Family <span class="script-font" style="font-size:40px; color:var(--primary-yellow);">Fun</span></h2>
+    <div class="grid-container">
+        <div class="idea-card">
+            <div class="card-badge">4 DAYS 3 NIGHTS</div>
+            <img src="../images/family_fun_nepal.png" alt="Family" class="card-img">
+            <div class="card-overlay"><span class="card-region">Chitwan</span><h3 class="card-title">Elephant Breeding Center & Village Walk</h3></div>
         </div>
     </div>
 </section>
@@ -657,13 +734,19 @@ $display_facts = array_slice($all_facts, 0, 4);
     <div class="container map-layout">
         <div class="map-visual" id="nepal-svg-container">
             <?php include __DIR__ . '/../includes/map.php'; ?>
+<!-- 6. Mountains & Treks -->
+<section id="mountains" class="container" style="padding-top: 60px;">
+    <h2 class="section-title" style="margin-bottom: 30px;">Mountains & <span class="script-font" style="font-size:40px; color:var(--primary-yellow);">Treks</span></h2>
+    <div class="grid-container">
+        <div class="idea-card">
+            <div class="card-badge">14 DAYS 13 NIGHTS</div>
+            <img src="../images/annapurna_trek.png" alt="Annapurna" class="card-img">
+            <div class="card-overlay"><span class="card-region">Annapurna Region</span><h3 class="card-title">Annapurna Circuit Expedition</h3></div>
         </div>
-        <div class="map-details">
-            <div class="province-card">
-                <h3 id="province-title" class="province-name">Select a District</h3>
-                <p id="province-desc" class="province-description">Experience the beautiful district of Nepal, a pristine destination waiting to be discovered.</p>
-                <a href="travel-ideas.php" class="btn btn-outline" style="padding: 12px 30px; font-size: 12px; margin-top: 20px; display:inline-block;">Explore Region</a>
-            </div>
+        <div class="idea-card">
+            <div class="card-badge">12 DAYS 11 NIGHTS</div>
+            <img src="../images/everest_trek.png" alt="Everest" class="card-img">
+            <div class="card-overlay"><span class="card-region">Sagarmatha Zone</span><h3 class="card-title">Everest Base Camp Trekking</h3></div>
         </div>
     </div>
 </section>
@@ -1127,4 +1210,6 @@ $display_facts = array_slice($all_facts, 0, 4);
 })();
 </script>
 
+<?php include '../includes/footer.php'; ?>
+<?php include __DIR__ . '/../includes/footer.php'; ?>
 <?php include '../includes/footer.php'; ?>

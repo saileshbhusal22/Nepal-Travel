@@ -79,6 +79,7 @@ document.addEventListener("DOMContentLoaded", () => {
                             <div class="user-avatar" style="width: 35px; height: 35px; font-size: 14px; background: #1b3a5a; overflow:hidden; display:flex; align-items:center; justify-content:center;">
                                 ${c.profile_image ? `<img src="../${c.profile_image}" onerror="this.onerror=null; this.src='../images/default_avatar.png';" style="width:100%; height:100%; object-fit:cover;">` : c.username.charAt(0).toUpperCase()}
                             </div>
+                            <div class="user-avatar" style="width: 35px; height: 35px; font-size: 14px; background: #1b3a5a;">${c.username.charAt(0).toUpperCase()}</div>
                             ${index === 0 ? '<span style="position: absolute; top: -5px; right: -5px; font-size: 14px;">👑</span>' : ''}
                         </div>
                         <div style="flex: 1;">
@@ -500,6 +501,9 @@ document.addEventListener("DOMContentLoaded", () => {
                             </div>
                             <div class="post-user-info">
                                 <h4><a href="profile.php?id=${post.user_id}" style="text-decoration:none; color:inherit;">${username}</a> ${destTag}</h4>
+                            <div class="user-avatar" style="background: ${isOwner ? 'linear-gradient(135deg, #1b3a5a, #2c537a)' : '#1b3a5a'}">${avatarText}</div>
+                            <div class="post-user-info">
+                                <h4>${username} ${destTag}</h4>
                                 <span class="post-date">${new Date(post.created_at).toLocaleDateString(undefined, {year: 'numeric', month: 'long', day: 'numeric'})}</span>
                             </div>
                             ${optionsBtn}
@@ -507,6 +511,7 @@ document.addEventListener("DOMContentLoaded", () => {
                         
                         <div class="post-image-wrapper">
                             <img src="${normalizeImagePath(post.image_path)}" alt="Experience" class="post-image" loading="lazy" onerror="this.onerror=null; this.src='/Nepal-Travel/images/annapurna_trek.png';">
+                            <img src="${normalizeImagePath(post.image_path)}" alt="Experience" class="post-image" loading="lazy">
                         </div>
 
                         <div style="padding: 15px 20px 0;">
