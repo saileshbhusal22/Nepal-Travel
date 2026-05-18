@@ -111,7 +111,7 @@ body {
   height: 44px;
   padding: 0 16px;
   border-radius: 6px;
-  border: 1px solid #dadce0;
+  border: 1px solid rgba(255,255,255,0.2);
   background: blueviolet;
   color: white;
   cursor: pointer;
@@ -125,13 +125,12 @@ body {
   transition: background 0.2s, opacity 0.2s;
 }
 .social-btn:hover {
-  opacity: 0.88;
+  background: rgba(255,255,255,0.2);
 }
 
 .facebook {
   background: rgba(59, 89, 152, 0.85);
   color: white;
-  border: 1px solid rgba(255,255,255,0.2);
 }
 .facebook:hover {
   background: rgba(59, 89, 152, 1);
@@ -225,18 +224,21 @@ small {
   height: 50px;
   padding: 0;
   font-size: 15px;
-  font-weight: 600;
+  font-weight: 700;
   border-radius: 8px;
-  background: #0e4d1d;
-  color: white;
+  background: #fbbf24;
+  color: #0f172a;
   border: none;
   cursor: pointer;
-  letter-spacing: 0.5px;
-  transition: background 0.2s, transform 0.1s;
-  font-family: inherit;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  transition: all 0.3s ease;
+  font-family: 'Montserrat', sans-serif;
 }
 .create-btn:hover {
-  background: #0a3a15;
+  background: #eab308;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(251,191,36,0.4);
 }
 .create-btn:active {
   transform: scale(0.98);

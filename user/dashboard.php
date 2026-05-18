@@ -1,5 +1,8 @@
 <?php
-if (session_status() === PHP_SESSION_NONE) { session_start(); }
+
+  session_start();
+
+
 if (!isset($_SESSION['user_id'])) {
     header('Location: /Nepal-Travel/user/login.php'); exit;
 }
@@ -66,7 +69,7 @@ if (
 }
 // ─────────────────────────────────────────────────────────────────────────
 
-$stmt = $conn->prepare("SELECT id, full_name, username, email, profile_image, created_at FROM users WHERE id = ?");
+$stmt = $conn->prepare("SELECT id, full_name, username, email, profile_image, bio, location, created_at FROM users WHERE id = ?");
 $stmt->bind_param("i", $_SESSION['user_id']);
 $stmt->execute();
 $user = $stmt->get_result()->fetch_assoc();
@@ -91,7 +94,7 @@ $initials    = strtoupper(substr($user['full_name'], 0, 2));
 $memberSince = date('F Y', strtotime($user['created_at']));
 $activeTab   = $_GET['tab'] ?? 'overview';
 
-// ── COUNTS FOR HERO STATS ─────────────────────────────────────────────────
+
 $stmt = $conn->prepare("SELECT COUNT(*) FROM bookings WHERE user_id = ?");
 $stmt->bind_param("i", $_SESSION['user_id']);
 $stmt->execute();
@@ -732,9 +735,9 @@ table.bkt tr.cancelling td{transition:opacity 0.4s, background 0.4s;opacity:0.4;
 
               <td><?php echo date('M j, Y', strtotime($b['date'])); ?></td>
 
-              <!-- GUESTS: locked if Khalti-paid -->
+              <!-- GUESTS: locked if Khalti-paid or confirmed -->
               <td>
-                <?php if (!$isKhalti && $b['status'] !== 'cancelled'): ?>
+                <?php if (!$isKhalti && $b['status'] !== 'cancelled' && $b['status'] !== 'confirmed'): ?>
                   <form method="POST" action="?tab=bookings" class="gf">
                     <input type="hidden" name="booking_id" value="<?php echo $b['id']; ?>">
                     <input type="hidden" name="booking_action" value="update_guests">
@@ -781,7 +784,7 @@ table.bkt tr.cancelling td{transition:opacity 0.4s, background 0.4s;opacity:0.4;
                     Ticket
                   </a>
 
-                  <?php if ($isKhalti): ?>
+                  <?php if ($isKhalti || $b['status'] === 'confirmed'): ?>
                     <span class="khalti-locked">
                       <svg viewBox="0 0 24 24" fill="currentColor" style="width:11px;height:11px"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg>
                       Contact support to modify
@@ -874,6 +877,7 @@ table.bkt tr.cancelling td{transition:opacity 0.4s, background 0.4s;opacity:0.4;
       <?php endforeach; ?>
     </div>
   <?php endif; ?>
+
 
 <?php elseif ($activeTab === 'settings'): ?>
 
@@ -1436,9 +1440,17 @@ table.bkt tr.cancelling td{transition:opacity 0.4s, background 0.4s;opacity:0.4;
         const btn = document.querySelector('.js-cancel-btn[data-id="' + bookingId + '"]');
         if (btn) btn.remove();
 
-        // 3. Briefly dim the row
+        // 3. Update guests cell to remove edit form
         const row = document.getElementById('bk-row-' + bookingId);
         if (row) {
+          const guestForm = row.querySelector('form.gf');
+          if (guestForm) {
+            const guestInput = guestForm.querySelector('input[name="guests"]');
+            const guestVal = guestInput ? guestInput.value : '';
+            const td = guestForm.parentElement;
+            td.innerHTML = '<span style="color:var(--soil)">' + guestVal + '</span>';
+          }
+          
           row.classList.add('cancelling');
           setTimeout(() => row.classList.remove('cancelling'), 700);
         }
@@ -1563,6 +1575,7 @@ table.bkt tr.cancelling td{transition:opacity 0.4s, background 0.4s;opacity:0.4;
       if (this.value.trim()) delError.classList.remove('show');
     });
   }
+
 
 })();
 </script>

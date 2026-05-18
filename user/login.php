@@ -1,5 +1,7 @@
 <?php
+
 session_start();
+
 require_once __DIR__ . '/../config/db.php';
 
 $message = "";
@@ -23,6 +25,20 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         } elseif ($user['email_verified'] != 1) {
             $message = "Please verify your email before logging in. Check your inbox.";
         } else {
+            if ($user['role'] === 'admin') {
+                // Close the public session first, preserving its data
+                session_write_close();
+                
+                // Start a brand new admin session
+                session_name('nepal_admin_session');
+                if (isset($_COOKIE['nepal_admin_session'])) {
+                    session_id($_COOKIE['nepal_admin_session']);
+                } else {
+                    session_id(session_create_id());
+                }
+                session_start();
+            }
+
             $_SESSION['user_id']   = $user['id'];
             $_SESSION['user_name'] = $user['full_name'];
             $_SESSION['role']      = $user['role'];
@@ -80,9 +96,10 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
         .form-content h2 {
             font-size: 36px;
-            font-weight: 700;
-            color: wheat;
+            font-weight: 800;
+            color: #fbbf24;
             margin-bottom: 0.4rem;
+            font-family: 'Montserrat', sans-serif;
         }
 
         .form-content .subtitle {
@@ -92,8 +109,8 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         }
 
         .form-content .subtitle a {
-            color: wheat;
-            font-weight: 600;
+            color: #fbbf24;
+            font-weight: 700;
             text-decoration: none;
         }
 
@@ -122,7 +139,6 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             border-color: rgba(255,255,255,0.5);
         }
 
-        /* password toggle */
         .pass-wrap { position: relative; }
         .pass-wrap input { padding-right: 44px; }
         .eye-btn {
@@ -155,17 +171,23 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         .btn-login {
             width: 100%;
             padding: 13px;
-            background: #2e7d32;
-            color: white;
+            background: #fbbf24;
+            color: #0f172a;
             border: none;
             border-radius: 6px;
             font-size: 15px;
-            font-weight: 600;
+            font-weight: 800;
             cursor: pointer;
-            letter-spacing: 0.5px;
-            transition: background 0.2s;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            transition: all 0.3s ease;
+            font-family: 'Montserrat', sans-serif;
         }
-        .btn-login:hover { background: #245c27; }
+        .btn-login:hover { 
+            background: #eab308;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(251,191,36,0.4);
+        }
 
         .message {
             font-size: 13px;
@@ -248,7 +270,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 </div>
 
 <div class="login-right">
-    <p class="tagline">Discover the Himalayas</p>
+    <p class="tagline">Experience the ultimate</p>
     <p class="big-title">NEPAL</p>
 </div>
 

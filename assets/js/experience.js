@@ -76,6 +76,9 @@ document.addEventListener("DOMContentLoaded", () => {
                 listEl.innerHTML = data.contributors.map((c, index) => `
                     <div class="contributor-item" style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px; padding: 10px; border-radius: 12px; background: ${index === 0 ? 'rgba(245, 166, 35, 0.05)' : '#fff'}; border: 1px solid ${index === 0 ? '#f5a62344' : '#f0f0f0'}; transition: all 0.3s ease; cursor: pointer;" onclick="window.location.href='profile.php?id=${c.id}'">
                         <div style="position: relative;">
+                            <div class="user-avatar" style="width: 35px; height: 35px; font-size: 14px; background: #1b3a5a; overflow:hidden; display:flex; align-items:center; justify-content:center;">
+                                ${c.profile_image ? `<img src="../${c.profile_image}" onerror="this.onerror=null; this.src='../images/default_avatar.png';" style="width:100%; height:100%; object-fit:cover;">` : c.username.charAt(0).toUpperCase()}
+                            </div>
                             <div class="user-avatar" style="width: 35px; height: 35px; font-size: 14px; background: #1b3a5a;">${c.username.charAt(0).toUpperCase()}</div>
                             ${index === 0 ? '<span style="position: absolute; top: -5px; right: -5px; font-size: 14px;">👑</span>' : ''}
                         </div>
@@ -493,6 +496,11 @@ document.addEventListener("DOMContentLoaded", () => {
                     
                     postEl.innerHTML = `
                         <div class="post-header">
+                            <div class="user-avatar" style="background: ${isOwner ? 'linear-gradient(135deg, #1b3a5a, #2c537a)' : '#1b3a5a'}; overflow:hidden; display:flex; align-items:center; justify-content:center;">
+                                ${post.profile_image ? `<img src="../${post.profile_image}" onerror="this.onerror=null; this.src='../images/default_avatar.png';" style="width:100%; height:100%; object-fit:cover;">` : avatarText}
+                            </div>
+                            <div class="post-user-info">
+                                <h4><a href="profile.php?id=${post.user_id}" style="text-decoration:none; color:inherit;">${username}</a> ${destTag}</h4>
                             <div class="user-avatar" style="background: ${isOwner ? 'linear-gradient(135deg, #1b3a5a, #2c537a)' : '#1b3a5a'}">${avatarText}</div>
                             <div class="post-user-info">
                                 <h4>${username} ${destTag}</h4>
@@ -502,6 +510,7 @@ document.addEventListener("DOMContentLoaded", () => {
                         </div>
                         
                         <div class="post-image-wrapper">
+                            <img src="${normalizeImagePath(post.image_path)}" alt="Experience" class="post-image" loading="lazy" onerror="this.onerror=null; this.src='/Nepal-Travel/images/annapurna_trek.png';">
                             <img src="${normalizeImagePath(post.image_path)}" alt="Experience" class="post-image" loading="lazy">
                         </div>
 
@@ -542,6 +551,25 @@ document.addEventListener("DOMContentLoaded", () => {
                 
                 attachActionListeners();
                 attachPostOptionsListeners();
+                
+                // Scroll to specific post if requested
+                const urlParams = new URLSearchParams(window.location.search);
+                const focusPostId = urlParams.get('post_id');
+                if (focusPostId) {
+                    const focusElement = document.getElementById(`post-card-${focusPostId}`);
+                    if (focusElement) {
+                        setTimeout(() => {
+                            focusElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            focusElement.style.transition = 'box-shadow 0.5s ease';
+                            focusElement.style.boxShadow = '0 0 25px rgba(245, 166, 35, 0.6)';
+                            setTimeout(() => { focusElement.style.boxShadow = '0 5px 20px rgba(0,0,0,0.05)'; }, 2500);
+                        }, 300);
+                        
+                        // Remove param from URL so it doesn't jump again on filter changes
+                        const newUrl = window.location.pathname + window.location.search.replace(new RegExp('([?&])post_id=' + focusPostId + '(&|$)'), '$1').replace(/[?&]$/, '');
+                        window.history.replaceState({}, document.title, newUrl);
+                    }
+                }
             }
         } catch (err) {
             console.error(err);

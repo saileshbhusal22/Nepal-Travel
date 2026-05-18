@@ -1,12 +1,21 @@
 <?php
+session_name('nepal_admin_session');
 session_start();
 require_once __DIR__ . '/../config/db.php';
 
 // ── Auth guard ───────────────────────────────────────────────────
-// if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
-//     header('Location: /Nepal-Travel/user/login.php'); exit;
-// }
-$admin_id = (int)($_SESSION['user_id'] ?? 1);
+if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
+    header('Location: /Nepal-Travel/user/login.php'); exit;
+}
+$admin_id = (int)$_SESSION['user_id'];
+
+// ── Fetch logged-in admin info ───────────────────────────────────
+$admin_info_res = $conn->query("SELECT full_name, username, profile_image FROM users WHERE id = $admin_id LIMIT 1");
+$admin_info     = $admin_info_res ? $admin_info_res->fetch_assoc() : [];
+$admin_display  = htmlspecialchars($admin_info['full_name'] ?? $admin_info['username'] ?? 'Admin');
+$admin_initial  = strtoupper(substr($admin_info['full_name'] ?? $admin_info['username'] ?? 'A', 0, 1));
+$admin_username = htmlspecialchars($admin_info['username'] ?? '');
+$admin_avatar   = $admin_info['profile_image'] ?? '';
 
 // ── Auto-expire ──────────────────────────────────────────────────
 $conn->query("UPDATE user_deals SET status='expired' WHERE status='approved' AND visible_until IS NOT NULL AND visible_until < NOW()");
@@ -16,7 +25,6 @@ $conn->query("UPDATE user_subscriptions SET status='expired' WHERE status='activ
 //  ALL POST ACTIONS — must be before any output
 // ════════════════════════════════════════════════════════════════
 
-// ── Booking status update ────────────────────────────────────────
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_status'])) {
     $bid    = (int)$_POST['booking_id'];
     $status = $conn->real_escape_string($_POST['status']);
@@ -24,20 +32,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_status'])) {
     header('Location: dashboard.php?tab=bookings&updated=1'); exit;
 }
 
-// ── Delete Booking ───────────────────────────────────────────────
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_booking'])) {
     $bid = (int)$_POST['booking_id'];
     $conn->query("DELETE FROM bookings WHERE id=$bid");
     header('Location: dashboard.php?tab=bookings&deleted_booking=1'); exit;
 }
 
-// ── Delete ALL Bookings ──────────────────────────────────────────
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_all_bookings'])) {
     $conn->query("DELETE FROM bookings");
     header('Location: dashboard.php?tab=bookings&deleted_all=1'); exit;
 }
 
-// ── Delete user ──────────────────────────────────────────────────
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_user'])) {
     $uid = (int)$_POST['user_id'];
     $conn->query("DELETE FROM bookings WHERE user_id=$uid");
@@ -45,59 +50,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_user'])) {
     header('Location: dashboard.php?tab=users&deleted=1'); exit;
 }
 
-// ── Approve Subscription ─────────────────────────────────────────
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'approve_sub') {
     $sub_id  = (int)$_POST['sub_id'];
-    $sub_row = $conn->query("
-        SELECT us.*, sp.duration_days
-        FROM user_subscriptions us
-        JOIN subscription_plans sp ON sp.id = us.plan_id
-        WHERE us.id = $sub_id
-    ");
+    $sub_row = $conn->query("SELECT us.*, sp.duration_days FROM user_subscriptions us JOIN subscription_plans sp ON sp.id = us.plan_id WHERE us.id = $sub_id");
     if ($sub_row && ($sub = $sub_row->fetch_assoc())) {
         $starts  = date('Y-m-d H:i:s');
         $expires = date('Y-m-d H:i:s', strtotime("+{$sub['duration_days']} days"));
-        $conn->query("
-            UPDATE user_subscriptions
-            SET status='active', starts_at='$starts', expires_at='$expires',
-                approved_by=$admin_id, approved_at=NOW()
-            WHERE id=$sub_id
-        ");
+        $conn->query("UPDATE user_subscriptions SET status='active', starts_at='$starts', expires_at='$expires', approved_by=$admin_id, approved_at=NOW() WHERE id=$sub_id");
     }
     header('Location: dashboard.php?tab=subscriptions&msg=' . urlencode('✓ Subscription activated!') . '&mt=success'); exit;
 }
 
-// ── Reject Subscription ──────────────────────────────────────────
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'reject_sub') {
     $sub_id = (int)$_POST['sub_id'];
     $conn->query("UPDATE user_subscriptions SET status='cancelled' WHERE id=$sub_id");
     header('Location: dashboard.php?tab=subscriptions&msg=' . urlencode('Subscription rejected.') . '&mt=error'); exit;
 }
 
-// ── Approve Deal ─────────────────────────────────────────────────
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'approve_deal') {
     $deal_id = (int)$_POST['deal_id'];
-    $drow = $conn->query("
-        SELECT ud.id, sp.duration_days
-        FROM user_deals ud
-        JOIN user_subscriptions us ON us.id = ud.subscription_id
-        JOIN subscription_plans sp ON sp.id = us.plan_id
-        WHERE ud.id = $deal_id
-    ");
+    $drow = $conn->query("SELECT ud.id, sp.duration_days FROM user_deals ud JOIN user_subscriptions us ON us.id = ud.subscription_id JOIN subscription_plans sp ON sp.id = us.plan_id WHERE ud.id = $deal_id");
     if ($drow && ($d = $drow->fetch_assoc())) {
         $from  = date('Y-m-d H:i:s');
         $until = date('Y-m-d H:i:s', strtotime("+{$d['duration_days']} days"));
-        $conn->query("
-            UPDATE user_deals
-            SET status='approved', visible_from='$from', visible_until='$until',
-                approved_by=$admin_id, approved_at=NOW()
-            WHERE id=$deal_id
-        ");
+        $conn->query("UPDATE user_deals SET status='approved', visible_from='$from', visible_until='$until', approved_by=$admin_id, approved_at=NOW() WHERE id=$deal_id");
     }
     header('Location: dashboard.php?tab=subscriptions&msg=' . urlencode('✓ Deal approved and published!') . '&mt=success'); exit;
 }
 
-// ── Reject Deal ──────────────────────────────────────────────────
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'reject_deal') {
     $deal_id = (int)$_POST['deal_id'];
     $reason  = $conn->real_escape_string(trim($_POST['reason'] ?? 'Does not meet our guidelines.'));
@@ -105,7 +85,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'rejec
     header('Location: dashboard.php?tab=subscriptions&msg=' . urlencode('Deal rejected.') . '&mt=error'); exit;
 }
 
-// ── Delete Deal ──────────────────────────────────────────────────
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'delete_deal') {
     $deal_id = (int)$_POST['deal_id'];
     $conn->query("DELETE FROM user_deals WHERE id=$deal_id");
@@ -118,76 +97,55 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'delet
 
 $activeTab = $_GET['tab'] ?? 'overview';
 
-// ── Core stats ───────────────────────────────────────────────────
 $total_users    = $conn->query("SELECT COUNT(*) FROM users")->fetch_row()[0];
 $total_bookings = $conn->query("SELECT COUNT(*) FROM bookings")->fetch_row()[0];
 $confirmed      = $conn->query("SELECT COUNT(*) FROM bookings WHERE status='confirmed'")->fetch_row()[0];
 $cancelled      = $conn->query("SELECT COUNT(*) FROM bookings WHERE status='booking cancel' OR status='cancelled'")->fetch_row()[0];
 $pending        = $conn->query("SELECT COUNT(*) FROM bookings WHERE status='active'")->fetch_row()[0];
 
-<<<<<<< HEAD
 // ── Support Chat stats ───────────────────────────────────────────
 $support_table_exists = $conn->query("SHOW TABLES LIKE 'support_sessions'")->num_rows > 0;
 $open_support   = $support_table_exists ? $conn->query("SELECT COUNT(*) FROM support_sessions WHERE status='open'")->fetch_row()[0] : 0;
 $unread_support = $support_table_exists ? $conn->query("SELECT COALESCE(SUM(unread_admin),0) FROM support_sessions WHERE status='open'")->fetch_row()[0] : 0;
 
 // ── Fetch users ──────────────────────────────────────────────────
-=======
 // ── Users ────────────────────────────────────────────────────────
->>>>>>> 718bb33f6b0b736bbd4b29b2f92b8a593cad3e26
+
 $users_result = $conn->query("SELECT id, full_name, username, email, phone, email_verified, phone_verified, created_at, profile_image FROM users ORDER BY id DESC");
 $users = $users_result ? $users_result->fetch_all(MYSQLI_ASSOC) : [];
 
-// ── Bookings ─────────────────────────────────────────────────────
-$bookings_result = $conn->query("
-    SELECT b.id, b.user_id, b.name, b.destination, b.date, b.guests, b.status, b.created_at,
-           u.full_name, u.email
-    FROM bookings b
-    LEFT JOIN users u ON b.user_id = u.id
-    ORDER BY b.id DESC
-");
+$bookings_result = $conn->query("SELECT b.id, b.user_id, b.name, b.destination, b.date, b.guests, b.status, b.created_at, u.full_name, u.email FROM bookings b LEFT JOIN users u ON b.user_id = u.id ORDER BY b.id DESC");
 $bookings = $bookings_result ? $bookings_result->fetch_all(MYSQLI_ASSOC) : [];
 
-// ── Subscriptions ────────────────────────────────────────────────
-$subs_result = $conn->query("
-    SELECT us.*, sp.name AS plan_name, sp.display_name, sp.duration_days, sp.deal_limit,
-           u.full_name AS user_name, u.email AS user_email
-    FROM user_subscriptions us
-    JOIN subscription_plans sp ON sp.id = us.plan_id
-    LEFT JOIN users u ON u.id = us.user_id
-    ORDER BY us.created_at DESC
-");
+$subs_result = $conn->query("SELECT us.*, sp.name AS plan_name, sp.display_name, sp.duration_days, sp.deal_limit, u.full_name AS user_name, u.email AS user_email FROM user_subscriptions us JOIN subscription_plans sp ON sp.id = us.plan_id LEFT JOIN users u ON u.id = us.user_id ORDER BY us.created_at DESC");
 $subs = $subs_result ? $subs_result->fetch_all(MYSQLI_ASSOC) : [];
 
-// ── User Deals ───────────────────────────────────────────────────
-$deals_result = $conn->query("
-    SELECT ud.*, u.full_name AS user_name, u.email AS user_email,
-           sp.display_name AS plan_display, sp.duration_days
-    FROM user_deals ud
-    LEFT JOIN users u ON u.id = ud.user_id
-    LEFT JOIN user_subscriptions us ON us.id = ud.subscription_id
-    LEFT JOIN subscription_plans sp ON sp.id = us.plan_id
-    ORDER BY ud.created_at DESC
-");
+$deals_result = $conn->query("SELECT ud.*, u.full_name AS user_name, u.email AS user_email, sp.display_name AS plan_display, sp.duration_days FROM user_deals ud LEFT JOIN users u ON u.id = ud.user_id LEFT JOIN user_subscriptions us ON us.id = ud.subscription_id LEFT JOIN subscription_plans sp ON sp.id = us.plan_id ORDER BY ud.created_at DESC");
 $deals = $deals_result ? $deals_result->fetch_all(MYSQLI_ASSOC) : [];
 
-// ── Reviews count for sidebar badge ─────────────────────────────
 $total_deal_reviews      = (int)($conn->query("SELECT COUNT(*) FROM deal_reviews")->fetch_row()[0] ?? 0);
 $total_user_deal_reviews = (int)($conn->query("SELECT COUNT(*) FROM user_deal_reviews")->fetch_row()[0] ?? 0);
 $total_reviews           = $total_deal_reviews + $total_user_deal_reviews;
 
-// ── Pending counts for badges ────────────────────────────────────
 $pending_subs  = count(array_filter($subs,  fn($s) => $s['status'] === 'pending'));
 $pending_deals = count(array_filter($deals, fn($d) => $d['status'] === 'pending'));
 $sub_revenue   = array_sum(array_column(array_filter($subs, fn($s) => in_array($s['status'], ['active','expired'])), 'amount_paid'));
 
+// ── Chat unread count ────────────────────────────────────────────
+$chat_table_exists = $conn->query("SHOW TABLES LIKE 'chat_messages'")->num_rows > 0;
+$total_chat_unread = 0;
+if ($chat_table_exists) {
+    $unread_res = $conn->query("SELECT COUNT(*) FROM chat_messages WHERE sender='user' AND is_read=0");
+    $total_chat_unread = $unread_res ? (int)$unread_res->fetch_row()[0] : 0;
+}
+
 // ── Flash message ────────────────────────────────────────────────
 $msg = ''; $msg_type = 'success';
-if (isset($_GET['msg']))              { $msg = $_GET['msg']; $msg_type = $_GET['mt'] ?? 'success'; }
-if (isset($_GET['updated']))          { $msg = '✓ Booking status updated successfully.'; $msg_type = 'success'; }
-if (isset($_GET['deleted']))          { $msg = '✓ User deleted successfully.'; $msg_type = 'success'; }
-if (isset($_GET['deleted_booking']))  { $msg = '✓ Booking deleted successfully.'; $msg_type = 'success'; }
-if (isset($_GET['deleted_all']))      { $msg = '✓ All bookings deleted successfully.'; $msg_type = 'success'; }
+if (isset($_GET['msg']))             { $msg = $_GET['msg']; $msg_type = $_GET['mt'] ?? 'success'; }
+if (isset($_GET['updated']))         { $msg = '✓ Booking status updated successfully.'; $msg_type = 'success'; }
+if (isset($_GET['deleted']))         { $msg = '✓ User deleted successfully.'; $msg_type = 'success'; }
+if (isset($_GET['deleted_booking'])) { $msg = '✓ Booking deleted successfully.'; $msg_type = 'success'; }
+if (isset($_GET['deleted_all']))     { $msg = '✓ All bookings deleted successfully.'; $msg_type = 'success'; }
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -231,8 +189,10 @@ button,input,select,textarea{font-family:var(--ff-b)}
 .sb-link.on svg{opacity:1}
 .sb-badge{margin-left:auto;background:rgba(201,162,39,0.15);color:var(--gold);font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;font-family:var(--ff-m)}
 .sb-badge-alert{background:rgba(224,85,85,0.2);color:var(--red2)}
+.sb-badge-chat{background:rgba(74,144,217,0.2);color:var(--blue2)}
 .sb-footer{padding:16px 24px;border-top:1px solid var(--border)}
-.sb-avatar{width:34px;height:34px;border-radius:50%;background:rgba(201,162,39,0.2);border:1px solid rgba(201,162,39,0.3);display:flex;align-items:center;justify-content:center;font-family:var(--ff-d);font-size:13px;font-weight:700;color:var(--gold);flex-shrink:0}
+.sb-avatar{width:34px;height:34px;border-radius:50%;background:rgba(201,162,39,0.2);border:1px solid rgba(201,162,39,0.3);display:flex;align-items:center;justify-content:center;font-family:var(--ff-d);font-size:13px;font-weight:700;color:var(--gold);flex-shrink:0;overflow:hidden}
+.sb-avatar img{width:100%;height:100%;object-fit:cover}
 
 /* ── MAIN ── */
 .main{flex:1;display:flex;flex-direction:column;overflow:hidden}
@@ -242,6 +202,7 @@ button,input,select,textarea{font-family:var(--ff-b)}
 .tb-actions{display:flex;align-items:center;gap:14px}
 .tb-tag{font-size:10px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--green2);background:rgba(46,125,82,0.15);border:1px solid rgba(76,175,125,0.2);padding:5px 14px;border-radius:20px;font-family:var(--ff-m)}
 .tb-time{font-size:11px;color:var(--muted2);font-family:var(--ff-m)}
+.tb-admin-name{font-size:11px;color:var(--muted);font-family:var(--ff-m);background:var(--surface2);border:1px solid var(--border2);padding:5px 12px;border-radius:20px}
 .content{padding:36px;flex:1;overflow-y:auto}
 
 /* ── ALERT ── */
@@ -256,7 +217,6 @@ button,input,select,textarea{font-family:var(--ff-b)}
 .sec-hd-count{font-family:var(--ff-m);font-size:11px;color:var(--muted2);letter-spacing:1px}
 
 /* ── STAT CARDS ── */
-<<<<<<< HEAD
 .stats-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:16px;margin-bottom:36px}
 @keyframes support-slide-up{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
 .stat-card{
@@ -265,11 +225,9 @@ button,input,select,textarea{font-family:var(--ff-b)}
   position:relative;overflow:hidden;
   transition:border-color 0.2s,transform 0.2s;
 }
-=======
 .stats-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:16px;margin-bottom:36px}
 .stats-grid-sub{grid-template-columns:repeat(4,1fr)}
 .stat-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:22px 20px;position:relative;overflow:hidden;transition:border-color 0.2s,transform 0.2s}
->>>>>>> 718bb33f6b0b736bbd4b29b2f92b8a593cad3e26
 .stat-card:hover{border-color:var(--border2);transform:translateY(-2px)}
 .stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--accent,var(--gold))}
 .stat-card-n{font-family:var(--ff-d);font-size:38px;font-weight:800;color:var(--text);line-height:1;margin-bottom:6px}
@@ -277,7 +235,7 @@ button,input,select,textarea{font-family:var(--ff-b)}
 .stat-card-ico{position:absolute;top:18px;right:18px;font-size:22px;opacity:0.18}
 .stat-pending-badge{display:inline-block;background:rgba(224,85,85,0.15);color:var(--red2);font-size:10px;font-weight:700;padding:2px 7px;border-radius:20px;margin-top:6px;font-family:var(--ff-m)}
 
-/* ── SUB TABS (within subscriptions section) ── */
+/* ── SUB TABS ── */
 .sub-tabs{display:flex;gap:4px;margin-bottom:1.5rem;background:var(--surface2);padding:4px;border-radius:10px;width:fit-content;border:1px solid var(--border)}
 .sub-tab-btn{padding:9px 22px;border-radius:7px;font-size:13px;font-weight:600;border:none;cursor:pointer;transition:all 0.15s;font-family:var(--ff-b);color:var(--muted);background:transparent;display:flex;align-items:center;gap:8px}
 .sub-tab-btn.active{background:var(--gold);color:#000}
@@ -368,7 +326,6 @@ tbody tr:hover td{background:rgba(255,255,255,0.02)}
 .mini-table tbody td{padding:10px 16px;font-size:12px}
 .mini-table thead th{padding:10px 16px}
 
-<<<<<<< HEAD
 /* responsive */
 @media(max-width:1400px){.stats-grid{grid-template-columns:repeat(3,1fr)}}
 @media(max-width:1024px){.sidebar{width:200px}.ov-grid{grid-template-columns:1fr}}
@@ -381,7 +338,6 @@ tbody tr:hover td{background:rgba(255,255,255,0.02)}
   .filter-btns{justify-content:flex-start}
   #support-inbox-wrap{grid-template-columns:1fr!important;height:auto!important}
 }
-=======
 /* ── EMPTY ── */
 .empty{padding:50px;text-align:center;color:var(--muted2)}
 .empty-ico{font-size:40px;opacity:0.2;margin-bottom:12px}
@@ -410,10 +366,82 @@ tbody tr:hover td{background:rgba(255,255,255,0.02)}
 .toast{position:fixed;bottom:28px;right:28px;background:var(--surface);border:1px solid var(--border2);color:var(--text);padding:13px 20px;border-radius:8px;font-size:13px;font-weight:500;box-shadow:0 8px 32px rgba(0,0,0,0.4);transform:translateY(12px);opacity:0;transition:all 0.3s cubic-bezier(0.34,1.56,0.64,1);z-index:9999;pointer-events:none;border-left:3px solid var(--green2)}
 .toast.show{transform:translateY(0);opacity:1}
 
+/* ══════════════════════════════════════════════
+   LIVE CHAT PANEL (Admin)
+══════════════════════════════════════════════ */
+.chat-layout{display:grid;grid-template-columns:300px 1fr;height:calc(100vh - 60px - 72px - 28px - 28px);min-height:500px;border:1px solid var(--border);border-radius:14px;overflow:hidden;background:var(--surface)}
+
+/* Sessions sidebar */
+.chat-sessions{background:var(--surface2);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden}
+.chat-sessions-hd{padding:16px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.chat-sessions-hd-title{font-family:var(--ff-d);font-size:14px;font-weight:700;color:var(--text)}
+.chat-sessions-list{flex:1;overflow-y:auto}
+.chat-sessions-list::-webkit-scrollbar{width:4px}
+.chat-sessions-list::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+.chat-session-item{padding:14px 18px;border-bottom:1px solid var(--border);cursor:pointer;transition:background 0.15s;display:flex;align-items:flex-start;gap:12px;position:relative}
+.chat-session-item:hover{background:rgba(255,255,255,0.03)}
+.chat-session-item.active{background:rgba(201,162,39,0.08);border-left:2px solid var(--gold)}
+.chat-session-av{width:36px;height:36px;border-radius:50%;background:rgba(74,144,217,0.2);border:1px solid rgba(74,144,217,0.3);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:var(--blue2);font-family:var(--ff-d);flex-shrink:0}
+.chat-session-info{flex:1;min-width:0}
+.chat-session-name{font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chat-session-preview{font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px;font-family:var(--ff-m)}
+.chat-session-time{font-size:10px;color:var(--muted2);font-family:var(--ff-m);flex-shrink:0;margin-top:2px}
+.chat-unread-dot{position:absolute;top:14px;right:14px;width:8px;height:8px;border-radius:50%;background:var(--blue2)}
+.chat-unread-badge{background:var(--blue2);color:#fff;font-size:9px;font-weight:800;padding:1px 6px;border-radius:10px;font-family:var(--ff-m);position:absolute;top:12px;right:12px}
+.chat-empty-sessions{padding:40px 20px;text-align:center;color:var(--muted2);font-size:13px}
+.chat-sessions-search{padding:10px 14px;border-bottom:1px solid var(--border);flex-shrink:0}
+.chat-sessions-search input{width:100%;background:var(--surface3);border:1px solid var(--border2);border-radius:7px;padding:7px 12px;font-size:12px;color:var(--text);outline:none}
+.chat-sessions-search input::placeholder{color:var(--muted2)}
+
+/* Message pane */
+.chat-pane{display:flex;flex-direction:column;overflow:hidden}
+.chat-pane-hd{padding:16px 22px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:14px;flex-shrink:0;background:var(--surface2)}
+.chat-pane-hd-av{width:36px;height:36px;border-radius:50%;background:rgba(74,144,217,0.2);border:1px solid rgba(74,144,217,0.3);display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;color:var(--blue2);font-family:var(--ff-d);flex-shrink:0}
+.chat-pane-hd-info{flex:1}
+.chat-pane-hd-name{font-size:14px;font-weight:700;color:var(--text)}
+.chat-pane-hd-sub{font-size:11px;color:var(--muted2);font-family:var(--ff-m);margin-top:2px}
+.chat-online-dot{width:8px;height:8px;border-radius:50%;background:var(--green2);display:inline-block;margin-right:5px;animation:pulse-g 2s infinite}
+@keyframes pulse-g{0%,100%{opacity:1}50%{opacity:0.5}}
+.chat-messages-area{flex:1;overflow-y:auto;padding:20px 22px;display:flex;flex-direction:column;gap:12px;background:#0f1119}
+.chat-messages-area::-webkit-scrollbar{width:4px}
+.chat-messages-area::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+.chat-bubble-wrap{display:flex;flex-direction:column}
+.chat-bubble-wrap.user{align-items:flex-start}
+.chat-bubble-wrap.admin{align-items:flex-end}
+.chat-bubble{max-width:72%;padding:10px 16px;border-radius:16px;font-size:13px;line-height:1.55;word-break:break-word;animation:bIn 0.18s ease}
+@keyframes bIn{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
+.chat-bubble.user{background:var(--surface3);color:var(--text);border-radius:4px 16px 16px 16px;border:1px solid var(--border2)}
+.chat-bubble.admin{background:linear-gradient(135deg,rgba(201,162,39,0.25),rgba(201,162,39,0.1));color:var(--text);border-radius:16px 4px 16px 16px;border:1px solid rgba(201,162,39,0.25)}
+.chat-bubble-time{font-size:10px;color:var(--muted2);margin-top:4px;font-family:var(--ff-m)}
+.chat-bubble-sender{font-size:10px;color:var(--muted2);margin-bottom:3px;font-family:var(--ff-m)}
+.chat-bubble.admin+.chat-bubble-time{text-align:right}
+.chat-typing-ind{display:none;align-items:center;gap:5px;padding:8px 14px;background:var(--surface3);border-radius:4px 16px 16px 16px;border:1px solid var(--border2);width:fit-content}
+.chat-typing-ind.show{display:flex}
+.chat-typing-ind span{width:6px;height:6px;border-radius:50%;background:var(--muted);animation:typB 1.2s infinite}
+.chat-typing-ind span:nth-child(2){animation-delay:.2s}
+.chat-typing-ind span:nth-child(3){animation-delay:.4s}
+@keyframes typB{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-5px)}}
+.chat-no-session{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--muted2)}
+.chat-no-session-ico{font-size:56px;opacity:0.15;margin-bottom:16px}
+.chat-no-session p{font-size:14px}
+.chat-input-area{padding:14px 22px;border-top:1px solid var(--border);display:flex;gap:10px;align-items:flex-end;flex-shrink:0;background:var(--surface)}
+.chat-input{flex:1;background:var(--surface2);border:1px solid var(--border2);border-radius:10px;padding:11px 16px;font-size:13px;color:var(--text);outline:none;resize:none;max-height:120px;line-height:1.5;transition:border-color 0.2s;font-family:var(--ff-b)}
+.chat-input::placeholder{color:var(--muted2)}
+.chat-input:focus{border-color:rgba(201,162,39,0.4)}
+.chat-send-btn{background:var(--gold);color:#000;border:none;border-radius:8px;padding:11px 18px;font-size:12px;font-weight:700;cursor:pointer;transition:background 0.15s;display:flex;align-items:center;gap:6px;flex-shrink:0;height:44px}
+.chat-send-btn:hover{background:var(--gold2)}
+.chat-send-btn:disabled{opacity:0.4;cursor:not-allowed}
+.chat-date-sep{text-align:center;font-size:10px;color:var(--muted2);font-family:var(--ff-m);letter-spacing:1px;padding:4px 0;position:relative}
+.chat-date-sep::before,.chat-date-sep::after{content:'';position:absolute;top:50%;width:28%;height:1px;background:var(--border)}
+.chat-date-sep::before{left:5%}
+.chat-date-sep::after{right:5%}
+
 @media(max-width:1200px){.stats-grid{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:1024px){.sidebar{width:200px}.ov-grid{grid-template-columns:1fr}.chat-layout{grid-template-columns:240px 1fr}}
+@media(max-width:768px){.sidebar{display:none}.stats-grid{grid-template-columns:repeat(2,1fr)}.content{padding:20px}.topbar{padding:0 20px}.tcard-search{flex-direction:column;align-items:stretch}.ov-grid{grid-template-columns:1fr}.chat-layout{grid-template-columns:1fr;height:auto}}
 @media(max-width:1024px){.sidebar{width:200px}.ov-grid{grid-template-columns:1fr}}
 @media(max-width:768px){.sidebar{display:none}.stats-grid{grid-template-columns:repeat(2,1fr)}.content{padding:20px}.topbar{padding:0 20px}.tcard-search{flex-direction:column;align-items:stretch}.ov-grid{grid-template-columns:1fr}}
->>>>>>> 718bb33f6b0b736bbd4b29b2f92b8a593cad3e26
+
 </style>
 </head>
 <body>
@@ -459,7 +487,7 @@ tbody tr:hover td{background:rgba(255,255,255,0.02)}
         <?php endif; ?>
       </a>
 
-      <a href="?tab=subscriptions" class="sb-link <?= $activeTab==='subscriptions'?'on':'' ?>">
+      <a href="subscription_admin.php" class="sb-link <?= $activeTab==='subscriptions'?'on':'' ?>">
         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 4H4c-1.11 0-1.99.89-1.99 2L2 18c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V6c0-1.11-.89-2-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z"/></svg>
         Subscriptions
         <?php if ($pending_subs + $pending_deals > 0): ?>
@@ -469,11 +497,28 @@ tbody tr:hover td{background:rgba(255,255,255,0.02)}
         <?php endif; ?>
       </a>
 
+      <!-- ── Live Chat Link ── -->
+      <a href="?tab=chat" class="sb-link <?= $activeTab==='chat'?'on':'' ?>">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"/></svg>
+        Live Chat
+        <?php if ($total_chat_unread > 0): ?>
+          <span class="sb-badge sb-badge-chat" id="sb-chat-badge"><?= $total_chat_unread ?></span>
+        <?php else: ?>
+          <span class="sb-badge sb-badge-chat" id="sb-chat-badge" style="display:none">0</span>
+        <?php endif; ?>
+      </a>
+
       <!-- ── Reviews Link ── -->
       <a href="reviews.php" class="sb-link">
         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M22 9.24l-7.19-.62L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21 12 17.27 18.18 21l-1.63-7.03L22 9.24zM12 15.4l-3.76 2.27 1-4.28-3.32-2.88 4.38-.38L12 6.1l1.71 4.04 4.38.38-3.32 2.88 1 4.28L12 15.4z"/></svg>
         Reviews
         <span class="sb-badge"><?= $total_reviews ?></span>
+      </a>
+
+      <!-- ── Posts Link ── -->
+      <a href="posts.php" class="sb-link">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M21 3H3C2 3 1 4 1 5v14c0 1.1.9 2 2 2h18c1 0 2-.9 2-2V5c0-1-1-2-2-2zm0 16H3V5h18v14zm-10-7h8v2h-8v-2zm0-4h8v2h-8V8zm-6 8h4v-8H5v8z"/></svg>
+        Posts
       </a>
 
       <div class="sb-section-label" style="margin-top:24px">Links</div>
@@ -488,18 +533,27 @@ tbody tr:hover td{background:rgba(255,255,255,0.02)}
         Deals &amp; Packages
       </a>
 
-      <a href="/Nepal-Travel/user/logout.php" class="sb-link">
+      <a href="logout.php" class="sb-link">
         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/></svg>
         Sign Out
       </a>
     </nav>
 
+    <!-- ── Sidebar footer: shows logged-in admin ── -->
     <div class="sb-footer">
       <div style="display:flex;align-items:center;gap:10px">
-        <div class="sb-avatar">A</div>
+        <div class="sb-avatar">
+          <?php if (!empty($admin_avatar) && $admin_avatar !== 'default.png'): ?>
+            <img src="/Nepal-Travel/<?= ltrim(htmlspecialchars($admin_avatar), '/') ?>" alt="">
+          <?php else: ?>
+            <?= $admin_initial ?>
+          <?php endif; ?>
+        </div>
         <div>
-          <div style="font-size:12px;font-weight:600">Admin</div>
-          <div style="font-size:10px;color:var(--muted2);font-family:var(--ff-m)">// Super Admin</div>
+          <div style="font-size:12px;font-weight:600"><?= $admin_display ?></div>
+          <div style="font-size:10px;color:var(--muted2);font-family:var(--ff-m)">
+            <?= $admin_username ? '@'.$admin_username : '// Super Admin' ?>
+          </div>
         </div>
       </div>
     </div>
@@ -512,6 +566,8 @@ tbody tr:hover td{background:rgba(255,255,255,0.02)}
         NEPAL TRAVEL / <span><?= strtoupper($activeTab) ?></span>
       </div>
       <div class="tb-actions">
+        <!-- Shows logged-in admin name in topbar too -->
+        <span class="tb-admin-name">👤 <?= $admin_display ?></span>
         <span class="tb-tag">● LIVE</span>
         <span class="tb-time" id="clock"></span>
       </div>
@@ -575,7 +631,6 @@ tbody tr:hover td{background:rgba(255,255,255,0.02)}
           </a>
         </div>
 
-        <!-- Subscription quick-stats row -->
         <div class="stats-grid stats-grid-sub" style="margin-bottom:24px">
           <div class="stat-card" style="--accent:#C9A227">
             <div class="stat-card-ico">💳</div>
@@ -601,7 +656,6 @@ tbody tr:hover td{background:rgba(255,255,255,0.02)}
           </div>
         </div>
 
-        <!-- Reviews quick-stat -->
         <div class="stats-grid" style="grid-template-columns:repeat(3,1fr);margin-bottom:24px">
           <div class="stat-card" style="--accent:#E8C44A">
             <div class="stat-card-ico">⭐</div>
@@ -614,9 +668,12 @@ tbody tr:hover td{background:rgba(255,255,255,0.02)}
             <div class="stat-card-l">Deal Reviews</div>
           </div>
           <div class="stat-card" style="--accent:#4A90D9">
-            <div class="stat-card-ico">👥</div>
-            <div class="stat-card-n"><?= $total_user_deal_reviews ?></div>
-            <div class="stat-card-l">User Deal Reviews</div>
+            <div class="stat-card-ico">💬</div>
+            <div class="stat-card-n"><?= $total_chat_unread ?></div>
+            <div class="stat-card-l">Unread Chats</div>
+            <?php if ($total_chat_unread > 0): ?>
+              <div style="margin-top:8px"><a href="?tab=chat" style="font-size:11px;color:var(--blue2);font-family:var(--ff-m)">Reply now →</a></div>
+            <?php endif; ?>
           </div>
         </div>
 
@@ -691,7 +748,6 @@ tbody tr:hover td{background:rgba(255,255,255,0.02)}
           </div>
         </div>
 
-        <!-- Pending subscriptions/deals quick panel -->
         <?php if ($pending_subs > 0 || $pending_deals > 0): ?>
         <div class="tcard" style="border-color:rgba(201,162,39,0.25)">
           <div class="tcard-hd" style="background:rgba(201,162,39,0.05)">
@@ -699,7 +755,7 @@ tbody tr:hover td{background:rgba(255,255,255,0.02)}
               <div class="tcard-hd-title">⚠️ Pending Review</div>
               <div class="tcard-hd-sub"><?= $pending_subs ?> subscription(s) · <?= $pending_deals ?> deal(s) awaiting action</div>
             </div>
-            <a href="?tab=subscriptions" style="font-size:11px;color:var(--gold);font-weight:700">Review Now →</a>
+            <a href="subscription_admin.php" style="font-size:11px;color:var(--gold);font-weight:700">Review Now →</a>
           </div>
         </div>
         <?php endif; ?>
@@ -867,7 +923,6 @@ tbody tr:hover td{background:rgba(255,255,255,0.02)}
                     <td><span class="pill pill-<?= $cls ?>"><span class="dot"></span><?= htmlspecialchars(ucfirst($b['status'])) ?></span></td>
                     <td class="mono"><?= date('d M Y', strtotime($b['created_at'])) ?></td>
                     <td class="bk-actions-cell">
-                      <!-- Update Status -->
                       <form method="POST" action="?tab=bookings" class="bk-status-form">
                         <input type="hidden" name="booking_id" value="<?= $b['id'] ?>">
                         <select name="status" class="status-sel">
@@ -877,7 +932,6 @@ tbody tr:hover td{background:rgba(255,255,255,0.02)}
                         </select>
                         <button type="submit" name="update_status" class="save-btn">Save</button>
                       </form>
-                      <!-- Delete Booking -->
                       <form method="POST" action="?tab=bookings" class="bk-delete-form"
                             onsubmit="return confirm('Permanently delete booking #<?= $bid_padded ?>? This cannot be undone.')">
                         <input type="hidden" name="booking_id" value="<?= $b['id'] ?>">
@@ -898,7 +952,6 @@ tbody tr:hover td{background:rgba(255,255,255,0.02)}
           </div>
         </div>
 
-<<<<<<< HEAD
       <!-- ════════════════════════════════
            SUPPORT CHAT TAB
       ════════════════════════════════ -->
@@ -967,7 +1020,6 @@ tbody tr:hover td{background:rgba(255,255,255,0.02)}
 
         </div>
         <?php endif; ?>
-=======
 
       <!-- ════════════════════════════════
            SUBSCRIPTIONS TAB
@@ -980,7 +1032,6 @@ tbody tr:hover td{background:rgba(255,255,255,0.02)}
           <span class="sec-hd-count"><?= count($subs) ?> TOTAL</span>
         </div>
 
-        <!-- Stats row -->
         <div class="stats-grid stats-grid-sub">
           <div class="stat-card" style="--accent:#C9A227">
             <div class="stat-card-ico">💳</div>
@@ -1006,7 +1057,6 @@ tbody tr:hover td{background:rgba(255,255,255,0.02)}
           </div>
         </div>
 
-        <!-- Sub-tabs: Subscriptions / Deals -->
         <div class="sub-tabs">
           <button class="sub-tab-btn active" id="stab-subs" onclick="switchSubTab('subs')">
             💳 Subscriptions
@@ -1018,7 +1068,6 @@ tbody tr:hover td{background:rgba(255,255,255,0.02)}
           </button>
         </div>
 
-        <!-- ── SUBSCRIPTIONS PANEL ── -->
         <div id="spanel-subs">
           <div class="tcard">
             <div class="tcard-hd">
@@ -1084,7 +1133,6 @@ tbody tr:hover td{background:rgba(255,255,255,0.02)}
           </div>
         </div>
 
-        <!-- ── DEALS PANEL ── -->
         <div id="spanel-deals" style="display:none">
           <div class="tcard">
             <div class="tcard-hd">
@@ -1162,7 +1210,77 @@ tbody tr:hover td{background:rgba(255,255,255,0.02)}
             </div>
           </div>
         </div>
->>>>>>> 718bb33f6b0b736bbd4b29b2f92b8a593cad3e26
+
+
+      <!-- ════════════════════════════════
+           LIVE CHAT TAB
+      ════════════════════════════════ -->
+      <?php elseif ($activeTab === 'chat'): ?>
+
+        <div class="sec-hd">
+          <h1 class="sec-hd-title">Live Chat</h1>
+          <div class="sec-hd-rule"></div>
+          <span class="sec-hd-count" id="chat-session-count">Loading sessions…</span>
+        </div>
+
+        <div class="chat-layout">
+
+          <!-- Sessions sidebar -->
+          <div class="chat-sessions">
+            <div class="chat-sessions-hd">
+              <div class="chat-sessions-hd-title">💬 Conversations</div>
+              <span id="chat-total-unread-badge" style="background:rgba(74,144,217,0.2);color:var(--blue2);font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;font-family:var(--ff-m);display:none"></span>
+            </div>
+            <div class="chat-sessions-search">
+              <input type="text" id="sessSearch" placeholder="Search users…" oninput="filterSessions(this.value)">
+            </div>
+            <div class="chat-sessions-list" id="chat-sessions-list">
+              <div class="chat-empty-sessions">
+                <div style="font-size:32px;opacity:0.2;margin-bottom:10px">💬</div>
+                <p>Loading conversations…</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Message pane -->
+          <div class="chat-pane" id="chat-pane">
+            <!-- No session selected state -->
+            <div class="chat-no-session" id="chat-no-session">
+              <div class="chat-no-session-ico">💬</div>
+              <p>Select a conversation to start replying</p>
+            </div>
+
+            <!-- Active chat area (hidden until session selected) -->
+            <div id="chat-active-pane" style="display:none;flex-direction:column;height:100%">
+              <div class="chat-pane-hd" id="chat-pane-hd">
+                <div class="chat-pane-hd-av" id="chat-pane-av">?</div>
+                <div class="chat-pane-hd-info">
+                  <div class="chat-pane-hd-name" id="chat-pane-name">—</div>
+                  <div class="chat-pane-hd-sub" id="chat-pane-sub"><span class="chat-online-dot"></span>Active session</div>
+                </div>
+                <div style="margin-left:auto;font-family:var(--ff-m);font-size:10px;color:var(--muted2)" id="chat-pane-sess"></div>
+              </div>
+
+              <div class="chat-messages-area" id="chat-messages-area">
+                <!-- Messages rendered by JS -->
+              </div>
+
+              <div class="chat-input-area">
+                <textarea
+                  id="chat-admin-input"
+                  class="chat-input"
+                  placeholder="Type your reply…"
+                  rows="1"
+                ></textarea>
+                <button class="chat-send-btn" id="chat-admin-send">
+                  <svg viewBox="0 0 24 24" fill="currentColor" style="width:16px;height:16px"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+                  Send
+                </button>
+              </div>
+            </div>
+          </div>
+
+        </div><!-- /chat-layout -->
 
       <?php endif; ?>
 
@@ -1221,6 +1339,9 @@ tbody tr:hover td{background:rgba(255,255,255,0.02)}
 <div class="toast" id="toast"></div>
 
 <script>
+// ─── Chat handler path ─────────────────────────────────────────────────────────
+const CHAT_HANDLER = '/Nepal-Travel/Public/chat_handler.php';
+
 // ── Clock ─────────────────────────────────────────────────────────
 function updateClock(){
   document.getElementById('clock').textContent =
@@ -1248,7 +1369,6 @@ function filterTable(inputId, tableId){
   });
 }
 
-// ── Generic table search (for sub tables) ─────────────────────────
 function filterTable2(tableId, q){
   q = q.toLowerCase();
   document.querySelectorAll('#'+tableId+' tbody tr').forEach(r=>{
@@ -1321,6 +1441,248 @@ function viewDealDetail(d){
   openM('dealDetailModal');
 }
 
+// ══════════════════════════════════════════════════════════════════
+//  ADMIN LIVE CHAT ENGINE
+// ══════════════════════════════════════════════════════════════════
+<?php if ($activeTab === 'chat'): ?>
+(function(){
+  let sessions      = [];
+  let activeSession = null;
+  let lastMsgId     = 0;
+  let pollTimer     = null;
+  let globalLastId  = 0;
+
+  const sessListEl  = document.getElementById('chat-sessions-list');
+  const msgsEl      = document.getElementById('chat-messages-area');
+  const inputEl     = document.getElementById('chat-admin-input');
+  const sendBtn     = document.getElementById('chat-admin-send');
+  const noSessEl    = document.getElementById('chat-no-session');
+  const activePaneEl= document.getElementById('chat-active-pane');
+  const paneNameEl  = document.getElementById('chat-pane-name');
+  const paneSubEl   = document.getElementById('chat-pane-sub');
+  const paneAvEl    = document.getElementById('chat-pane-av');
+  const paneSessEl  = document.getElementById('chat-pane-sess');
+  const countEl     = document.getElementById('chat-session-count');
+  const totalBadgeEl= document.getElementById('chat-total-unread-badge');
+  const sbBadgeEl   = document.getElementById('sb-chat-badge');
+
+  function fmtTime(str){
+    if(!str) return '';
+    const d = new Date(str.replace(' ','T'));
+    return d.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+  }
+  function fmtDate(str){
+    if(!str) return '';
+    const d = new Date(str.replace(' ','T'));
+    return d.toLocaleDateString([],{weekday:'short',month:'short',day:'numeric'});
+  }
+  function isToday(str){
+    if(!str) return false;
+    const d = new Date(str.replace(' ','T'));
+    return d.toDateString()===new Date().toDateString();
+  }
+  function fmtSessTime(str){ return isToday(str) ? fmtTime(str) : fmtDate(str); }
+  function initials(name){
+    if(!name || name.startsWith('Guest')) return '?';
+    return name.split(' ').map(w=>w[0]||'').join('').substring(0,2).toUpperCase();
+  }
+
+  function renderSessions(list){
+    const q = (document.getElementById('sessSearch')?.value||'').toLowerCase();
+    const filtered = q ? list.filter(s=>(s.display_name||s.session_id).toLowerCase().includes(q)) : list;
+
+    if(!filtered.length){
+      sessListEl.innerHTML = `<div class="chat-empty-sessions">
+        <div style="font-size:32px;opacity:0.2;margin-bottom:10px">💬</div>
+        <p>${q ? 'No matches found.' : 'No conversations yet.'}</p>
+      </div>`;
+      return;
+    }
+
+    const totalUnread = list.reduce((acc,s)=>acc+(+s.unread||0),0);
+    countEl.textContent = list.length + ' conversation' + (list.length!==1?'s':'');
+    if(totalUnread>0){
+      totalBadgeEl.textContent = totalUnread + ' unread';
+      totalBadgeEl.style.display = 'inline';
+      sbBadgeEl.textContent = totalUnread;
+      sbBadgeEl.style.display = 'inline';
+    } else {
+      totalBadgeEl.style.display = 'none';
+      sbBadgeEl.style.display = 'none';
+    }
+
+    sessListEl.innerHTML = filtered.map(s => {
+      const name     = s.full_name || s.username || ('Guest · ' + s.session_id.substring(0,8));
+      const isActive = activeSession && activeSession.session_id === s.session_id;
+      const unread   = +s.unread || 0;
+      return `<div class="chat-session-item${isActive?' active':''}" data-sess="${escHtml(s.session_id)}" onclick="openSession(${JSON.stringify(s).replace(/"/g,'&quot;')})">
+        <div class="chat-session-av">${initials(name)}</div>
+        <div class="chat-session-info">
+          <div class="chat-session-name">${escHtml(name)}</div>
+          <div class="chat-session-preview">${escHtml(s.email||s.session_id.substring(0,16)+'…')}</div>
+        </div>
+        <div style="flex-shrink:0;text-align:right">
+          <div class="chat-session-time">${fmtSessTime(s.last_at)}</div>
+          ${unread>0 ? `<span class="chat-unread-badge" style="margin-top:4px;display:inline-block">${unread}</span>` : ''}
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  window.filterSessions = function(q){ renderSessions(sessions); };
+
+  window.openSession = function(s){
+    activeSession = s;
+    lastMsgId     = 0;
+    const name = s.full_name || s.username || ('Guest · ' + s.session_id.substring(0,8));
+    paneNameEl.textContent = name;
+    paneAvEl.textContent   = initials(name);
+    paneSubEl.innerHTML    = `<span class="chat-online-dot"></span> ${escHtml(s.email||s.session_id.substring(0,16)+'…')}`;
+    paneSessEl.textContent = 'Session: ' + s.session_id.substring(0,12) + '…';
+    noSessEl.style.display     = 'none';
+    activePaneEl.style.display = 'flex';
+    document.querySelectorAll('.chat-session-item').forEach(el=>{
+      el.classList.toggle('active', el.dataset.sess===s.session_id);
+    });
+    msgsEl.innerHTML = '';
+    loadHistory(s.session_id);
+    inputEl.focus();
+  };
+
+  function loadHistory(sessId){
+    fetch(`${CHAT_HANDLER}?action=admin_poll&since=0&session_id=${encodeURIComponent(sessId)}`)
+    .then(r=>r.json())
+    .then(d=>{
+      if(!d.ok) return;
+      sessions = d.sessions || sessions;
+      renderSessions(sessions);
+      msgsEl.innerHTML = '';
+      let lastDate = '';
+      (d.history||[]).forEach(m=>{
+        const msgDate = fmtDate(m.created_at);
+        if(msgDate !== lastDate){
+          const sep = document.createElement('div');
+          sep.className = 'chat-date-sep';
+          sep.textContent = msgDate;
+          msgsEl.appendChild(sep);
+          lastDate = msgDate;
+        }
+        appendMessage(m.sender, m.message, m.created_at, false);
+        lastMsgId = Math.max(lastMsgId, +m.id);
+        globalLastId = Math.max(globalLastId, +m.id);
+      });
+      scrollToBottom();
+    })
+    .catch(console.error);
+  }
+
+  function appendMessage(sender, text, time, doScroll){
+    const wrap = document.createElement('div');
+    wrap.className = 'chat-bubble-wrap ' + sender;
+    const bubble = document.createElement('div');
+    bubble.className = 'chat-bubble ' + sender;
+    bubble.textContent = text;
+    const t = document.createElement('div');
+    t.className = 'chat-bubble-time';
+    t.textContent = (sender==='admin' ? '🏔️ You · ' : '👤 User · ') + fmtTime(time);
+    wrap.appendChild(bubble);
+    wrap.appendChild(t);
+    msgsEl.appendChild(wrap);
+    if(doScroll!==false) scrollToBottom();
+  }
+
+  function scrollToBottom(){ msgsEl.scrollTop = msgsEl.scrollHeight; }
+
+  function sendReply(){
+    if(!activeSession) return;
+    const txt = inputEl.value.trim();
+    if(!txt) return;
+    appendMessage('admin', txt, new Date().toISOString().replace('T',' ').substring(0,19), true);
+    inputEl.value = '';
+    inputEl.style.height = 'auto';
+    sendBtn.disabled = true;
+    fetch(CHAT_HANDLER, {
+      method: 'POST',
+      headers: {'Content-Type':'application/x-www-form-urlencoded'},
+      body: 'action=admin_reply&session_id='+encodeURIComponent(activeSession.session_id)+'&message='+encodeURIComponent(txt)
+    })
+    .then(r=>r.json())
+    .then(d=>{ if(d.ok) globalLastId = Math.max(globalLastId, +d.id); })
+    .catch(console.error)
+    .finally(()=>{ sendBtn.disabled = false; });
+  }
+
+  sendBtn.addEventListener('click', sendReply);
+  inputEl.addEventListener('keydown', e=>{
+    if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); sendReply(); }
+  });
+  inputEl.addEventListener('input', ()=>{
+    inputEl.style.height = 'auto';
+    inputEl.style.height = Math.min(inputEl.scrollHeight, 120) + 'px';
+  });
+
+  function poll(){
+    const sessParam = activeSession ? '&session_id='+encodeURIComponent(activeSession.session_id) : '';
+    fetch(`${CHAT_HANDLER}?action=admin_poll&since=${globalLastId}${sessParam}`)
+    .then(r=>r.json())
+    .then(d=>{
+        if(!d.ok) return;
+        // REMOVE the `if(d.sessions && d.sessions.length)` check — always render
+        sessions = d.sessions || sessions;
+        renderSessions(sessions);
+      if(activeSession && d.new_msgs){
+        d.new_msgs.forEach(m=>{
+          if(+m.id <= lastMsgId) return;
+          if(m.session_id !== activeSession.session_id) return;
+          if(m.sender === 'user') appendMessage('user', m.message, m.created_at, true);
+          lastMsgId = Math.max(lastMsgId, +m.id);
+          globalLastId = Math.max(globalLastId, +m.id);
+        });
+      }
+    })
+    .catch(console.error);
+  }
+
+  function initialLoad(){
+    fetch(`${CHAT_HANDLER}?action=admin_poll&since=0`)
+    .then(r=>r.json())
+    .then(d=>{
+      if(!d.ok) return;
+      sessions = d.sessions || [];
+      renderSessions(sessions);
+      countEl.textContent = sessions.length + ' conversation' + (sessions.length!==1?'s':'');
+    })
+    .catch(()=>{ countEl.textContent = 'Could not load sessions'; });
+  }
+
+  function escHtml(str){
+    const d = document.createElement('div');
+    d.appendChild(document.createTextNode(str||''));
+    return d.innerHTML;
+  }
+
+  initialLoad();
+  pollTimer = setInterval(poll, 3000);
+})();
+<?php endif; ?>
+
+// ── Global sidebar chat badge polling (all tabs except chat) ───────────────────
+<?php if ($activeTab !== 'chat'): ?>
+(function(){
+  const sbBadge = document.getElementById('sb-chat-badge');
+  if(!sbBadge) return;
+  setInterval(()=>{
+    fetch(`${CHAT_HANDLER}?action=unread_count`)
+    .then(r=>r.json())
+    .then(d=>{
+      if(!d.ok) return;
+      if(d.count>0){ sbBadge.textContent=d.count; sbBadge.style.display='inline'; }
+      else { sbBadge.style.display='none'; }
+    })
+    .catch(()=>{});
+  }, 10000);
+})();
+<?php endif; ?>
 // ══════════════════════════════════════════════════════════
 // SUPPORT CHAT ADMIN LOGIC
 // ══════════════════════════════════════════════════════════

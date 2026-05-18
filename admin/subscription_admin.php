@@ -1,4 +1,5 @@
 <?php
+session_name('nepal_admin_session');
 session_start();
 require_once __DIR__ . '/../config/db.php';
 
@@ -36,6 +37,21 @@ if ($_POST['action'] ?? '' === 'reject_sub') {
     $sub_id = (int)$_POST['sub_id'];
     $conn->query("UPDATE user_subscriptions SET status='cancelled' WHERE id=$sub_id");
     $msg = 'Subscription rejected.'; $msg_type = 'error';
+}
+
+// ── Delete Subscription ─────────────────────────────────────────
+if ($_POST['action'] ?? '' === 'delete_sub') {
+    $sub_id = (int)$_POST['sub_id'];
+    $conn->query("DELETE FROM user_deals WHERE subscription_id=$sub_id");
+    $conn->query("DELETE FROM user_subscriptions WHERE id=$sub_id");
+    $msg = 'Subscription deleted.'; $msg_type = 'success';
+}
+
+// ── Delete All Subscriptions ────────────────────────────────────
+if ($_POST['action'] ?? '' === 'delete_all_subs') {
+    $conn->query("DELETE FROM user_deals WHERE subscription_id IS NOT NULL");
+    $conn->query("DELETE FROM user_subscriptions");
+    $msg = 'All subscriptions deleted.'; $msg_type = 'success';
 }
 
 // ── Approve Deal ────────────────────────────────────────────────
@@ -333,6 +349,10 @@ tbody tr:hover td{background:rgba(255,255,255,0.02)}
         <div class="tcard">
           <div class="tcard-hd">
             <div class="tcard-hd-title">All Subscriptions</div>
+            <form method="POST" onsubmit="return confirm('WARNING: This will permanently delete ALL subscriptions and their associated deals. Are you absolutely sure?')">
+              <input type="hidden" name="action" value="delete_all_subs">
+              <button type="submit" class="btn btn-delete" style="color:var(--red);border-color:rgba(224,85,85,0.3)">🗑 Delete All</button>
+            </form>
           </div>
           <div class="tcard-search">
             <input type="text" class="search-inp" placeholder="Search by user, plan, status…" oninput="filterTable('subTable',this.value)">
@@ -379,8 +399,13 @@ tbody tr:hover td{background:rgba(255,255,255,0.02)}
                         </form>
                         <button class="btn btn-reject" onclick="openRejectSub(<?= $s['id'] ?>)">✕ Reject</button>
                       <?php elseif ($s['status'] === 'active'): ?>
-                        <span style="font-size:11px;color:var(--green)">● Active</span>
+                        <span style="font-size:11px;color:var(--green);margin-right:8px">● Active</span>
                       <?php endif; ?>
+                      <form method="POST" style="display:inline" onsubmit="return confirm('Delete this subscription permanently? Associated deals will also be deleted.')">
+                        <input type="hidden" name="action" value="delete_sub">
+                        <input type="hidden" name="sub_id" value="<?= $s['id'] ?>">
+                        <button type="submit" class="btn btn-delete">🗑</button>
+                      </form>
                     </div>
                   </td>
                 </tr>

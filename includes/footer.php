@@ -180,6 +180,8 @@
 
         </div>
 
+    <script src="../assets/js/script.js"></script>
+</body>
         <!-- Footer Bottom -->
         <div class="footer-bottom">
             <p>
