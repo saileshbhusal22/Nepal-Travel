@@ -1,14 +1,102 @@
 <?php 
 $current_page = 'travel-ideas.php';
-include '../includes/header.php'; 
+include __DIR__ . '/../includes/header.php'; 
 
 // Centralized Travel Ideas Data
-include_once '../includes/travel-ideas-data.php';
+$travel_ideas = [];
+// attempt to load from database, fallback to static include
+try {
+    require_once __DIR__ . '/../config/db.php';
+    require_once __DIR__ . '/../includes/travel-idea-db-seeder.php';
+    $tblRes = $conn->query("SHOW TABLES LIKE 'travel_ideas'");
+    if ($tblRes && $tblRes->num_rows > 0) {
+            $stmt = $conn->prepare("SELECT t.id, t.slug, t.title, COALESCE(p.name, '') AS province, t.province_slug, t.image_path, t.subtitle AS description, t.duration_days, t.nights, t.difficulty, GROUP_CONCAT(DISTINCT et.name ORDER BY et.name SEPARATOR ', ') AS type FROM travel_ideas t LEFT JOIN provinces p ON p.id = t.province_id LEFT JOIN travel_idea_experiences tie ON tie.idea_id = t.id LEFT JOIN experience_types et ON et.id = tie.experience_type_id GROUP BY t.id ORDER BY t.created_at DESC LIMIT 200");
+            if ($stmt) {
+                $stmt->execute();
+                $res = $stmt->get_result();
+                while ($row = $res->fetch_assoc()) {
+                    $durationDays = isset($row['duration_days']) ? (int)$row['duration_days'] : 0;
+                    $durationText = '';
+                    if ($durationDays > 0) {
+                        $durationText = $durationDays . 'D';
+                        if (!empty($row['nights']) && $row['nights'] > 0) {
+                            $durationText .= $row['nights'] . 'N';
+                        }
+                    }
+
+                    $experienceType = trim((string)($row['type'] ?? ''));
+                    $travel_ideas[] = [
+                        'id' => $row['id'],
+                        'slug' => $row['slug'],
+                        'title' => $row['title'],
+                        'province' => $row['province'] ?? '',
+                        'province_slug' => $row['province_slug'] ?? '',
+                        'image' => !empty($row['image_path']) ? $row['image_path'] : '../images/default_idea.png',
+                        'description' => !empty($row['description']) ? $row['description'] : $experienceType,
+                        'season' => '',
+                        'duration' => $durationText,
+                        'duration_days' => $durationDays,
+                        'difficulty' => $row['difficulty'] ?? '',
+                        'type' => $experienceType !== '' ? $experienceType : 'Other'
+                    ];
+                }
+                $stmt->close();
+            }
+
+            if (empty($travel_ideas)) {
+                travelIdeaDbSeedStaticTravelIdeas($conn);
+
+                $stmt = $conn->prepare("SELECT t.id, t.slug, t.title, COALESCE(p.name, '') AS province, t.province_slug, t.image_path, t.subtitle AS description, t.duration_days, t.nights, t.difficulty, GROUP_CONCAT(DISTINCT et.name ORDER BY et.name SEPARATOR ', ') AS type FROM travel_ideas t LEFT JOIN provinces p ON p.id = t.province_id LEFT JOIN travel_idea_experiences tie ON tie.idea_id = t.id LEFT JOIN experience_types et ON et.id = tie.experience_type_id GROUP BY t.id ORDER BY t.created_at DESC LIMIT 200");
+                if ($stmt) {
+                    $stmt->execute();
+                    $res = $stmt->get_result();
+                    while ($row = $res->fetch_assoc()) {
+                        $durationDays = isset($row['duration_days']) ? (int)$row['duration_days'] : 0;
+                        $durationText = '';
+                        if ($durationDays > 0) {
+                            $durationText = $durationDays . 'D';
+                            if (!empty($row['nights']) && $row['nights'] > 0) {
+                                $durationText .= $row['nights'] . 'N';
+                            }
+                        }
+
+                        $experienceType = trim((string)($row['type'] ?? ''));
+                        $travel_ideas[] = [
+                            'id' => $row['id'],
+                            'slug' => $row['slug'],
+                            'title' => $row['title'],
+                            'province' => $row['province'] ?? '',
+                            'province_slug' => $row['province_slug'] ?? '',
+                            'image' => !empty($row['image_path']) ? $row['image_path'] : '../images/default_idea.png',
+                            'description' => !empty($row['description']) ? $row['description'] : $experienceType,
+                            'season' => '',
+                            'duration' => $durationText,
+                            'duration_days' => $durationDays,
+                            'difficulty' => $row['difficulty'] ?? '',
+                            'type' => $experienceType !== '' ? $experienceType : 'Other'
+                        ];
+                    }
+                    $stmt->close();
+                }
+            }
+        } else {
+            include_once '../includes/travel-ideas-data.php';
+        }
+    } catch (Throwable $e) {
+        // fallback to static data on any DB error
+        include_once '../includes/travel-ideas-data.php';
+    }
 
 // Helper to determine duration range for filtering
-function getDurationRange($durationStr) {
-    preg_match('/\d+/', $durationStr, $matches);
-    $days = isset($matches[0]) ? (int)$matches[0] : 1;
+function getDurationRange($durationValue) {
+    if (is_numeric($durationValue)) {
+        $days = (int)$durationValue;
+    } elseif (preg_match('/\d+/', (string)$durationValue, $matches)) {
+        $days = (int)$matches[0];
+    } else {
+        $days = 0;
+    }
+
     if ($days <= 3) return 'short';
     if ($days <= 7) return 'medium';
     return 'long';
@@ -218,6 +306,26 @@ if (isset($_GET['search']) && trim($_GET['search']) !== '') {
     background: var(--primary-yellow);
 }
 
+.share-idea-btn {
+    background: var(--primary-blue);
+    color: white;
+    text-align: center;
+    padding: 12px 18px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    transition: all 0.3s ease;
+    border: none;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.share-idea-btn:hover {
+    background: var(--primary-yellow);
+    color: #111;
+}
+
 /* Package Card Styles */
 .package-card {
     background: white;
@@ -266,6 +374,32 @@ if (isset($_GET['search']) && trim($_GET['search']) !== '') {
 .hidden {
     display: none;
 }
+
+    .travel-image-preview-container {
+        width: 100%;
+        max-width: 100%;
+        max-height: 360px;
+        overflow: hidden;
+    }
+
+    .travel-image-preview-container img,
+    .travel-image-preview-container .cropper-container,
+    .travel-image-preview-container .cropper-wrap-box,
+    .travel-image-preview-container .cropper-view-box,
+    .travel-image-preview-container .cropper-canvas,
+    .travel-image-preview-container .cropper-canvas img {
+        width: 100% !important;
+        max-width: 100% !important;
+        height: auto !important;
+        max-height: 100% !important;
+        object-fit: cover !important;
+    }
+
+    .modal-content {
+        max-width: min(760px, calc(100vw - 48px));
+        max-height: calc(100vh - 80px);
+        overflow-y: auto;
+    }
 </style>
 
 <!-- Hero Section -->
@@ -336,10 +470,17 @@ if (isset($_GET['search']) && trim($_GET['search']) !== '') {
 
         <!-- Grid -->
         <div>
-            <!-- Search Bar -->
-            <div class="search-container">
-                <svg class="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-                <input type="text" id="searchInput" class="search-input" placeholder="Search destinations, activities, or regions...">
+            <!-- Search Bar with Share Button -->
+            <div style="display: flex; gap: 12px; margin-bottom: 30px; align-items: center;">
+                <div class="search-container" style="margin-bottom: 0; flex: 1;">
+                    <svg class="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                    <input type="text" id="searchInput" class="search-input" placeholder="Search destinations, activities, or regions...">
+                </div>
+                <?php if (isset($_SESSION['user_id'])): ?>
+                    <button id="openTravelIdeaModalBtn" class="share-idea-btn">Share Idea</button>
+                <?php else: ?>
+                    <a href="../user/login.php" class="share-idea-btn" style="text-decoration: none; display: flex; align-items: center; justify-content: center;">Share Idea</a>
+                <?php endif; ?>
             </div>
 
             <div id="ideasGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 25px;">
@@ -388,6 +529,170 @@ if (isset($_GET['search']) && trim($_GET['search']) !== '') {
         </div>
     </div>
 </section>
+
+<!-- Travel Idea Post Modal -->
+<div id="travelIdeaModal" class="modal-overlay" style="display: none; position: fixed; inset: 0; z-index: 2000; background: rgba(15, 23, 42, 0.65); align-items: flex-start; justify-content: center; padding: 40px 24px 24px; overflow-y: auto;">
+    <div class="modal-content" style="background: #fff; border-radius: 24px; max-width: 760px; width: 100%; padding: 30px; position: relative; box-shadow: 0 30px 80px rgba(15, 23, 42, 0.18);">
+        <button id="closeTravelIdeaModal" style="position: absolute; top: 18px; right: 18px; border: none; background: transparent; font-size: 28px; line-height: 1; color: #334155; cursor: pointer;">&times;</button>
+        <h2 style="margin: 0 0 12px; color: #1b3a5a; font-size: 28px;">Share a Travel Idea</h2>
+        <p style="margin: 0 0 24px; color: #64748b;">Upload a photo, tag a district, and tell the community about your next recommended route.</p>
+        <form id="travelIdeaForm" enctype="multipart/form-data" style="display:grid; gap:18px;">
+            <div style="display:grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap:16px;">
+                <label style="display:block; font-weight:700; color:#334155;">
+                    Journey Title
+                    <input type="text" name="title" id="travelIdeaTitle" placeholder="e.g. Kathmandu Heritage Walk" required style="width:100%; margin-top:8px; padding:14px 16px; border:1px solid #d1d5db; border-radius:14px; font-size:14px;">
+                </label>
+                <label style="display:block; font-weight:700; color:#334155;">
+                    Short Subtitle / Tagline
+                    <input type="text" name="subtitle" placeholder="e.g. A living museum of culture and temples" style="width:100%; margin-top:8px; padding:14px 16px; border:1px solid #d1d5db; border-radius:14px; font-size:14px;">
+                </label>
+            </div>
+
+            <label style="display:block; font-weight:700; color:#334155;">
+                Cover Image
+                <input type="file" name="image" id="travelPostImage" accept="image/jpeg,image/png,image/webp" required style="width:100%; margin-top:8px; padding:12px 14px; border:1px solid #d1d5db; border-radius:14px; font-size:14px;">
+            </label>
+
+            <div class="travel-image-preview-container" style="display:none; text-align:center; width:100%; box-sizing:border-box;">
+                <div style="max-height: 420px; overflow:hidden; border-radius: 20px; background: #f8fafc; padding: 10px; width:100%; box-sizing:border-box;">
+                    <img id="travelImagePreview" src="" alt="Preview" style="width:100%; max-width:100%; height:auto; max-height:400px; display:block; border-radius:16px; object-fit:cover;">
+                </div>
+                <button type="button" id="travelSkipCropBtn" style="margin-top: 12px; background: #f0f0f0; color: #334155; border: 1px solid #d1d5db; padding: 10px 18px; border-radius: 999px; cursor: pointer; font-size: 13px;">SKIP CROP / USE FULL PHOTO</button>
+            </div>
+
+            <div style="display:grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap:16px;">
+                <label style="display:block; font-weight:700; color:#334155;">
+                    Province
+                    <select name="province" id="travelProvinceSelect" required style="width:100%; margin-top:8px; padding:14px 16px; border:1px solid #d1d5db; border-radius:14px; font-size:14px;">
+                        <option value="">Select Province</option>
+                        <option value="Koshi">Koshi</option>
+                        <option value="Madhesh">Madhesh</option>
+                        <option value="Bagmati">Bagmati</option>
+                        <option value="Gandaki">Gandaki</option>
+                        <option value="Lumbini">Lumbini</option>
+                        <option value="Karnali">Karnali</option>
+                        <option value="Sudurpashchim">Sudurpashchim</option>
+                    </select>
+                </label>
+                <label style="display:block; font-weight:700; color:#334155;">
+                    Difficulty Level
+                    <select name="difficulty" style="width:100%; margin-top:8px; padding:14px 16px; border:1px solid #d1d5db; border-radius:14px; font-size:14px;">
+                        <option value="">Select Difficulty</option>
+                        <option value="Easy">Easy</option>
+                        <option value="Moderate">Moderate</option>
+                        <option value="Challenging">Challenging</option>
+                    </select>
+                </label>
+            </div>
+
+            <div style="display:grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap:16px;">
+                <label style="display:block; font-weight:700; color:#334155;">
+                    Number of Days
+                    <input type="number" name="duration_days" min="1" placeholder="2" style="width:100%; margin-top:8px; padding:14px 16px; border:1px solid #d1d5db; border-radius:14px; font-size:14px;">
+                </label>
+                <label style="display:block; font-weight:700; color:#334155;">
+                    Number of Nights
+                    <input type="number" name="nights" min="0" placeholder="1" style="width:100%; margin-top:8px; padding:14px 16px; border:1px solid #d1d5db; border-radius:14px; font-size:14px;">
+                </label>
+            </div>
+
+            <div style="display:grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap:16px;">
+                <label style="display:block; font-weight:700; color:#334155;">
+                    Transport Mode
+                    <input type="text" name="transport" placeholder="Taxi, Local Bus, Flight" style="width:100%; margin-top:8px; padding:14px 16px; border:1px solid #d1d5db; border-radius:14px; font-size:14px;">
+                </label>
+                <label style="display:block; font-weight:700; color:#334155;">
+                    Accommodation Type
+                    <input type="text" name="accommodation" placeholder="Hotels, Teahouses, Homestays" style="width:100%; margin-top:8px; padding:14px 16px; border:1px solid #d1d5db; border-radius:14px; font-size:14px;">
+                </label>
+            </div>
+
+            <div style="display:grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap:16px;">
+                <label style="display:block; font-weight:700; color:#334155;">
+                    Best Time to Visit
+                    <input type="text" name="best_time" placeholder="e.g. Sept–April" style="width:100%; margin-top:8px; padding:14px 16px; border:1px solid #d1d5db; border-radius:14px; font-size:14px;">
+                </label>
+                <div></div>
+            </div>
+
+            <div style="display:grid; gap:12px;">
+                <strong style="font-size:14px; color:#334155; letter-spacing:0.7px;">Experience Type</strong>
+                <div style="display:grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap:10px;">
+                    <label style="font-weight:600; color:#334155;"><input type="checkbox" name="experience_types[]" value="Trekking"> Trekking</label>
+                    <label style="font-weight:600; color:#334155;"><input type="checkbox" name="experience_types[]" value="Culture"> Culture</label>
+                    <label style="font-weight:600; color:#334155;"><input type="checkbox" name="experience_types[]" value="Wildlife"> Wildlife</label>
+                    <label style="font-weight:600; color:#334155;"><input type="checkbox" name="experience_types[]" value="Pilgrimage"> Pilgrimage</label>
+                    <label style="font-weight:600; color:#334155;"><input type="checkbox" name="experience_types[]" value="Adventure"> Adventure</label>
+                    <label style="font-weight:600; color:#334155;"><input type="checkbox" name="experience_types[]" value="Nature"> Nature</label>
+                    <label style="font-weight:600; color:#334155;"><input type="checkbox" name="experience_types[]" value="History"> History</label>
+                </div>
+            </div>
+
+            <label style="display:block; font-weight:700; color:#334155;">
+                Highlights
+                <textarea name="highlights" rows="3" placeholder="Add 3-5 highlights, one per line." style="width:100%; margin-top:8px; padding:14px 16px; border:1px solid #d1d5db; border-radius:14px; font-size:14px; resize:vertical;"></textarea>
+            </label>
+
+            <label style="display:block; font-weight:700; color:#334155;">
+                Travel Idea Details
+                <textarea name="content" id="travelIdeaDetails" rows="5" placeholder="Write detailed route, stops, itinerary notes, or helpful tips for this idea." required style="width:100%; margin-top:8px; padding:14px 16px; border:1px solid #d1d5db; border-radius:14px; font-size:14px; resize:vertical;"></textarea>
+            </label>
+
+            <label style="display:block; font-weight:700; color:#334155;">
+                Pro Travel Tip
+                <textarea name="pro_tip" rows="3" placeholder="Morning visits recommended to avoid crowds" style="width:100%; margin-top:8px; padding:14px 16px; border:1px solid #d1d5db; border-radius:14px; font-size:14px; resize:vertical;"></textarea>
+            </label>
+
+            <div style="display:flex; justify-content:space-between; align-items:center; gap:16px;">
+                <h3 style="margin:0; color:#1b3a5a; font-size:18px;">Itinerary Builder</h3>
+                <button type="button" id="addItineraryDayBtn" class="premium-btn" style="border-radius:999px; padding:10px 18px; font-size:13px;">Add Another Day</button>
+            </div>
+
+            <div id="itineraryContainer" style="display:grid; gap:20px; margin-top:10px;"></div>
+            <input type="hidden" name="province_slug" id="travelProvinceSlug" value="">
+
+            <button type="submit" class="premium-btn" style="width:100%; border-radius:999px; padding:14px 20px;">Submit Travel Idea</button>
+            <div id="travelIdeaError" style="display:none; color:#dc2626; font-size:13px; margin-top:-8px;"></div>
+        </form>
+
+        <template id="itineraryDayTemplate">
+            <div class="itinerary-day-block" style="padding:18px; border:1px solid #e2e8f0; border-radius:20px; background:#f8fafc; position:relative;">
+                <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:16px;">
+                    <h4 class="itinerary-day-heading" style="margin:0; color:#1b3a5a; font-size:16px;">Day 1</h4>
+                    <button type="button" class="remove-itinerary-day-btn" style="display:none; background:#f8fafc; color:#dc2626; border:1px solid #f1f5f9; border-radius:999px; padding:8px 14px; cursor:pointer; font-size:13px;">Remove</button>
+                </div>
+                <div style="display:grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap:16px; margin-bottom:16px;">
+                    <label style="display:block; font-weight:700; color:#334155;">
+                        Day Number
+                        <input type="number" name="itinerary_day_order[]" min="1" placeholder="1" style="width:100%; margin-top:8px; padding:14px 16px; border:1px solid #d1d5db; border-radius:14px; font-size:14px;">
+                    </label>
+                    <label style="display:block; font-weight:700; color:#334155;">
+                        Day Title
+                        <input type="text" name="itinerary_day_title[]" placeholder="e.g. Heritage Tour" style="width:100%; margin-top:8px; padding:14px 16px; border:1px solid #d1d5db; border-radius:14px; font-size:14px;">
+                    </label>
+                    <label style="display:block; font-weight:700; color:#334155;">
+                        Day Image (optional)
+                        <input type="file" name="itinerary_image[]" accept="image/jpeg,image/png,image/webp" style="width:100%; margin-top:8px; padding:12px 14px; border:1px solid #d1d5db; border-radius:14px; font-size:14px;">
+                    </label>
+                </div>
+                <div style="display:grid; gap:16px;">
+                    <label style="display:block; font-weight:700; color:#334155;">
+                        Morning Activities
+                        <textarea name="itinerary_morning[]" rows="3" placeholder="e.g. Durbar Square" style="width:100%; margin-top:8px; padding:14px 16px; border:1px solid #d1d5db; border-radius:14px; font-size:14px; resize:vertical;"></textarea>
+                    </label>
+                    <label style="display:block; font-weight:700; color:#334155;">
+                        Afternoon Activities
+                        <textarea name="itinerary_afternoon[]" rows="3" placeholder="e.g. Swayambhunath" style="width:100%; margin-top:8px; padding:14px 16px; border:1px solid #d1d5db; border-radius:14px; font-size:14px; resize:vertical;"></textarea>
+                    </label>
+                    <label style="display:block; font-weight:700; color:#334155;">
+                        Evening Activities
+                        <textarea name="itinerary_evening[]" rows="3" placeholder="e.g. Dinner at a traditional restaurant" style="width:100%; margin-top:8px; padding:14px 16px; border:1px solid #d1d5db; border-radius:14px; font-size:14px; resize:vertical;"></textarea>
+                    </label>
+                </div>
+            </div>
+        </template>
+    </div>
+</div>
 
 <!-- "You Might Also Like" Section -->
 <section style="padding: 80px 0; border-top: 1px solid #eee; background: white;">
@@ -537,4 +842,146 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 
-<?php include '../includes/footer.php'; ?>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
+<script src="../assets/js/travel-ideas-api.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const openBtn = document.getElementById('openTravelIdeaModalBtn');
+    const modal = document.getElementById('travelIdeaModal');
+    const closeBtn = document.getElementById('closeTravelIdeaModal');
+    const form = document.getElementById('travelIdeaForm');
+    const postImage = document.getElementById('travelPostImage');
+    const imagePreview = document.getElementById('travelImagePreview');
+    const skipBtn = document.getElementById('travelSkipCropBtn');
+    const provinceSelect = document.getElementById('travelProvinceSelect');
+    const provinceSlugInput = document.getElementById('travelProvinceSlug');
+    const itineraryContainer = document.getElementById('itineraryContainer');
+    const itineraryTemplate = document.getElementById('itineraryDayTemplate');
+    const addItineraryDayBtn = document.getElementById('addItineraryDayBtn');
+    let cropper = null;
+
+    const updateProvinceSlug = () => {
+        if (!provinceSelect || !provinceSlugInput) return;
+        const slug = provinceSelect.value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+        provinceSlugInput.value = slug;
+    };
+
+    const updateItineraryHeadings = () => {
+        const blocks = itineraryContainer.querySelectorAll('.itinerary-day-block');
+        blocks.forEach((block, index) => {
+            const heading = block.querySelector('.itinerary-day-heading');
+            const orderInput = block.querySelector('input[name="itinerary_day_order[]"]');
+            let dayNumber = index + 1;
+            if (orderInput && orderInput.value.trim() !== '' && Number(orderInput.value) > 0) {
+                dayNumber = Number(orderInput.value);
+            }
+            if (heading) heading.textContent = 'Day ' + dayNumber;
+            const removeBtn = block.querySelector('.remove-itinerary-day-btn');
+            if (removeBtn) removeBtn.style.display = blocks.length > 1 ? 'inline-flex' : 'none';
+        });
+    };
+
+    const addItineraryDay = (data = {}) => {
+        if (!itineraryTemplate || !itineraryContainer) return;
+        const clone = itineraryTemplate.content.cloneNode(true);
+        const heading = clone.querySelector('.itinerary-day-heading');
+        const dayOrderInput = clone.querySelector('input[name="itinerary_day_order[]"]');
+        const titleInput = clone.querySelector('input[name="itinerary_day_title[]"]');
+        const morningInput = clone.querySelector('textarea[name="itinerary_morning[]"]');
+        const afternoonInput = clone.querySelector('textarea[name="itinerary_afternoon[]"]');
+        const eveningInput = clone.querySelector('textarea[name="itinerary_evening[]"]');
+        const removeBtn = clone.querySelector('.remove-itinerary-day-btn');
+
+        if (dayOrderInput) {
+            dayOrderInput.value = data.day_order ? data.day_order : itineraryContainer.children.length + 1;
+            dayOrderInput.addEventListener('input', updateItineraryHeadings);
+        }
+        if (titleInput && data.title) titleInput.value = data.title;
+        if (morningInput && data.morning) morningInput.value = data.morning;
+        if (afternoonInput && data.afternoon) afternoonInput.value = data.afternoon;
+        if (eveningInput && data.evening) eveningInput.value = data.evening;
+
+        if (removeBtn) {
+            removeBtn.addEventListener('click', function() {
+                const block = this.closest('.itinerary-day-block');
+                if (block) { block.remove(); updateItineraryHeadings(); }
+            });
+        }
+
+        itineraryContainer.appendChild(clone);
+        updateItineraryHeadings();
+    };
+
+    const initializeItinerary = () => {
+        if (!itineraryContainer) return;
+        if (itineraryContainer.children.length === 0) {
+            addItineraryDay();
+        } else {
+            updateItineraryHeadings();
+        }
+    };
+
+    if (openBtn) openBtn.addEventListener('click', () => { if(modal) { modal.style.display = 'flex'; document.body.style.overflow='hidden'; }});
+    if (closeBtn) closeBtn.addEventListener('click', () => { if(modal) { modal.style.display = 'none'; document.body.style.overflow=''; }});
+    if (modal) modal.addEventListener('click', (e) => { if (e.target === modal) { modal.style.display = 'none'; document.body.style.overflow=''; } });
+
+    if (provinceSelect) {
+        updateProvinceSlug();
+        provinceSelect.addEventListener('change', updateProvinceSlug);
+    }
+    if (addItineraryDayBtn) {
+        addItineraryDayBtn.addEventListener('click', function() {
+            addItineraryDay();
+        });
+    }
+    initializeItinerary();
+
+    if (postImage) {
+        postImage.addEventListener('change', function() {
+            const file = this.files[0]; if (!file) return;
+            const reader = new FileReader(); reader.onload = function(e) {
+                imagePreview.src = e.target.result; const ctn = imagePreview.closest('.travel-image-preview-container'); if(ctn) ctn.style.display='block';
+                if (cropper) cropper.destroy();
+                cropper = new Cropper(imagePreview, { aspectRatio: 4/5, viewMode:1, autoCropArea:0.8 });
+            }; reader.readAsDataURL(file);
+        });
+    }
+    if (skipBtn) skipBtn.addEventListener('click', () => { if (cropper) { cropper.destroy(); cropper=null; skipBtn.innerText='✓ USING FULL PHOTO'; } });
+
+    if (form) {
+        form.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const err = document.getElementById('travelIdeaError'); if (err) { err.style.display='none'; }
+            const submitBtn = form.querySelector('button[type="submit"]'); const orig = submitBtn ? submitBtn.innerText : null; if (submitBtn) { submitBtn.innerText='Submitting...'; submitBtn.disabled=true; }
+
+            const send = async (formData) => {
+                try {
+                    const res = await postTravelIdea(form, { apiBase: 'api/travel_ideas/create_idea.php', formData });
+                    if (res.success) {
+                        form.reset(); const ctn = imagePreview.closest('.travel-image-preview-container'); if (ctn) ctn.style.display='none'; if (cropper) { cropper.destroy(); cropper=null; }
+                        if (modal) { modal.style.display='none'; document.body.style.overflow=''; }
+                        alert('Travel idea shared!');
+                        window.location.reload();
+                    } else {
+                        if (err) { err.textContent = res.message || 'Failed'; err.style.display='block'; }
+                        alert(res.message || 'Failed to share');
+                    }
+                } catch (ex) { console.error(ex); if (err) { err.textContent='Server error'; err.style.display='block'; } }
+                finally { if (submitBtn) { submitBtn.disabled=false; submitBtn.innerText = orig; } }
+            };
+
+            if (cropper) {
+                cropper.getCroppedCanvas({ width:1080, height:1350 }).toBlob(async (blob) => {
+                    const fd = new FormData(form); fd.set('image', blob, `travel_idea_${Date.now()}.jpg`);
+                    await send(fd);
+                }, 'image/jpeg', 0.85);
+            } else {
+                const fd = new FormData(form);
+                await send(fd);
+            }
+        });
+    }
+});
+</script>
+
+<?php include __DIR__ . '/../includes/footer.php'; ?>
