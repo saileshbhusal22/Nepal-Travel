@@ -100,10 +100,45 @@
     background-color: var(--primary-blue);
     color: white;
   }
-  
+
+  .premium-btn,
+  a.premium-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 14px 28px;
+    border-radius: 999px;
+    background: var(--primary-yellow);
+    color: #111;
+    font-family: "Montserrat", sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    border: none;
+    cursor: pointer;
+    text-decoration: none;
+    transition: transform 0.25s ease, box-shadow 0.25s ease, background 0.25s ease;
+    box-shadow: 0 12px 30px rgba(245, 166, 35, 0.18);
+  }
+
+  .premium-btn:hover,
+  a.premium-btn:hover {
+    background: #e89a19;
+    transform: translateY(-1px);
+    box-shadow: 0 14px 35px rgba(245, 166, 35, 0.24);
+  }
+
+  .premium-btn:focus,
+  a.premium-btn:focus {
+    outline: none;
+    box-shadow: 0 0 0 4px rgba(245, 166, 35, 0.18);
+  }
+
   /* =========================================
      Header & Navigation
      ========================================= */
+
   header.header-main {
     position: fixed;
     top: 0;

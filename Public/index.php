@@ -1,6 +1,6 @@
 <?php 
-include 'includes/header.php'; 
-require_once 'user/db.php';
+include __DIR__ . '/../includes/header.php'; 
+require_once __DIR__ . '/../user/db.php';
 
 // Fetch the 8 latest community posts for the home page feed
 $community_posts_query = "
@@ -275,7 +275,7 @@ $display_facts = array_slice($all_facts, 0, 4);
             </div>
         </form>
 
-        <?php include 'includes/deals-data.php'; ?>
+        <?php include __DIR__ . '/../includes/deals-data.php'; ?>
         
         <!-- Grid -->
         <div id="dealsGridContainer" class="deals-options-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 30px; margin-bottom: 60px;">
@@ -469,7 +469,7 @@ $display_facts = array_slice($all_facts, 0, 4);
     </style>
     <div class="container map-layout">
         <div class="map-visual" id="nepal-svg-container">
-            <?php include 'includes/map.php'; ?>
+            <?php include __DIR__ . '/../includes/map.php'; ?>
         </div>
         <div class="map-details">
             <div class="province-card">
@@ -525,4 +525,4 @@ $display_facts = array_slice($all_facts, 0, 4);
     });
 </script>
 
-<?php include 'includes/footer.php'; ?>
+<?php include __DIR__ . '/../includes/footer.php'; ?>
