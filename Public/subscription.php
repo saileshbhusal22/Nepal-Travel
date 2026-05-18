@@ -107,21 +107,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'submi
 // ── Flash messages from redirect ──────────────────────────────
 if (isset($_GET['msg'])) {
     $flash = [
-        'submitted'         => '✓ Subscription submitted! Admin will review and activate it.',
-        'deal_submitted'    => '✓ Your deal is under review. It will go live after admin approval.',
-        'khalti_success'    => '✓ Khalti payment verified! Your subscription is now active.',
-        'payment_cancelled' => '✗ Payment was cancelled. Please try again.',
-        'payment_failed'    => '✗ Payment verification failed. Please contact support.',
-        'amount_mismatch'   => '✗ Payment amount mismatch detected. Please contact support.',
-        'already_activated' => '✓ Your subscription is already active.',
+        'submitted'          => '✓ Subscription submitted! Admin will review and activate it.',
+        'deal_submitted'     => '✓ Your deal is under review. It will go live after admin approval.',
+        'esewa_success'      => '✓ eSewa payment verified! Your subscription is now active.',
+        'payment_cancelled'  => '✗ Payment was cancelled. Please try again.',
+        'payment_failed'     => '✗ Payment verification failed. Please contact support.',
+        'amount_mismatch'    => '✗ Payment amount mismatch detected. Please contact support.',
+        'already_activated'  => '✓ Your subscription is already active.',
+        'already_subscribed' => '✓ You already have an active or pending subscription for this plan.',
+        'already_has_active' => '✗ You already have an active subscription.',
+        'invalid_plan'       => '✗ Invalid or inactive plan selected.',
     ];
     $msg      = $flash[$_GET['msg']] ?? '';
     $msg_type = str_starts_with($msg, '✗') ? 'error' : 'success';
 }
 
-// ── Khalti error from redirect ─────────────────────────────────
-if (isset($_GET['khalti_error']) && empty($msg)) {
-    $msg      = '✗ ' . htmlspecialchars($_GET['khalti_error']);
+// ── eSewa error from redirect ──────────────────────────────────
+if (isset($_GET['esewa_error']) && empty($msg)) {
+    $msg      = '✗ ' . htmlspecialchars($_GET['esewa_error']);
     $msg_type = 'error';
 }
 
@@ -171,7 +174,7 @@ include '../includes/header.php';
   --border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.12);
   --text:#f0ede6;--muted:rgba(240,237,230,0.45);--muted2:rgba(240,237,230,0.22);
   --gold:#c9a227;--gold2:#e8c44a;--blue:#2563eb;--pink:#e84393;
-  --green:#4caf7d;--red:#e05555;
+  --green:#4caf7d;--red:#e05555;--esewa:#60bb46;
 }
 html{scroll-behavior:smooth}
 body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;-webkit-font-smoothing:antialiased}
@@ -186,7 +189,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
   content:'';position:absolute;inset:0;
   background:radial-gradient(ellipse 80% 60% at 50% 0%,rgba(201,162,39,0.12),transparent 70%),
              radial-gradient(ellipse 40% 40% at 10% 80%,rgba(37,99,235,0.08),transparent 60%),
-             radial-gradient(ellipse 40% 40% at 90% 80%,rgba(232,67,147,0.08),transparent 60%);
+             radial-gradient(ellipse 40% 40% at 90% 80%,rgba(96,187,70,0.08),transparent 60%);
   pointer-events:none;
 }
 .sub-hero-tag{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--gold);margin-bottom:1.2rem;opacity:.8}
@@ -244,7 +247,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .form-group{display:flex;flex-direction:column;gap:7px;margin-bottom:16px}
 .flbl{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);font-weight:600;font-family:'DM Mono',monospace}
 .fin{background:var(--surface2);color:var(--text);border:1px solid var(--border2);border-radius:8px;padding:11px 14px;font-size:13.5px;font-family:'DM Sans',sans-serif;outline:none;transition:border-color .2s;width:100%}
-.fin:focus{border-color:rgba(201,162,39,.5)}
+.fin:focus{border-color:rgba(96,187,70,.5)}
 .fin::placeholder{color:var(--muted2)}
 textarea.fin{resize:vertical;min-height:80px;line-height:1.6}
 .fin-hint{font-size:11px;color:var(--muted2)}
@@ -254,7 +257,7 @@ textarea.fin{resize:vertical;min-height:80px;line-height:1.6}
 .mps-price{font-family:'DM Mono',monospace;font-size:13px;color:var(--gold)}
 .btn-submit{width:100%;padding:14px;border:none;border-radius:10px;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:800;cursor:pointer;transition:all .18s;letter-spacing:.03em;display:flex;align-items:center;justify-content:center;gap:8px}
 .btn-submit:hover{filter:brightness(1.1);transform:scale(1.01)}
-.btn-khalti{background:#5C2D8E;color:#fff;margin-bottom:12px}
+.btn-esewa{background:#60bb46;color:#fff;margin-bottom:12px}
 .btn-manual{background:var(--gold);color:#000}
 .divider{display:flex;align-items:center;gap:10px;margin:16px 0}
 .divider-line{flex:1;height:1px;background:var(--border)}
@@ -483,16 +486,16 @@ tbody tr:hover td{background:rgba(255,255,255,.02)}
         </div>
       </div>
 
-      <!-- ── KHALTI BUTTON ── -->
-      <form method="POST" action="khalti_initiate.php" id="khaltiForm">
-        <input type="hidden" name="action"   value="khalti_pay">
-        <input type="hidden" name="plan_id"  id="khalti_plan_id">
-        <button type="submit" class="btn-submit btn-khalti">
+      <!-- ── ESEWA BUTTON ── -->
+      <form method="POST" action="esewa_initiate.php" id="esewaForm">
+        <input type="hidden" name="action"  value="esewa_pay">
+        <input type="hidden" name="plan_id" id="esewa_plan_id">
+        <button type="submit" class="btn-submit btn-esewa">
           <svg width="20" height="20" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
             <circle cx="20" cy="20" r="20" fill="#ffffff22"/>
-            <text x="20" y="26" text-anchor="middle" font-size="16" fill="white">K</text>
+            <text x="20" y="26" text-anchor="middle" font-size="14" font-weight="bold" fill="white">e</text>
           </svg>
-          Pay with Khalti
+          Pay with eSewa
         </button>
       </form>
 
@@ -505,8 +508,8 @@ tbody tr:hover td{background:rgba(255,255,255,.02)}
 
       <!-- ── MANUAL PAYMENT ── -->
       <form method="POST" action="subscription.php">
-        <input type="hidden" name="action"   value="subscribe">
-        <input type="hidden" name="plan_id"  id="pay_plan_id">
+        <input type="hidden" name="action"  value="subscribe">
+        <input type="hidden" name="plan_id" id="pay_plan_id">
 
         <div class="bank-info">
           <strong>// PAYMENT INSTRUCTIONS</strong>
@@ -621,11 +624,11 @@ const planIcons = {
 };
 
 function openPayModal(planId, planName, planPrice) {
-  document.getElementById('pay_plan_id').value     = planId;
-  document.getElementById('khalti_plan_id').value  = planId;
-  document.getElementById('mps_name').textContent  = planName;
-  document.getElementById('mps_price').textContent = 'NPR ' + Number(planPrice).toLocaleString();
-  document.getElementById('mps_icon').textContent  = planIcons[String(planId)] || '📦';
+  document.getElementById('pay_plan_id').value    = planId;
+  document.getElementById('esewa_plan_id').value  = planId;
+  document.getElementById('mps_name').textContent = planName;
+  document.getElementById('mps_price').textContent= 'NPR ' + Number(planPrice).toLocaleString();
+  document.getElementById('mps_icon').textContent = planIcons[String(planId)] || '📦';
   openModal('payModal');
 }
 

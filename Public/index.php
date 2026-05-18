@@ -561,10 +561,13 @@ $display_facts = array_slice($all_facts, 0, 4);
                     $img_path = htmlspecialchars($post['image_path']);
                     if (strpos(strtolower($img_path), 'logo') !== false || empty($img_path)) {
                         $img_path = '../images/sarangkot_sunrise.png';
+                    } else {
+                        // Ensure the path is correct relative to the Public folder
+                        $img_path = '../' . ltrim(preg_replace('/^Nepal-Travel\//i', '', $img_path), '/');
                     }
                 ?>
-                <a href="experience.php" class="community-item">
-                    <img src="<?php echo $img_path; ?>" alt="Experience">
+                <a href="experience.php?post_id=<?php echo $post['id']; ?>" class="community-item">
+                    <img src="<?php echo $img_path; ?>" alt="Experience" onerror="this.onerror=null; this.src='../images/annapurna_trek.png';">
                     <div class="insta-overlay" style="position: absolute; inset: 0; background: linear-gradient(to bottom, transparent, rgba(27, 58, 90, 0.8)); opacity: 0; transition: opacity 0.3s; display: flex; flex-direction: column; justify-content: flex-end; padding: 20px; color: white;">
                         <span style="font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: #f5a623; font-weight: 800;">@<?php echo htmlspecialchars($post['username']); ?></span>
                         <h4 style="font-size: 14px; margin: 5px 0 0; line-height: 1.3;"><?php echo mb_strimwidth(htmlspecialchars($post['caption']), 0, 50, "..."); ?></h4>

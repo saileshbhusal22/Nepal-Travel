@@ -449,7 +449,7 @@ tbody tr:hover td{background:rgba(255,255,255,0.02)}
         <span class="sb-badge"><?= $total_bookings ?></span>
       </a>
 
-      <a href="?tab=subscriptions" class="sb-link <?= $activeTab==='subscriptions'?'on':'' ?>">
+      <a href="subscription_admin.php" class="sb-link <?= $activeTab==='subscriptions'?'on':'' ?>">
         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 4H4c-1.11 0-1.99.89-1.99 2L2 18c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V6c0-1.11-.89-2-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z"/></svg>
         Subscriptions
         <?php if ($pending_subs + $pending_deals > 0): ?>
@@ -475,6 +475,12 @@ tbody tr:hover td{background:rgba(255,255,255,0.02)}
         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M22 9.24l-7.19-.62L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21 12 17.27 18.18 21l-1.63-7.03L22 9.24zM12 15.4l-3.76 2.27 1-4.28-3.32-2.88 4.38-.38L12 6.1l1.71 4.04 4.38.38-3.32 2.88 1 4.28L12 15.4z"/></svg>
         Reviews
         <span class="sb-badge"><?= $total_reviews ?></span>
+      </a>
+
+      <!-- ── Posts Link ── -->
+      <a href="posts.php" class="sb-link">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M21 3H3C2 3 1 4 1 5v14c0 1.1.9 2 2 2h18c1 0 2-.9 2-2V5c0-1-1-2-2-2zm0 16H3V5h18v14zm-10-7h8v2h-8v-2zm0-4h8v2h-8V8zm-6 8h4v-8H5v8z"/></svg>
+        Posts
       </a>
 
       <div class="sb-section-label" style="margin-top:24px">Links</div>
@@ -699,7 +705,7 @@ tbody tr:hover td{background:rgba(255,255,255,0.02)}
               <div class="tcard-hd-title">⚠️ Pending Review</div>
               <div class="tcard-hd-sub"><?= $pending_subs ?> subscription(s) · <?= $pending_deals ?> deal(s) awaiting action</div>
             </div>
-            <a href="?tab=subscriptions" style="font-size:11px;color:var(--gold);font-weight:700">Review Now →</a>
+            <a href="subscription_admin.php" style="font-size:11px;color:var(--gold);font-weight:700">Review Now →</a>
           </div>
         </div>
         <?php endif; ?>

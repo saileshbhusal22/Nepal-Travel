@@ -83,7 +83,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const paths = svgElement.querySelectorAll('path');
 
             // Load district data
-            fetch('data/districts.json')
+            fetch('../data/districts.json')
                 .then(response => response.json())
                 .then(data => {
                     const { descriptions, categories } = data;

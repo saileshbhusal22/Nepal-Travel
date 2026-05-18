@@ -1555,6 +1555,381 @@
     .community-feed-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
     .mh-content { padding-top: calc(var(--header-height) + 10px); }
   }
+ 
 
+  /* ═══════════════════════════════════════════════════════════════
+   HAMBURGER MENU - ADDITIONAL STYLES FOR styles.css
+   Add these if they're not already in your header.php <style> tag
+═══════════════════════════════════════════════════════════════ */
+
+/* Search Portal Styling (add to your styles.css) */
+.search-portal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.9);
+    z-index: 3000;
+    display: none;
+    flex-direction: column;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    backdrop-filter: blur(3px);
+}
+
+.search-portal.active {
+    display: flex;
+    opacity: 1;
+}
+
+.search-portal-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    max-width: 1000px;
+    margin: 0 auto;
+    width: 100%;
+    padding: 40px 20px 20px;
+}
+
+.search-header {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 24px;
+    align-items: center;
+}
+
+.search-input-wrapper {
+    flex: 1;
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.search-icon {
+    position: absolute;
+    left: 16px;
+    color: #f5a623;
+    flex-shrink: 0;
+}
+
+.search-input {
+    width: 100%;
+    padding: 14px 16px 14px 48px;
+    background: rgba(255, 255, 255, 0.95);
+    border: 2px solid transparent;
+    border-radius: 8px;
+    font-family: 'Montserrat', sans-serif;
+    font-size: 16px;
+    outline: none;
+    transition: all 0.2s ease;
+}
+
+.search-input:focus {
+    border-color: #f5a623;
+    background: #fff;
+    box-shadow: 0 0 0 3px rgba(245, 166, 35, 0.1);
+}
+
+.search-input::placeholder {
+    color: rgba(0, 0, 0, 0.4);
+}
+
+.search-pulse {
+    position: absolute;
+    right: 16px;
+    width: 8px;
+    height: 8px;
+    background: #f5a623;
+    border-radius: 50%;
+    animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        opacity: 0.3;
+        transform: scale(1);
+    }
+    50% {
+        opacity: 0.8;
+        transform: scale(1.1);
+    }
+}
+
+.clear-search-btn,
+.close-search-btn {
+    background: rgba(255, 255, 255, 0.1);
+    border: none;
+    color: #fff;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+}
+
+.clear-search-btn:hover,
+.close-search-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+    color: #f5a623;
+}
+
+.search-tabs {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 24px;
+    overflow-x: auto;
+    padding-bottom: 8px;
+}
+
+.search-tabs::-webkit-scrollbar {
+    height: 4px;
+}
+
+.search-tabs::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 2px;
+}
+
+.search-tabs::-webkit-scrollbar-thumb {
+    background: rgba(245, 166, 35, 0.3);
+    border-radius: 2px;
+}
+
+.search-tabs::-webkit-scrollbar-thumb:hover {
+    background: rgba(245, 166, 35, 0.5);
+}
+
+.search-tab-btn {
+    padding: 8px 16px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 20px;
+    color: rgba(255, 255, 255, 0.7);
+    font-family: 'Montserrat', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.search-tab-btn:hover {
+    background: rgba(245, 166, 35, 0.15);
+    border-color: #f5a623;
+    color: #f5a623;
+}
+
+.search-tab-btn.active {
+    background: #f5a623;
+    border-color: #f5a623;
+    color: #0f172a;
+}
+
+.suggestions-panel {
+    flex: 1;
+    overflow-y: auto;
+}
+
+.suggestions-section {
+    margin-bottom: 32px;
+}
+
+.suggestions-section h3 {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 12px;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.5);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin: 0 0 12px 0;
+}
+
+.suggestion-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.suggestion-chip {
+    padding: 8px 14px;
+    background: rgba(245, 166, 35, 0.1);
+    border: 1px solid rgba(245, 166, 35, 0.3);
+    border-radius: 20px;
+    color: #f5a623;
+    font-family: 'Montserrat', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.suggestion-chip:hover {
+    background: rgba(245, 166, 35, 0.2);
+    border-color: #f5a623;
+}
+
+.search-results-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 16px;
+    margin-top: 20px;
+}
+
+.search-result-card {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    overflow: hidden;
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.search-result-card:hover {
+    background: rgba(245, 166, 35, 0.1);
+    border-color: #f5a623;
+    transform: translateY(-2px);
+}
+
+.search-result-image {
+    width: 100%;
+    height: 120px;
+    background: linear-gradient(135deg, #1b3a5a, #285da1);
+    object-fit: cover;
+}
+
+.search-result-content {
+    padding: 12px;
+}
+
+.search-result-title {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    color: #fff;
+    margin: 0 0 6px 0;
+    line-height: 1.3;
+}
+
+.search-result-desc {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.6);
+    margin: 0;
+}
+
+/* Mobile search portal adjustments */
+@media (max-width: 768px) {
+    .search-portal-content {
+        padding: 20px 16px 16px;
+    }
+
+    .search-input {
+        font-size: 14px;
+        padding: 12px 14px 12px 44px;
+    }
+
+    .search-results-grid {
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        gap: 12px;
+    }
+}
+
+@media (max-width: 480px) {
+    .search-portal-content {
+        padding: 16px 12px 12px;
+    }
+
+    .search-header {
+        gap: 8px;
+    }
+
+    .search-tabs {
+        gap: 8px;
+        margin-bottom: 16px;
+    }
+
+    .search-tab-btn {
+        padding: 6px 12px;
+        font-size: 11px;
+    }
+
+    .search-results-grid {
+        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+        gap: 10px;
+    }
+
+    .search-result-card {
+        border-radius: 6px;
+    }
+
+    .search-result-image {
+        height: 100px;
+    }
+
+    .search-result-content {
+        padding: 10px;
+    }
+
+    .search-result-title {
+        font-size: 12px;
+    }
+}
+
+/* Scrollbar styling for suggestions panel */
+.suggestions-panel::-webkit-scrollbar {
+    width: 6px;
+}
+
+.suggestions-panel::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 3px;
+}
+
+.suggestions-panel::-webkit-scrollbar-thumb {
+    background: rgba(245, 166, 35, 0.3);
+    border-radius: 3px;
+}
+
+.suggestions-panel::-webkit-scrollbar-thumb:hover {
+    background: rgba(245, 166, 35, 0.5);
+}
+
+/* Animation keyframes */
+@keyframes slideInFromRight {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes fadeInBackdrop {
+    from {
+        opacity: 0;
+        backdrop-filter: blur(0);
+    }
+    to {
+        opacity: 1;
+        backdrop-filter: blur(2px);
+    }
+}
+
+/* Apply animations */
+.mobile-drawer.is-open {
+    animation: slideInFromRight 0.35s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.drawer-overlay.is-open {
+    animation: fadeInBackdrop 0.35s ease forwards;
+}
 
   

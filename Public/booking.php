@@ -47,9 +47,13 @@ function sendBookingEmail($email, $fullname, $bookingDetails) {
                </p>"
             : '';
 
-        $payBadge = ($payMethod === 'khalti')
-            ? "<span style='background:#ede9fe;color:#5b21b6;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700;'>💳 Khalti</span>"
-            : "<span style='background:#dbeafe;color:#1e40af;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700;'>🏔️ Pay at Destination</span>";
+        if ($payMethod === 'khalti') {
+            $payBadge = "<span style='background:#ede9fe;color:#5b21b6;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700;'>💳 Khalti</span>";
+        } elseif ($payMethod === 'esewa') {
+            $payBadge = "<span style='background:#e6f9e0;color:#2d7a1f;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700;'>💚 eSewa</span>";
+        } else {
+            $payBadge = "<span style='background:#dbeafe;color:#1e40af;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700;'>🏔️ Pay at Destination</span>";
+        }
 
         $amountRow = ($amount > 0)
             ? "<tr style='background:#f8f9fa;'>
@@ -176,12 +180,10 @@ if ($is_logged_in && $IS_POST) {
     $guests           = (int)($_POST['guests']     ?? 1);
     $user_id          = (int)$_SESSION['user_id'];
 
-    // ── Validate date format strictly (must be YYYY-MM-DD) ───
     if ($post_date && !preg_match('/^\d{4}-\d{2}-\d{2}$/', $post_date)) {
         $post_date = '';
     }
 
-    // ── Re-fetch price server-side (tamper-proof) ────────────
     $amount = 0.0;
     if ($deal_id > 0) {
         $pStmt = $conn->prepare("SELECT price FROM deals WHERE id = ?");
@@ -205,7 +207,6 @@ if ($is_logged_in && $IS_POST) {
         $amount = (float)$fetched_price * $guests;
     }
 
-    // ── Basic validation ─────────────────────────────────────
     if (!$name || !$post_destination || !$post_date || $guests < 1) {
         $error = 'Please fill in all fields.';
     } elseif (strtotime($post_date) < strtotime('today')) {
@@ -215,11 +216,9 @@ if ($is_logged_in && $IS_POST) {
         $final_deal_id = ($deal_id > 0) ? $deal_id : null;
         $final_ud_id   = ($ud_id > 0)   ? $ud_id   : null;
 
-        // ── Duplicate booking check — by deal_id ─────────────
         $duplicate_booking_id = null;
 
         if ($final_deal_id !== null) {
-            // Check active OR pending (pending = Khalti payment in progress)
             $dup = $conn->prepare(
                 "SELECT id FROM bookings
                  WHERE user_id = ? AND deal_id = ? AND status IN ('active','pending')
@@ -232,7 +231,6 @@ if ($is_logged_in && $IS_POST) {
             $dup->close();
 
         } elseif ($final_ud_id !== null) {
-            // ── Duplicate booking check — by ud_id ───────────
             $dup = $conn->prepare(
                 "SELECT id FROM bookings
                  WHERE user_id = ? AND ud_id = ? AND status IN ('active','pending')
@@ -245,9 +243,6 @@ if ($is_logged_in && $IS_POST) {
             $dup->close();
         }
 
-        // ── Duplicate booking check — by destination (cross-type fallback) ──
-        // Catches cases where the same destination exists as both a deal
-        // and a user_deal, or the user arrives without proper GET params.
         if (!$duplicate_booking_id && $post_destination) {
             $dup3 = $conn->prepare(
                 "SELECT id FROM bookings
@@ -331,7 +326,6 @@ if ($is_logged_in) {
     $user_id = (int)$_SESSION['user_id'];
 
     if ($deal_id > 0) {
-        // Check by deal_id — active OR pending (pending = Khalti in progress)
         $chk = $conn->prepare(
             "SELECT id FROM bookings
              WHERE user_id = ? AND deal_id = ? AND status IN ('active','pending')
@@ -344,7 +338,6 @@ if ($is_logged_in) {
         $chk->close();
 
     } elseif ($ud_id > 0) {
-        // Check by ud_id — active OR pending
         $chk = $conn->prepare(
             "SELECT id FROM bookings
              WHERE user_id = ? AND ud_id = ? AND status IN ('active','pending')
@@ -357,7 +350,6 @@ if ($is_logged_in) {
         $chk->close();
     }
 
-    // Cross-type fallback: same destination booked via either deal type
     if (!$existing_booking_id && $destination) {
         $chk2 = $conn->prepare(
             "SELECT id FROM bookings
@@ -605,6 +597,7 @@ include '../includes/header.php';
       text-align: center;
     }
 
+    /* Khalti button */
     .btn-khalti {
       display: flex;
       align-items: center;
@@ -635,6 +628,38 @@ include '../includes/header.php';
       letter-spacing: 0.05em;
     }
 
+    /* eSewa button */
+    .btn-esewa {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      width: 100%;
+      padding: 13px;
+      background: #60bb46;
+      color: #fff;
+      font-size: 15px;
+      font-weight: 700;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: background 0.15s, transform 0.1s;
+      letter-spacing: 0.03em;
+    }
+    .btn-esewa:hover  { background: #4ea336; }
+    .btn-esewa:active { transform: scale(0.98); }
+
+    .esewa-logo {
+      background: #fff;
+      border-radius: 4px;
+      padding: 2px 6px;
+      font-size: 11px;
+      font-weight: 900;
+      color: #60bb46;
+      letter-spacing: 0.05em;
+    }
+
+    /* Cash button */
     .btn-cash {
       display: flex;
       align-items: center;
@@ -666,6 +691,13 @@ include '../includes/header.php';
       content: '';
       flex: 1;
       border-top: 1px solid rgba(255,255,255,0.08);
+    }
+
+    /* Payment methods row (Khalti + eSewa side by side) */
+    .btn-pay-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
     }
   </style>
 </head>
@@ -710,7 +742,6 @@ include '../includes/header.php';
       </div>
 
     <?php elseif ($existing_booking_id): ?>
-      <!-- ── Already booked: show banner, hide form entirely ── -->
       <div class="already-booked-banner">
         <div class="ab-icon">🎫</div>
         <h3>You've Already Booked This Deal!</h3>
@@ -746,8 +777,6 @@ include '../includes/header.php';
 
       <?php
         $msg = $_GET['msg'] ?? '';
-
-        // Duplicate detected by khalti_booking_initiate.php
         if (strpos($msg, 'duplicate:') === 0):
             $khalti_dup_id = (int)substr($msg, 10);
       ?>
@@ -834,16 +863,24 @@ include '../includes/header.php';
         </div>
         <?php endif; ?>
 
-        <!-- Payment buttons -->
+        <!-- ── Payment buttons ─────────────────────────────── -->
         <div class="payment-section">
           <div class="payment-label">Choose Payment Method</div>
 
           <?php if ($price > 0): ?>
-          <button type="button" class="btn-khalti" onclick="payWithKhalti()">
-            <span class="khalti-logo">K</span>
-            Pay with Khalti &nbsp;·&nbsp;
-            <span id="khaltiAmount">NPR <?= number_format((float)$price, 0) ?></span>
-          </button>
+
+          <!-- Khalti + eSewa side by side -->
+          <div class="btn-pay-row">
+            <button type="button" class="btn-khalti" onclick="payWithKhalti()">
+              <span class="khalti-logo">K</span>
+              Khalti &nbsp;·&nbsp; <span id="khaltiAmount">NPR <?= number_format((float)$price, 0) ?></span>
+            </button>
+
+            <button type="button" class="btn-esewa" onclick="payWithEsewa()">
+              <span class="esewa-logo">e</span>
+              eSewa &nbsp;·&nbsp; <span id="esewaAmount">NPR <?= number_format((float)$price, 0) ?></span>
+            </button>
+          </div>
 
           <div class="or-divider">or</div>
           <?php endif; ?>
@@ -868,6 +905,7 @@ include '../includes/header.php';
   const totalDisplay   = document.getElementById('totalDisplay');
   const priceBreakdown = document.getElementById('priceBreakdown');
   const khaltiAmount   = document.getElementById('khaltiAmount');
+  const esewaAmount    = document.getElementById('esewaAmount');
 
   function updateTotal() {
     if (!pricePerGuest) return;
@@ -881,6 +919,7 @@ include '../includes/header.php';
       'NPR ' + pricePerGuest.toLocaleString('en-IN', { maximumFractionDigits: 0 }) +
       ' × ' + guests + ' guest' + (guests > 1 ? 's' : '');
     if (khaltiAmount)   khaltiAmount.textContent = formatted;
+    if (esewaAmount)    esewaAmount.textContent  = formatted;
   }
 
   if (guestsInput) {
@@ -888,8 +927,7 @@ include '../includes/header.php';
     updateTotal();
   }
 
-  function payWithKhalti() {
-    const form   = document.getElementById('bookingForm');
+  function validateForm() {
     const name   = document.getElementById('name').value.trim();
     const dest   = document.getElementById('destination').value.trim();
     const date   = document.getElementById('date').value;
@@ -897,14 +935,26 @@ include '../includes/header.php';
 
     if (!name || !dest || !date || guests < 1) {
       alert('Please fill in all fields before paying.');
-      return;
+      return false;
     }
     if (new Date(date) < new Date(new Date().toDateString())) {
       alert('Please choose a travel date in the future.');
-      return;
+      return false;
     }
+    return true;
+  }
 
+  function payWithKhalti() {
+    if (!validateForm()) return;
+    const form = document.getElementById('bookingForm');
     form.action = 'khalti_booking_initiate.php';
+    form.submit();
+  }
+
+  function payWithEsewa() {
+    if (!validateForm()) return;
+    const form = document.getElementById('bookingForm');
+    form.action = 'esewa_booking_initiate.php';
     form.submit();
   }
 </script>
