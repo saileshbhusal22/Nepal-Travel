@@ -1,10 +1,13 @@
 <?php 
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 require_once __DIR__ . '/../config/db.php';
 require_once __DIR__ . '/../includes/travel-idea-details-data.php';
 require_once __DIR__ . '/../includes/travel-idea-db-seeder.php';
 
- $id = isset($_GET['id']) ? trim($_GET['id']) : '';
- $detail = null;
+$id = isset($_GET['id']) ? trim($_GET['id']) : '';
+$detail = null;
 
 function formatDurationText($days, $nights) {
     $days = (int)$days;
@@ -32,7 +35,13 @@ function buildTravelIdeaDetail($row) {
         }
     }
     if (empty($highlights)) {
-        $highlights = !empty($subtitle) ? [$subtitle] : [$content];
+        $fallbacks = array_filter([
+            !empty($subtitle) ? $subtitle : null,
+            !empty($row['difficulty']) ? 'Difficulty: ' . $row['difficulty'] : null,
+            (!empty($row['duration_days']) && (int)$row['duration_days'] > 0) ? $row['duration_days'] . ' day trip' : null,
+            !empty($experienceLabel) ? $experienceLabel : null,
+        ]);
+        $highlights = !empty($fallbacks) ? array_values($fallbacks) : ['Community travel idea'];
     }
 
     return [
@@ -122,6 +131,24 @@ if (!empty($id)) {
     }
 }
 
+$relatedRows = [];
+if ($detail && isset($detail['id']) && is_numeric($detail['id'])) {
+    $relatedStmt = $conn->prepare(
+        "SELECT t.id, t.title, t.subtitle, t.image_path, d.hero_image, t.duration_days, t.nights
+         FROM travel_ideas t
+         LEFT JOIN travel_idea_details d ON d.idea_id = t.id
+         WHERE t.id != ?
+         ORDER BY t.id DESC
+         LIMIT 3"
+    );
+    if ($relatedStmt) {
+        $relatedStmt->bind_param('i', $detail['id']);
+        $relatedStmt->execute();
+        $relatedRows = $relatedStmt->get_result()->fetch_all(MYSQLI_ASSOC);
+        $relatedStmt->close();
+    }
+}
+
 if (!$detail && isset($travel_idea_details[$id])) {
     $detail = $travel_idea_details[$id];
     $detail['is_dynamic'] = true;
@@ -143,10 +170,24 @@ include '../includes/header.php';
 
 <!-- Hero Section -->
 <section class="detail-hero" style="background-image: url('<?php echo htmlspecialchars($detail['hero_image']); ?>');">
-    <div class="container hero-info">
-        <span class="vibe-tag"><?php echo htmlspecialchars($detail['vibe']); ?></span>        <?php if (isset($_SESSION['user_id']) && $detail['owner_id'] === (int)$_SESSION['user_id']): ?>
+    <?php if (isset($_SESSION['user_id']) && $detail['owner_id'] !== null && $detail['owner_id'] === (int)$_SESSION['user_id']): ?>
+        <div class="owner-action-buttons">
             <button id="editIdeaBtn" class="edit-idea-button">Edit Travel Idea</button>
-        <?php endif; ?>        <h1 class="detail-title"><?php echo htmlspecialchars($detail['title']); ?></h1>
+            <button id="deleteIdeaBtn" class="delete-idea-button">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px;">
+                    <polyline points="3 6 5 6 21 6"></polyline>
+                    <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path>
+                    <path d="M10 11v6"></path>
+                    <path d="M14 11v6"></path>
+                    <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path>
+                </svg>
+                Delete Travel Idea
+            </button>
+        </div>
+    <?php endif; ?>
+    <div class="container hero-info">
+        <span class="vibe-tag"><?php echo htmlspecialchars($detail['vibe']); ?></span>
+        <h1 class="detail-title"><?php echo htmlspecialchars($detail['title']); ?></h1>
         <div class="detail-meta">
             <span>
                 <!-- Location Icon -->
@@ -177,7 +218,7 @@ include '../includes/header.php';
         <main class="detail-article">
             <p class="intro-text"><?php echo htmlspecialchars($detail['intro']); ?></p>
             
-            <?php if (!empty($detail['is_dynamic']) && !empty($detail['content'])): ?>
+            <?php if (!empty($detail['is_dynamic']) && !empty($detail['content']) && $detail['content'] !== $detail['intro']): ?>
             <div style="margin-bottom: 60px;">
                 <h3 style="font-family: 'Playfair Display', serif; font-size: 32px; color: var(--primary-blue); margin-bottom: 20px;">Travel Idea Details</h3>
                 <div style="background: white; border-radius: 18px; padding: 24px; box-shadow: 0 20px 40px rgba(0,0,0,0.05); line-height: 1.8; color: #334155;">
@@ -290,19 +331,19 @@ include '../includes/header.php';
             <!-- Related Suggestions -->
             <div class="related-ideas-sidebar" style="margin-top: 50px;">
                 <h4 style="font-family: 'Playfair Display', serif; font-size: 22px; margin-bottom: 25px; color: var(--primary-blue);">More to Explore</h4>
-                <?php 
-                $shown = 0;
-                foreach($travel_idea_details as $rid => $rdata): 
-                    if($rid === $id || $shown >= 3) continue;
-                    $shown++;
+                <?php foreach ($relatedRows as $rdata): ?>
+                <?php
+                    $relatedImage = !empty($rdata['hero_image']) ? $rdata['hero_image'] : (!empty($rdata['image_path']) ? $rdata['image_path'] : '../images/default_idea.png');
+                    $relatedSubtitle = !empty($rdata['subtitle']) ? $rdata['subtitle'] : 'Shared Travel Idea';
+                    $relatedDuration = formatDurationText($rdata['duration_days'], $rdata['nights']);
                 ?>
-                <a href="travel-idea-detail.php?id=<?php echo $rid; ?>" class="related-card-link" style="text-decoration: none; display: block; margin-bottom: 20px;">
+                <a href="travel-idea-detail.php?id=<?php echo $rdata['id']; ?>" class="related-card-link" style="text-decoration: none; display: block; margin-bottom: 20px;">
                     <div class="related-card" style="display: flex; gap: 15px; align-items: center;">
-                        <img src="<?php echo htmlspecialchars($rdata['hero_image']); ?>" style="width: 80px; height: 80px; border-radius: 10px; object-fit: cover;">
+                        <img src="<?php echo htmlspecialchars($relatedImage); ?>" style="width: 80px; height: 80px; border-radius: 10px; object-fit: cover;">
                         <div>
-                            <span style="font-size: 10px; text-transform: uppercase; color: var(--primary-yellow); font-weight: 800; letter-spacing: 1px;"><?php echo $rdata['vibe']; ?></span>
-                            <h5 style="margin: 3px 0; color: var(--primary-blue); font-size: 14px; line-height: 1.3;"><?php echo $rdata['title']; ?></h5>
-                            <span style="font-size: 11px; color: #999;"><?php echo $rdata['duration']; ?></span>
+                            <span style="font-size: 10px; text-transform: uppercase; color: var(--primary-yellow); font-weight: 800; letter-spacing: 1px;"><?php echo htmlspecialchars($relatedSubtitle); ?></span>
+                            <h5 style="margin: 3px 0; color: var(--primary-blue); font-size: 14px; line-height: 1.3;"><?php echo htmlspecialchars($rdata['title']); ?></h5>
+                            <span style="font-size: 11px; color: #999;"><?php echo htmlspecialchars($relatedDuration); ?></span>
                         </div>
                     </div>
                 </a>
@@ -317,7 +358,7 @@ include '../includes/header.php';
     </div>
 </section>
 
-<?php if (isset($_SESSION['user_id']) && $detail['owner_id'] === (int)$_SESSION['user_id']): ?>
+<?php if (isset($_SESSION['user_id']) && $detail['owner_id'] !== null && $detail['owner_id'] === (int)$_SESSION['user_id']): ?>
 <div id="editIdeaModal" class="modal-overlay" style="display:none;">
     <div class="modal-content">
         <span class="close-modal" id="closeEditModal">&times;</span>
@@ -407,13 +448,14 @@ include '../includes/header.php';
 (function() {
     const detail = <?php echo json_encode($detail, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>;
     const editIdeaBtn = document.getElementById('editIdeaBtn');
+    const deleteIdeaBtn = document.getElementById('deleteIdeaBtn');
     const editModal = document.getElementById('editIdeaModal');
     const closeEditModal = document.getElementById('closeEditModal');
     const cancelEditBtn = document.getElementById('cancelEditBtn');
     const itineraryContainer = document.getElementById('itineraryDaysContainer');
     const editForm = document.getElementById('editIdeaForm');
 
-    if (!editIdeaBtn || !editModal) return;
+    if (editIdeaBtn && editModal) {
 
     function createItineraryDay(day = {}) {
         const idx = itineraryContainer.children.length + 1;
@@ -553,6 +595,37 @@ include '../includes/header.php';
     }
 
     editIdeaBtn.addEventListener('click', showModal);
+    if (deleteIdeaBtn) {
+        deleteIdeaBtn.addEventListener('click', async () => {
+            if (!confirm('Delete this travel idea? This cannot be undone.')) {
+                return;
+            }
+            deleteIdeaBtn.disabled = true;
+            const originalText = deleteIdeaBtn.textContent;
+            deleteIdeaBtn.textContent = 'Deleting...';
+            try {
+                const response = await fetch('./api/travel_ideas/delete_idea.php', {
+                    method: 'POST',
+                    credentials: 'same-origin',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    },
+                    body: new URLSearchParams({ idea_id: detail.id })
+                });
+                const result = await response.json();
+                if (result.success) {
+                    window.location.href = 'travel-ideas.php';
+                } else {
+                    alert(result.message || 'Unable to delete travel idea.');
+                }
+            } catch (err) {
+                alert('Unable to delete travel idea. Please try again.');
+            } finally {
+                deleteIdeaBtn.disabled = false;
+                deleteIdeaBtn.textContent = originalText;
+            }
+        });
+    }
     closeEditModal.addEventListener('click', closeModal);
     cancelEditBtn.addEventListener('click', closeModal);
 
@@ -605,6 +678,7 @@ include '../includes/header.php';
             submitButton.disabled = false;
         }
     });
+    }
 })();
 </script>
 

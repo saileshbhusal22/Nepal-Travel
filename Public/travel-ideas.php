@@ -558,7 +558,7 @@ if (isset($_GET['search']) && trim($_GET['search']) !== '') {
                         <?php if (isset($_SESSION['user_id']) && (int)$_SESSION['user_id'] === (int)$idea['user_id']): ?>
                             <a href="travel-idea-detail.php?id=<?php echo $idea['id']; ?>&open_edit=1" class="edit-card-btn">Edit</a>
                         <?php endif; ?>
-                        <div class="view-btn">View Journey Detail</div>
+                        <a href="travel-idea-detail.php?id=<?php echo $idea['id']; ?>" class="view-btn">View Journey Detail</a>
                     </div>
                 </div>
                 <?php endforeach; ?>

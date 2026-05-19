@@ -65,6 +65,55 @@
     gap: 8px;
 }
 
+.detail-hero {
+    position: relative;
+}
+
+.detail-hero .owner-action-buttons {
+    position: absolute;
+    top: 24px;
+    left: 24px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    z-index: 2;
+}
+
+.edit-idea-button,
+.delete-idea-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 12px 20px;
+    border-radius: 999px;
+    border: 1px solid transparent;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform 0.15s ease, opacity 0.15s ease, background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+.edit-idea-button {
+    background: rgba(255,255,255,0.95);
+    color: var(--primary-blue);
+}
+
+.delete-idea-button {
+    background: #d64541;
+    color: white;
+}
+
+.edit-idea-button:hover {
+    transform: translateY(-1px);
+    opacity: 0.95;
+}
+
+.delete-idea-button:hover {
+    transform: translateY(-1px);
+    opacity: 0.95;
+    background: #b12f31;
+}
+
 /* Sidebar Box Style */
 .info-sidebar-box {
     background: white;
@@ -367,23 +416,6 @@
     margin-top: 12px;
 }
 
-.edit-idea-button {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding: 12px 20px;
-    margin: 0 0 18px 0;
-    border-radius: 999px;
-    background: #ffffff;
-    color: var(--primary-blue);
-    border: 1px solid rgba(27, 58, 90, 0.15);
-    font-weight: 700;
-    cursor: pointer;
-}
-
-.edit-idea-button:hover {
-    background: rgba(27, 58, 90, 0.04);
-}
 
 @media (max-width: 992px) {
     .container {
