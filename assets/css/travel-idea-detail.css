@@ -65,6 +65,55 @@
     gap: 8px;
 }
 
+.detail-hero {
+    position: relative;
+}
+
+.detail-hero .owner-action-buttons {
+    position: absolute;
+    top: 24px;
+    left: 24px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    z-index: 2;
+}
+
+.edit-idea-button,
+.delete-idea-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 12px 20px;
+    border-radius: 999px;
+    border: 1px solid transparent;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform 0.15s ease, opacity 0.15s ease, background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+.edit-idea-button {
+    background: rgba(255,255,255,0.95);
+    color: var(--primary-blue);
+}
+
+.delete-idea-button {
+    background: #d64541;
+    color: white;
+}
+
+.edit-idea-button:hover {
+    transform: translateY(-1px);
+    opacity: 0.95;
+}
+
+.delete-idea-button:hover {
+    transform: translateY(-1px);
+    opacity: 0.95;
+    background: #b12f31;
+}
+
 /* Sidebar Box Style */
 .info-sidebar-box {
     background: white;
@@ -219,6 +268,155 @@
     color: var(--primary-yellow) !important;
 }
 
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.65);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    padding: 24px;
+}
+
+.modal-content {
+    background: #ffffff;
+    width: min(1100px, 100%);
+    max-height: calc(100vh - 48px);
+    overflow-y: auto;
+    border-radius: 24px;
+    padding: 32px;
+    box-shadow: 0 35px 90px rgba(0, 0, 0, 0.25);
+    position: relative;
+}
+
+.close-modal {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    font-size: 30px;
+    color: var(--primary-blue);
+    cursor: pointer;
+    line-height: 1;
+}
+
+.modal-content h2 {
+    margin-top: 0;
+    margin-bottom: 24px;
+    font-size: 32px;
+    color: var(--primary-blue);
+}
+
+.field-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 20px;
+}
+
+.field-grid label,
+.itinerary-editor label {
+    display: block;
+    font-size: 13px;
+    color: var(--primary-blue);
+    font-weight: 700;
+    margin-bottom: 0;
+}
+
+.field-grid input,
+.field-grid select,
+.field-grid textarea,
+.itinerary-editor textarea {
+    width: 100%;
+    padding: 12px 14px;
+    border: 1px solid #d8dee8;
+    border-radius: 14px;
+    font-size: 14px;
+    color: #1b3a5a;
+    font-family: inherit;
+    margin-top: 8px;
+    box-sizing: border-box;
+}
+
+.itinerary-editor {
+    margin-top: 28px;
+    border-top: 1px solid #e2e8f0;
+    padding-top: 24px;
+}
+
+.editor-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-bottom: 20px;
+}
+
+.editor-header h3 {
+    margin: 0;
+    font-size: 22px;
+    color: var(--primary-blue);
+}
+
+.day-block {
+    border: 1px solid #e2e8f0;
+    border-radius: 18px;
+    background: #f8fafc;
+    padding: 22px;
+    margin-bottom: 18px;
+}
+
+.day-block-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 16px;
+}
+
+.day-block-header strong {
+    font-size: 16px;
+    color: var(--primary-blue);
+}
+
+.day-fields {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.remove-day-btn,
+.secondary-btn,
+.primary-btn {
+    border: none;
+    border-radius: 12px;
+    padding: 12px 18px;
+    cursor: pointer;
+    font-weight: 700;
+}
+
+.remove-day-btn {
+    background: #fff5f5;
+    color: #c0392b;
+    border: 1px solid #f5c6cb;
+}
+
+.secondary-btn {
+    background: #f8fafc;
+    color: var(--primary-blue);
+    border: 1px solid #d8dee8;
+}
+
+.primary-btn {
+    background: var(--primary-blue);
+    color: white;
+}
+
+.form-error {
+    color: #b00020;
+    font-weight: 700;
+    margin-top: 12px;
+}
+
+
 @media (max-width: 992px) {
     .container {
         grid-template-columns: 1fr !important;
@@ -236,5 +434,10 @@
     
     .day-image img {
         height: 200px;
+    }
+
+    .field-grid,
+    .day-fields {
+        grid-template-columns: 1fr;
     }
 }

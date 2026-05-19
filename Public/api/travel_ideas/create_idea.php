@@ -166,17 +166,26 @@ if (!empty($province_slug)) {
 }
 
 $intro = !empty($content) ? $content : (!empty($subtitle) ? $subtitle : 'A travel idea shared by our community.');
-$highlights = [];
+$highlights_arr = [];
 if (!empty($highlights_input)) {
-    $highlights = array_filter(array_map('trim', preg_split('/\R+/', $highlights_input)));
+    $highlights_arr = array_filter(array_map('trim', preg_split('/\R+/', $highlights_input)));
 }
-if (empty($highlights) && !empty($subtitle)) {
-    $highlights[] = $subtitle;
+if (empty($highlights_arr) && !empty($subtitle)) {
+    $highlights_arr[] = $subtitle;
 }
-if (empty($highlights)) {
-    $highlights[] = 'A travel idea shared by our community.';
+if (empty($highlights_arr)) {
+    $highlights_arr = array_filter([
+        !empty($subtitle) ? $subtitle : null,
+        !empty($transport) ? 'Transport: ' . $transport : null,
+        !empty($accommodation) ? 'Stay: ' . $accommodation : null,
+        !empty($best_time) ? 'Best time: ' . $best_time : null,
+        !empty($difficulty) ? 'Difficulty: ' . $difficulty : null,
+    ]);
 }
-$highlights = json_encode(array_values($highlights), JSON_UNESCAPED_UNICODE);
+if (empty($highlights_arr)) {
+    $highlights_arr[] = 'Community travel idea from ' . ($province ?: 'Nepal');
+}
+$highlights = json_encode(array_values($highlights_arr), JSON_UNESCAPED_UNICODE);
 
 $logistics = json_encode([
     'transport' => $transport ?: 'Check local transport options.',
@@ -216,19 +225,19 @@ $maxItems = max(count($dayOrders), count($dayTitles), count($dayMornings), count
 for ($i = 0; $i < $maxItems; $i++) {
     $orderValue = trim($dayOrders[$i] ?? '');
     $day_order = ctype_digit($orderValue) && (int)$orderValue > 0 ? (int)$orderValue : null;
-    $title = trim($dayTitles[$i] ?? '');
+    $day_title = trim($dayTitles[$i] ?? '');
     $morning = trim($dayMornings[$i] ?? '');
     $afternoon = trim($dayAfternoons[$i] ?? '');
     $evening = trim($dayEvenings[$i] ?? '');
     $img = isset($itineraryImages[$i]) ? $itineraryImages[$i] : null;
 
-    if (empty($title) && empty($morning) && empty($afternoon) && empty($evening) && empty($img)) {
+    if (empty($day_title) && empty($morning) && empty($afternoon) && empty($evening) && empty($img)) {
         continue;
     }
 
     $itineraryItems[] = [
         'day_order' => $day_order,
-        'title' => $title ?: 'Day ' . ($day_order ?: ($i + 1)),
+        'title' => $day_title ?: 'Day ' . ($day_order ?: ($i + 1)),
         'morning' => $morning,
         'afternoon' => $afternoon,
         'evening' => $evening,
