@@ -37,10 +37,13 @@ function buildTravelIdeaDetail($row) {
 
     return [
         'id' => $row['id'],
+        'owner_id' => isset($row['owner_id']) ? (int)$row['owner_id'] : null,
         'slug' => $row['slug'],
         'title' => $row['title'],
         'province' => $row['province'] ?: 'Unknown Province',
         'duration' => formatDurationText($row['duration_days'], $row['nights']),
+        'duration_days' => isset($row['duration_days']) ? (int)$row['duration_days'] : 0,
+        'nights' => isset($row['nights']) ? (int)$row['nights'] : 0,
         'vibe' => !empty($subtitle) ? $subtitle : (!empty($experienceLabel) ? $experienceLabel : 'Shared Travel Idea'),
         'hero_image' => !empty($row['hero_image']) ? $row['hero_image'] : (!empty($row['image_path']) ? $row['image_path'] : '../images/default_idea.png'),
         'intro' => $content,
@@ -53,7 +56,7 @@ function buildTravelIdeaDetail($row) {
 }
 
 if (!empty($id)) {
-    $queryBase = "SELECT t.id, t.title, COALESCE(p.name, '') AS province, t.province_slug, t.image_path, t.slug, t.subtitle, t.duration_days, t.nights, t.difficulty, d.content, d.highlights, d.logistics, d.hero_image, GROUP_CONCAT(DISTINCT et.name ORDER BY et.name SEPARATOR ', ') AS experience_types FROM travel_ideas t LEFT JOIN provinces p ON p.id = t.province_id LEFT JOIN travel_idea_details d ON d.idea_id = t.id LEFT JOIN travel_idea_experiences tie ON tie.idea_id = t.id LEFT JOIN experience_types et ON et.id = tie.experience_type_id";
+    $queryBase = "SELECT t.id, t.user_id AS owner_id, t.title, COALESCE(p.name, '') AS province, t.province_slug, t.image_path, t.slug, t.subtitle, t.duration_days, t.nights, t.difficulty, d.content, d.highlights, d.logistics, d.hero_image, GROUP_CONCAT(DISTINCT et.name ORDER BY et.name SEPARATOR ', ') AS experience_types FROM travel_ideas t LEFT JOIN provinces p ON p.id = t.province_id LEFT JOIN travel_idea_details d ON d.idea_id = t.id LEFT JOIN travel_idea_experiences tie ON tie.idea_id = t.id LEFT JOIN experience_types et ON et.id = tie.experience_type_id";
     if (is_numeric($id) && $id > 0) {
         $queryBase .= " WHERE t.id = ? GROUP BY t.id LIMIT 1";
         $stmt = $conn->prepare($queryBase);
@@ -141,8 +144,9 @@ include '../includes/header.php';
 <!-- Hero Section -->
 <section class="detail-hero" style="background-image: url('<?php echo htmlspecialchars($detail['hero_image']); ?>');">
     <div class="container hero-info">
-        <span class="vibe-tag"><?php echo htmlspecialchars($detail['vibe']); ?></span>
-        <h1 class="detail-title"><?php echo htmlspecialchars($detail['title']); ?></h1>
+        <span class="vibe-tag"><?php echo htmlspecialchars($detail['vibe']); ?></span>        <?php if (isset($_SESSION['user_id']) && $detail['owner_id'] === (int)$_SESSION['user_id']): ?>
+            <button id="editIdeaBtn" class="edit-idea-button">Edit Travel Idea</button>
+        <?php endif; ?>        <h1 class="detail-title"><?php echo htmlspecialchars($detail['title']); ?></h1>
         <div class="detail-meta">
             <span>
                 <!-- Location Icon -->
@@ -312,5 +316,296 @@ include '../includes/header.php';
 
     </div>
 </section>
+
+<?php if (isset($_SESSION['user_id']) && $detail['owner_id'] === (int)$_SESSION['user_id']): ?>
+<div id="editIdeaModal" class="modal-overlay" style="display:none;">
+    <div class="modal-content">
+        <span class="close-modal" id="closeEditModal">&times;</span>
+        <h2>Edit Travel Idea</h2>
+        <form id="editIdeaForm" enctype="multipart/form-data">
+            <input type="hidden" name="idea_id" value="<?php echo htmlspecialchars($detail['id']); ?>">
+            <div class="field-grid">
+                <label>
+                    <span>Title</span>
+                    <input type="text" name="title" id="editIdeaTitle" required>
+                </label>
+                <label>
+                    <span>Short Summary</span>
+                    <input type="text" name="subtitle" id="editIdeaSubtitle">
+                </label>
+                <label>
+                    <span>Province</span>
+                    <input type="text" name="province" id="editIdeaProvince" placeholder="e.g. Bagmati">
+                </label>
+                <label>
+                    <span>Difficulty</span>
+                    <select name="difficulty" id="editIdeaDifficulty">
+                        <option value="">Select difficulty</option>
+                        <option value="Easy">Easy</option>
+                        <option value="Moderate">Moderate</option>
+                        <option value="Challenging">Challenging</option>
+                    </select>
+                </label>
+                <label>
+                    <span>Duration (days)</span>
+                    <input type="number" name="duration_days" id="editIdeaDays" min="1" placeholder="e.g. 5">
+                </label>
+                <label>
+                    <span>Nights</span>
+                    <input type="number" name="nights" id="editIdeaNights" min="0" placeholder="e.g. 4">
+                </label>
+            </div>
+
+            <label style="display:block; margin-top:20px;">
+                <span>Main Content</span>
+                <textarea name="content" id="editIdeaContent" rows="5" required></textarea>
+            </label>
+
+            <label style="display:block; margin-top:20px;">
+                <span>Trip Highlights (one per line)</span>
+                <textarea name="highlights" id="editIdeaHighlights" rows="3" placeholder="Highlight 1\nHighlight 2"></textarea>
+            </label>
+
+            <div class="field-grid" style="margin-top:20px;">
+                <label>
+                    <span>Transport</span>
+                    <input type="text" name="transport" id="editIdeaTransport">
+                </label>
+                <label>
+                    <span>Accommodation</span>
+                    <input type="text" name="accommodation" id="editIdeaAccommodation">
+                </label>
+                <label>
+                    <span>Best Time</span>
+                    <input type="text" name="best_time" id="editIdeaBestTime">
+                </label>
+                <label>
+                    <span>Pro Tip</span>
+                    <input type="text" name="pro_tip" id="editIdeaProTip">
+                </label>
+            </div>
+
+            <div class="itinerary-editor">
+                <div class="editor-header">
+                    <h3>Edit Itinerary</h3>
+                    <button type="button" id="addDayBtn" class="secondary-btn">Add Day</button>
+                </div>
+                <div id="itineraryDaysContainer"></div>
+            </div>
+
+            <div id="editIdeaError" class="form-error" style="display:none;"></div>
+            <div style="display:flex; gap: 16px; flex-wrap: wrap; margin-top: 24px; align-items:center;">
+                <button type="submit" class="primary-btn">Save Changes</button>
+                <button type="button" class="secondary-btn" id="cancelEditBtn">Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+<?php endif; ?>
+
+<script>
+(function() {
+    const detail = <?php echo json_encode($detail, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>;
+    const editIdeaBtn = document.getElementById('editIdeaBtn');
+    const editModal = document.getElementById('editIdeaModal');
+    const closeEditModal = document.getElementById('closeEditModal');
+    const cancelEditBtn = document.getElementById('cancelEditBtn');
+    const itineraryContainer = document.getElementById('itineraryDaysContainer');
+    const editForm = document.getElementById('editIdeaForm');
+
+    if (!editIdeaBtn || !editModal) return;
+
+    function createItineraryDay(day = {}) {
+        const idx = itineraryContainer.children.length + 1;
+        const wrapper = document.createElement('div');
+        wrapper.className = 'day-block';
+
+        const header = document.createElement('div');
+        header.className = 'day-block-header';
+
+        const title = document.createElement('strong');
+        title.textContent = `Day ${idx}`;
+
+        const removeBtn = document.createElement('button');
+        removeBtn.type = 'button';
+        removeBtn.className = 'remove-day-btn';
+        removeBtn.textContent = 'Remove';
+        removeBtn.addEventListener('click', () => {
+            wrapper.remove();
+            refreshDayLabels();
+        });
+
+        header.appendChild(title);
+        header.appendChild(removeBtn);
+        wrapper.appendChild(header);
+
+        const grid = document.createElement('div');
+        grid.className = 'field-grid day-fields';
+
+        const orderLabel = document.createElement('label');
+        const orderSpan = document.createElement('span');
+        orderSpan.textContent = 'Day Order';
+        const orderInput = document.createElement('input');
+        orderInput.type = 'number';
+        orderInput.name = 'itinerary_day_order[]';
+        orderInput.min = '1';
+        orderInput.value = day.day_order ?? idx;
+        orderLabel.appendChild(orderSpan);
+        orderLabel.appendChild(orderInput);
+
+        const titleLabel = document.createElement('label');
+        const titleSpan = document.createElement('span');
+        titleSpan.textContent = 'Title';
+        const titleInput = document.createElement('input');
+        titleInput.type = 'text';
+        titleInput.name = 'itinerary_day_title[]';
+        titleInput.placeholder = `Day ${idx} title`;
+        titleInput.value = day.title || '';
+        titleLabel.appendChild(titleSpan);
+        titleLabel.appendChild(titleInput);
+
+        const morningLabel = document.createElement('label');
+        const morningSpan = document.createElement('span');
+        morningSpan.textContent = 'Morning';
+        const morningTextarea = document.createElement('textarea');
+        morningTextarea.name = 'itinerary_morning[]';
+        morningTextarea.rows = 2;
+        morningTextarea.value = day.morning || '';
+        morningLabel.appendChild(morningSpan);
+        morningLabel.appendChild(morningTextarea);
+
+        const afternoonLabel = document.createElement('label');
+        const afternoonSpan = document.createElement('span');
+        afternoonSpan.textContent = 'Afternoon';
+        const afternoonTextarea = document.createElement('textarea');
+        afternoonTextarea.name = 'itinerary_afternoon[]';
+        afternoonTextarea.rows = 2;
+        afternoonTextarea.value = day.afternoon || '';
+        afternoonLabel.appendChild(afternoonSpan);
+        afternoonLabel.appendChild(afternoonTextarea);
+
+        const eveningLabel = document.createElement('label');
+        const eveningSpan = document.createElement('span');
+        eveningSpan.textContent = 'Evening';
+        const eveningTextarea = document.createElement('textarea');
+        eveningTextarea.name = 'itinerary_evening[]';
+        eveningTextarea.rows = 2;
+        eveningTextarea.value = day.evening || '';
+        eveningLabel.appendChild(eveningSpan);
+        eveningLabel.appendChild(eveningTextarea);
+
+        grid.appendChild(orderLabel);
+        grid.appendChild(titleLabel);
+        grid.appendChild(morningLabel);
+        grid.appendChild(afternoonLabel);
+        grid.appendChild(eveningLabel);
+
+        wrapper.appendChild(grid);
+        itineraryContainer.appendChild(wrapper);
+    }
+
+    function refreshDayLabels() {
+        itineraryContainer.querySelectorAll('.day-block').forEach((block, index) => {
+            const label = block.querySelector('.day-block-header strong');
+            if (label) {
+                label.textContent = `Day ${index + 1}`;
+            }
+        });
+    }
+
+    function populateForm() {
+        document.getElementById('editIdeaTitle').value = detail.title || '';
+        document.getElementById('editIdeaSubtitle').value = detail.vibe || '';
+        document.getElementById('editIdeaProvince').value = detail.province || '';
+        document.getElementById('editIdeaDifficulty').value = detail.difficulty || '';
+        document.getElementById('editIdeaDays').value = detail.duration_days || '';
+        document.getElementById('editIdeaNights').value = detail.nights || '';
+        document.getElementById('editIdeaContent').value = detail.content || '';
+        document.getElementById('editIdeaHighlights').value = Array.isArray(detail.highlights) ? detail.highlights.join('\n') : detail.highlights || '';
+        document.getElementById('editIdeaTransport').value = detail.logistics?.transport || '';
+        document.getElementById('editIdeaAccommodation').value = detail.logistics?.accommodation || '';
+        document.getElementById('editIdeaBestTime').value = detail.logistics?.best_time || '';
+        document.getElementById('editIdeaProTip').value = detail.logistics?.pro_tip || '';
+
+        itineraryContainer.innerHTML = '';
+        const itinerary = Array.isArray(detail.itinerary) ? detail.itinerary : [];
+        if (itinerary.length === 0) {
+            createItineraryDay({day_order: 1, title: 'Day 1', morning: '', afternoon: '', evening: ''});
+        } else {
+            itinerary.forEach(day => createItineraryDay(day));
+        }
+    }
+
+    function showModal() {
+        populateForm();
+        editModal.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeModal() {
+        editModal.style.display = 'none';
+        document.body.style.overflow = '';
+        const url = new URL(window.location.href);
+        if (url.searchParams.has('open_edit')) {
+            url.searchParams.delete('open_edit');
+            window.history.replaceState({}, '', url.toString());
+        }
+    }
+
+    editIdeaBtn.addEventListener('click', showModal);
+    closeEditModal.addEventListener('click', closeModal);
+    cancelEditBtn.addEventListener('click', closeModal);
+
+    editModal.addEventListener('click', (event) => {
+        if (event.target === editModal) {
+            closeModal();
+        }
+    });
+
+    const openEditParam = new URLSearchParams(window.location.search).get('open_edit');
+    if (openEditParam === '1') {
+        showModal();
+    }
+
+    document.getElementById('addDayBtn').addEventListener('click', () => {
+        createItineraryDay({day_order: itineraryContainer.children.length + 1, title: `Day ${itineraryContainer.children.length + 1}`, morning: '', afternoon: '', evening: ''});
+    });
+
+    editForm.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const errorEl = document.getElementById('editIdeaError');
+        errorEl.style.display = 'none';
+        errorEl.textContent = '';
+        const submitButton = editForm.querySelector('button[type="submit"]');
+        const originalLabel = submitButton.textContent;
+        submitButton.textContent = 'Saving...';
+        submitButton.disabled = true;
+
+        const formData = new FormData(editForm);
+        try {
+            const response = await fetch('api/travel_ideas/update_idea.php', {
+                method: 'POST',
+                body: formData
+            });
+            const data = await response.json();
+            if (data.success) {
+                closeModal();
+                const url = new URL(window.location.href);
+                url.searchParams.delete('open_edit');
+                setTimeout(() => window.location.href = url.toString(), 200);
+            } else {
+                errorEl.textContent = data.message || 'Could not save changes.';
+                errorEl.style.display = 'block';
+            }
+        } catch (err) {
+            errorEl.textContent = 'Unable to save changes. Please try again.';
+            errorEl.style.display = 'block';
+        } finally {
+            submitButton.textContent = originalLabel;
+            submitButton.disabled = false;
+        }
+    });
+})();
+</script>
 
 <?php include __DIR__ . '/../includes/footer.php'; ?>

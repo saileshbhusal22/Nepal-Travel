@@ -10,7 +10,7 @@ try {
     require_once __DIR__ . '/../includes/travel-idea-db-seeder.php';
     $tblRes = $conn->query("SHOW TABLES LIKE 'travel_ideas'");
     if ($tblRes && $tblRes->num_rows > 0) {
-            $stmt = $conn->prepare("SELECT t.id, t.slug, t.title, COALESCE(p.name, '') AS province, t.province_slug, t.image_path, t.subtitle AS description, t.duration_days, t.nights, t.difficulty, GROUP_CONCAT(DISTINCT et.name ORDER BY et.name SEPARATOR ', ') AS type FROM travel_ideas t LEFT JOIN provinces p ON p.id = t.province_id LEFT JOIN travel_idea_experiences tie ON tie.idea_id = t.id LEFT JOIN experience_types et ON et.id = tie.experience_type_id GROUP BY t.id ORDER BY t.created_at DESC LIMIT 200");
+            $stmt = $conn->prepare("SELECT t.id, t.user_id, t.slug, t.title, COALESCE(p.name, '') AS province, t.province_slug, t.image_path, t.subtitle AS description, t.duration_days, t.nights, t.difficulty, GROUP_CONCAT(DISTINCT et.name ORDER BY et.name SEPARATOR ', ') AS type FROM travel_ideas t LEFT JOIN provinces p ON p.id = t.province_id LEFT JOIN travel_idea_experiences tie ON tie.idea_id = t.id LEFT JOIN experience_types et ON et.id = tie.experience_type_id GROUP BY t.id ORDER BY t.created_at DESC LIMIT 200");
             if ($stmt) {
                 $stmt->execute();
                 $res = $stmt->get_result();
@@ -37,7 +37,8 @@ try {
                         'duration' => $durationText,
                         'duration_days' => $durationDays,
                         'difficulty' => $row['difficulty'] ?? '',
-                        'type' => $experienceType !== '' ? $experienceType : 'Other'
+                        'type' => $experienceType !== '' ? $experienceType : 'Other',
+                        'user_id' => isset($row['user_id']) ? (int)$row['user_id'] : null
                     ];
                 }
                 $stmt->close();
@@ -46,7 +47,7 @@ try {
             if (empty($travel_ideas)) {
                 travelIdeaDbSeedStaticTravelIdeas($conn);
 
-                $stmt = $conn->prepare("SELECT t.id, t.slug, t.title, COALESCE(p.name, '') AS province, t.province_slug, t.image_path, t.subtitle AS description, t.duration_days, t.nights, t.difficulty, GROUP_CONCAT(DISTINCT et.name ORDER BY et.name SEPARATOR ', ') AS type FROM travel_ideas t LEFT JOIN provinces p ON p.id = t.province_id LEFT JOIN travel_idea_experiences tie ON tie.idea_id = t.id LEFT JOIN experience_types et ON et.id = tie.experience_type_id GROUP BY t.id ORDER BY t.created_at DESC LIMIT 200");
+                $stmt = $conn->prepare("SELECT t.id, t.user_id, t.slug, t.title, COALESCE(p.name, '') AS province, t.province_slug, t.image_path, t.subtitle AS description, t.duration_days, t.nights, t.difficulty, GROUP_CONCAT(DISTINCT et.name ORDER BY et.name SEPARATOR ', ') AS type FROM travel_ideas t LEFT JOIN provinces p ON p.id = t.province_id LEFT JOIN travel_idea_experiences tie ON tie.idea_id = t.id LEFT JOIN experience_types et ON et.id = tie.experience_type_id GROUP BY t.id ORDER BY t.created_at DESC LIMIT 200");
                 if ($stmt) {
                     $stmt->execute();
                     $res = $stmt->get_result();
@@ -73,7 +74,8 @@ try {
                             'duration' => $durationText,
                             'duration_days' => $durationDays,
                             'difficulty' => $row['difficulty'] ?? '',
-                            'type' => $experienceType !== '' ? $experienceType : 'Other'
+                            'type' => $experienceType !== '' ? $experienceType : 'Other',
+                            'user_id' => isset($row['user_id']) ? (int)$row['user_id'] : null
                         ];
                     }
                     $stmt->close();
@@ -194,6 +196,19 @@ if (isset($_GET['search']) && trim($_GET['search']) !== '') {
     text-decoration: none;
     color: inherit;
     height: 100%;
+    position: relative;
+}
+
+.card-link-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+}
+
+.edit-card-btn,
+.view-btn {
+    position: relative;
+    z-index: 2;
 }
 
 .idea-card:hover {
@@ -302,30 +317,55 @@ if (isset($_GET['search']) && trim($_GET['search']) !== '') {
     margin-top: auto;
 }
 
-.idea-card:hover .view-btn {
-    background: var(--primary-yellow);
-}
-
-.share-idea-btn {
-    background: var(--primary-blue);
-    color: white;
-    text-align: center;
-    padding: 12px 18px;
-    border-radius: 8px;
-    font-size: 12px;
-    font-weight: 700;
-    text-transform: uppercase;
-    transition: all 0.3s ease;
-    border: none;
-    cursor: pointer;
-    white-space: nowrap;
-}
-
-.share-idea-btn:hover {
+.view-btn:hover {
     background: var(--primary-yellow);
     color: #111;
 }
 
+.edit-card-btn {
+    display: block;
+    width: 100%;
+    padding: 10px 0;
+    margin-top: 16px;
+    margin-bottom: 12px;
+    border-radius: 8px;
+    background: var(--primary-blue);
+    color: white;
+    text-align: center;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    transition: all 0.3s ease;
+    text-decoration: none;
+    position: relative;
+    z-index: 2;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.edit-card-btn:hover {
+    background: var(--primary-yellow);
+    color: #111;
+}
+    padding: 0 22px;
+    height: 52px;
+    border-radius: 30px;
+    font-size: 14px;
+    font-weight: 700;
+    font-family: inherit;
+    cursor: pointer;
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.share-idea-btn:hover {
+    background: #e09415;
+    transform: translateY(-2px);
+}
 /* Package Card Styles */
 .package-card {
     background: white;
@@ -486,13 +526,13 @@ if (isset($_GET['search']) && trim($_GET['search']) !== '') {
             <div id="ideasGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 25px;">
                 <?php foreach($travel_ideas as $idea): ?>
                 <?php $durRange = getDurationRange($idea['duration'] ?? '1D'); ?>
-                <a href="travel-idea-detail.php?id=<?php echo $idea['id']; ?>" 
-                   class="idea-card" 
+                <div class="idea-card" 
                    data-province="<?php echo $idea['province_slug']; ?>"
                    data-type="<?php echo htmlspecialchars($idea['type'] ?? 'Other'); ?>"
                    data-duration="<?php echo htmlspecialchars($durRange); ?>"
                    data-title="<?php echo strtolower($idea['title']); ?>"
                    data-desc="<?php echo strtolower($idea['description']); ?>">
+                    <a href="travel-idea-detail.php?id=<?php echo $idea['id']; ?>" class="card-link-overlay"></a>
                     <div class="card-img-wrapper">
                         <img src="<?php echo htmlspecialchars($idea['image']); ?>" alt="<?php echo htmlspecialchars($idea['title']); ?>">
                         <span class="province-badge"><?php echo htmlspecialchars($idea['province']); ?></span>
@@ -515,9 +555,12 @@ if (isset($_GET['search']) && trim($_GET['search']) !== '') {
                             </div>
                         </div>
 
+                        <?php if (isset($_SESSION['user_id']) && (int)$_SESSION['user_id'] === (int)$idea['user_id']): ?>
+                            <a href="travel-idea-detail.php?id=<?php echo $idea['id']; ?>&open_edit=1" class="edit-card-btn">Edit</a>
+                        <?php endif; ?>
                         <div class="view-btn">View Journey Detail</div>
                     </div>
-                </a>
+                </div>
                 <?php endforeach; ?>
             </div>
             
@@ -771,7 +814,8 @@ document.addEventListener('DOMContentLoaded', function() {
             const cardDesc = card.getAttribute('data-desc');
             
             const provinceMatch = (activeProvince === 'all' || cardProvince === activeProvince);
-            const typeMatch = (activeType === 'all' || cardType === activeType);
+            const cardTypeList = cardType ? cardType.toLowerCase().split(',').map(t => t.trim()) : [];
+            const typeMatch = (activeType === 'all' || cardTypeList.includes(activeType.toLowerCase()));
             const durationMatch = (activeDuration === 'all' || cardDuration === activeDuration);
             const searchMatch = (searchQuery === '' || cardTitle.includes(searchQuery) || cardDesc.includes(searchQuery));
 
