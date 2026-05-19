@@ -1,5 +1,8 @@
-<?php include '../includes/header.php'; ?>
-<link rel="stylesheet" href="../assets/css/styles.css">
+<?php
+$current_page = 'about.php';
+include __DIR__ . '/../includes/header.php';
+?>
+
 <!-- Hero Section -->
 <section class="hero-about" style="background-image: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url('../images/kathmandu_night_hero.png');">
     <div class="container hero-about-container">
@@ -60,9 +63,59 @@
             </div>
         </section>
         <section style="background: #f4f7f9; padding: 80px 0;">
-            <div class="container" style="text-align: center; max-width: 800px;">
-                <h2 style="color: var(--primary-blue); font-size: 30px; margin-bottom: 20px;">A Tapestry of Diverse Landscapes</h2>
-                <p style="color: var(--text-gray); font-size: 16px; line-height: 1.8;">From the dense, humid jungles of the Terai plains in the south to the desolate, freezing altitudes of the High Himalayas in the north, Nepal offers a gradient of geography that invites explorers of all kinds. The mid-hills host vibrant valleys, terraced farming, and culturally rich settlements.</p>
+            <div class="container" style="text-align: center; max-width: 1000px;">
+                <h2 style="color: var(--primary-blue); font-size: 30px; margin-bottom: 40px;">A Tapestry of Diverse Landscapes</h2>
+                
+                <!-- Landscape Comparison Strip -->
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 50px;">
+                    <div style="position: relative; border-radius: 12px; overflow: hidden; height: 250px;">
+                        <img src="../images/chitwan_rhino.png" alt="Terai" style="width: 100%; height: 100%; object-fit: cover;">
+                        <div style="position: absolute; bottom: 0; left: 0; right: 0; background: linear-gradient(transparent, rgba(0,0,0,0.7)); padding: 15px; color: white; text-align: left;">
+                            <h4 style="margin: 0; font-size: 18px; font-weight: 800;">The Terai</h4>
+                            <p style="margin: 5px 0 0; font-size: 12px; opacity: 0.9;">Tropical jungles & fertile plains.</p>
+                        </div>
+                    </div>
+                    <div style="position: relative; border-radius: 12px; overflow: hidden; height: 250px;">
+                        <img src="../images/pokhara_lake.png" alt="Hills" style="width: 100%; height: 100%; object-fit: cover;">
+                        <div style="position: absolute; bottom: 0; left: 0; right: 0; background: linear-gradient(transparent, rgba(0,0,0,0.7)); padding: 15px; color: white; text-align: left;">
+                            <h4 style="margin: 0; font-size: 18px; font-weight: 800;">The Hills</h4>
+                            <p style="margin: 5px 0 0; font-size: 12px; opacity: 0.9;">Terraced fields & vibrant valleys.</p>
+                        </div>
+                    </div>
+                    <div style="position: relative; border-radius: 12px; overflow: hidden; height: 250px;">
+                        <img src="../images/everest_trek.png" alt="Himalayas" style="width: 100%; height: 100%; object-fit: cover;">
+                        <div style="position: absolute; bottom: 0; left: 0; right: 0; background: linear-gradient(transparent, rgba(0,0,0,0.7)); padding: 15px; color: white; text-align: left;">
+                            <h4 style="margin: 0; font-size: 18px; font-weight: 800;">The Himalayas</h4>
+                            <p style="margin: 5px 0 0; font-size: 12px; opacity: 0.9;">Glaciers & world's highest peaks.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <p style="color: var(--text-gray); font-size: 16px; line-height: 1.8; margin-bottom: 60px;">From the dense, humid jungles of the Terai plains in the south to the desolate, freezing altitudes of the High Himalayas in the north, Nepal offers a gradient of geography that invites explorers of all kinds.</p>
+
+                <!-- Orienting Quick Facts -->
+                <div style="background: white; border-radius: 20px; padding: 40px; box-shadow: 0 10px 40px rgba(0,0,0,0.05); display: grid; grid-template-columns: repeat(5, 1fr); gap: 20px;">
+                    <div style="border-right: 1px solid #eee; padding: 0 10px;">
+                        <div style="font-size: 10px; color: #999; text-transform: uppercase; letter-spacing: 1px; font-weight: 800; margin-bottom: 5px;">Population</div>
+                        <div style="font-size: 18px; font-weight: 800; color: var(--primary-blue);">~30 Million</div>
+                    </div>
+                    <div style="border-right: 1px solid #eee; padding: 0 10px;">
+                        <div style="font-size: 10px; color: #999; text-transform: uppercase; letter-spacing: 1px; font-weight: 800; margin-bottom: 5px;">Capital</div>
+                        <div style="font-size: 18px; font-weight: 800; color: var(--primary-blue);">Kathmandu</div>
+                    </div>
+                    <div style="border-right: 1px solid #eee; padding: 0 10px;">
+                        <div style="font-size: 10px; color: #999; text-transform: uppercase; letter-spacing: 1px; font-weight: 800; margin-bottom: 5px;">Currency</div>
+                        <div style="font-size: 18px; font-weight: 800; color: var(--primary-blue);">NPR (Rs)</div>
+                    </div>
+                    <div style="border-right: 1px solid #eee; padding: 0 10px;">
+                        <div style="font-size: 10px; color: #999; text-transform: uppercase; letter-spacing: 1px; font-weight: 800; margin-bottom: 5px;">Language</div>
+                        <div style="font-size: 18px; font-weight: 800; color: var(--primary-blue);">Nepali</div>
+                    </div>
+                    <div style="padding: 0 10px;">
+                        <div style="font-size: 10px; color: #999; text-transform: uppercase; letter-spacing: 1px; font-weight: 800; margin-bottom: 5px;">Time Zone</div>
+                        <div style="font-size: 18px; font-weight: 800; color: var(--primary-blue);">UTC+5:45</div>
+                    </div>
+                </div>
             </div>
         </section>
     </div>
@@ -102,11 +155,11 @@
                     <tr>
                         <td style="padding: 25px 30px 25px 0; vertical-align: top; width: 50%;">
                             <p style="color: #555; font-size: 14px; line-height: 1.8; margin-bottom: 15px;">Nepal Airlines, proudly serving as the flag carrier of Nepal, deeply connects global travelers to the majestic Himalayas.</p>
-                            <span style="font-size: 14px; color: #555;">Website : <a href="#" style="color: #2b70c9;">https://www.nepalairlines.com.np</a></span>
+                            <span style="font-size: 14px; color: #555;">Website : <a href="https://www.nepalairlines.com.np" target="_blank" rel="noopener noreferrer" style="color: #2b70c9;">https://www.nepalairlines.com.np</a></span>
                         </td>
                         <td style="padding: 25px 0 25px 20px; vertical-align: top; width: 50%;">
                             <p style="color: #555; font-size: 14px; line-height: 1.8; margin-bottom: 15px;">Himalaya Airlines is a premium international carrier bridging South Asian destinations directly with Kathmandu.</p>
-                            <span style="font-size: 14px; color: #555;">Website : <a href="#" style="color: #2b70c9;">https://www.himalaya-airlines.com</a></span>
+                            <span style="font-size: 14px; color: #555;">Website : <a href="https://www.himalaya-airlines.com" target="_blank" rel="noopener noreferrer" style="color: #2b70c9;">https://www.himalaya-airlines.com</a></span>
                         </td>
                     </tr>
                 </tbody>
@@ -158,15 +211,46 @@
                 Before entering Nepal, there are several requirements that visitors must meet. These include having a valid passport with at least 6 months validity from your arrival date.
             </p>
             <p style="color: #666; font-size: 15px; line-height: 1.8; margin-bottom: 40px;">
-                Please visit the official portal of the <a href="#" style="color: #2b70c9;">Department of Immigration</a> for more details about the <a href="#" style="color: #2b70c9;">entry requirements</a>.
+                Please visit the official portal of the <a href="https://www.immigration.gov.np/en" target="_blank" rel="noopener noreferrer" style="color: #2b70c9;">Department of Immigration</a> for more details about the <a href="https://www.immigration.gov.np/en/page/tourist-visa" target="_blank" rel="noopener noreferrer" style="color: #2b70c9;">entry requirements</a>.
             </p>
 
             <h3 style="font-size: 22px; font-weight: 500; color: #333; margin-bottom: 20px;">Visa</h3>
-            <p style="color: #666; font-size: 15px; line-height: 1.8; margin-bottom: 15px;">
-                Most international visitors can easily obtain a Tourist Visa on Arrival at Tribhuvan International Airport and other designated land borders. You can expedite the process by filling out the online pre-arrival visa form.
+            <p style="color: #666; font-size: 15px; line-height: 1.8; margin-bottom: 25px;">
+                Most international visitors can easily obtain a Tourist Visa on Arrival at Tribhuvan International Airport and other designated land borders.
             </p>
+
+            <!-- Visa Fee Table -->
+            <div style="margin-bottom: 40px; background: #fff; border: 1px solid #eee; border-radius: 8px; overflow: hidden;">
+                <div style="background: #f8f9fa; padding: 15px 20px; font-weight: 800; color: var(--primary-blue); border-bottom: 1px solid #eee; display: flex; justify-content: space-between;">
+                    <span>Tourist Visa Type</span>
+                    <span>Fee (USD)</span>
+                </div>
+                <div style="padding: 15px 20px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between;">
+                    <span>15 Days (Multiple Entry)</span>
+                    <span style="font-weight: 700;">$30</span>
+                </div>
+                <div style="padding: 15px 20px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between;">
+                    <span>30 Days (Multiple Entry)</span>
+                    <span style="font-weight: 700;">$50</span>
+                </div>
+                <div style="padding: 15px 20px; display: flex; justify-content: space-between;">
+                    <span>90 Days (Multiple Entry)</span>
+                    <span style="font-weight: 700;">$125</span>
+                </div>
+            </div>
+
+            <div style="background: #fff8e1; border-left: 4px solid #ffc107; padding: 20px; border-radius: 4px; margin-bottom: 30px;">
+                <h4 style="margin: 0 0 10px; color: #856404; font-size: 16px; font-weight: 800;">Which visa do I need?</h4>
+                <ul style="margin: 0; padding-left: 20px; color: #856404; font-size: 14px; line-height: 1.6;">
+                    <li><strong>SAARC Citizens:</strong> First 30 days are visa-free for citizens of SAARC countries (excluding Afghanistan).</li>
+                    <li><strong>Indian Citizens:</strong> No visa required. Valid ID card (Voter ID or Passport) is sufficient for entry by air.</li>
+                    <li><strong>Other Nationalities:</strong> Standard Tourist Visa on Arrival required for most countries.</li>
+                    <li><strong>Visa-Exempt:</strong> Pre-arranged visa required for citizens of Nigeria, Ghana, Zimbabwe, Swaziland, Cameroon, Somalia, Liberia, Ethiopia, Iraq, Palestine, and Afghanistan.</li>
+                </ul>
+            </div>
+
             <p style="color: #666; font-size: 15px; line-height: 1.8; margin-bottom: 20px;">
-                To access the necessary information on Visa options (15 Days, 30 Days, or 90 Days), simply visit the official website of the <a href="#" style="color: #2b70c9;">Nepal Immigration Portal</a>.
+                To access the necessary information on Visa options or to apply online, simply visit the official website of the <a href="https://nepalimmigration.gov.np/" target="_blank" rel="noopener noreferrer" style="color: #2b70c9;">Nepal Immigration Portal</a>.
             </p>
         </div>
     </div>
@@ -197,9 +281,17 @@
                     <p style="color: #666; font-size: 15px; line-height: 1.8; margin-bottom: 20px;">
                         Luxury and VIP tourist buses connect major cities like Kathmandu, Pokhara, and Chitwan. They are highly affordable and surprisingly comfortable for long overland routes, featuring AC and frequent rest stops.
                     </p>
+                    <div style="background: #f0f4f8; padding: 15px; border-radius: 8px;">
+                        <span style="font-size: 12px; font-weight: 800; color: var(--primary-blue); text-transform: uppercase; letter-spacing: 1px;">Approximate Travel Times</span>
+                        <ul style="margin: 10px 0 0; padding-left: 20px; font-size: 14px; color: #555;">
+                            <li><strong>Kathmandu → Pokhara:</strong> ~6–7 hrs (Bus) / 25 min (Flight)</li>
+                            <li><strong>Kathmandu → Chitwan:</strong> ~5–6 hrs (Bus) / 20 min (Flight)</li>
+                            <li><strong>Pokhara → Chitwan:</strong> ~4–5 hrs (Bus)</li>
+                        </ul>
+                    </div>
                 </div>
                 <div>
-                    <img src="../images/city_excitement_nepal.png" alt="City Transport" style="width: 100%; border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); object-fit: cover; aspect-ratio: 16/9;">
+                    <img src="../images/sarangkot_sunrise.png" alt="Travel Logistics" style="width: 100%; border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); object-fit: cover; aspect-ratio: 16/9;">
                 </div>
             </div>
         </div>
@@ -234,6 +326,62 @@
                     <p style="color: #666; font-size: 15px; line-height: 1.8; margin-bottom: 20px;">
                         Always walk around stupas and monasteries in a clockwise direction. Remove your shoes before entering someone's home or a sacred temple. Finally, never underestimate the warmth of local hospitality—a simple "Namaste" goes a long way!
                     </p>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 60px; margin-bottom: 60px; align-items: start;">
+                <div>
+                    <h3 style="font-size: 22px; font-weight: 500; color: #333; margin-bottom: 20px;">Health & Safety</h3>
+                    <p style="color: #666; font-size: 15px; line-height: 1.8; margin-bottom: 15px;">
+                        <strong>Altitude Sickness (AMS):</strong> If trekking above 3,000m, ascend slowly, stay hydrated, and never ignore headaches or dizziness. Descend immediately if symptoms worsen.
+                    </p>
+                    <p style="color: #666; font-size: 15px; line-height: 1.8; margin-bottom: 15px;">
+                        <strong>Water:</strong> Never drink tap water. Always use bottled, boiled, or purified water (using tablets/filters).
+                    </p>
+                    <p style="color: #666; font-size: 15px; line-height: 1.8; margin-bottom: 15px;">
+                        <strong>Insurance:</strong> Ensure your travel insurance covers high-altitude rescue and helicopter evacuation if you plan to trek.
+                    </p>
+                </div>
+                <div style="background: #fdf2f2; padding: 30px; border-radius: 12px; border: 1px solid #fee2e2;">
+                    <h4 style="margin: 0 0 20px; color: #991b1b; font-size: 18px; font-weight: 800;">Emergency Contacts</h4>
+                    <div style="margin-bottom: 15px; display: flex; justify-content: space-between; font-size: 14px;">
+                        <span style="color: #b91c1c; font-weight: 700;">Tourist Police:</span>
+                        <span style="color: #111; font-weight: 800;">1144 / 01-4247041</span>
+                    </div>
+                    <div style="margin-bottom: 15px; display: flex; justify-content: space-between; font-size: 14px;">
+                        <span style="color: #b91c1c; font-weight: 700;">Emergency Hotline:</span>
+                        <span style="color: #111; font-weight: 800;">100</span>
+                    </div>
+                    <div style="margin-bottom: 15px; display: flex; justify-content: space-between; font-size: 14px;">
+                        <span style="color: #b91c1c; font-weight: 700;">Ambulance (Red Cross):</span>
+                        <span style="color: #111; font-weight: 800;">102</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; font-size: 14px;">
+                        <span style="color: #b91c1c; font-weight: 700;">Fire Brigade:</span>
+                        <span style="color: #111; font-weight: 800;">101</span>
+                    </div>
+                </div>
+            </div>
+
+            <h3 style="font-size: 24px; font-weight: 500; color: #333; margin-bottom: 30px;">Packing Guide by Season</h3>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-bottom: 40px;">
+                <div style="padding: 25px; background: #fff; border: 1px solid #eee; border-radius: 12px;">
+                    <h5 style="margin: 0 0 15px; color: var(--primary-blue); font-size: 16px; font-weight: 800;">Spring & Autumn (Trekking)</h5>
+                    <ul style="margin: 0; padding-left: 20px; color: #666; font-size: 14px; line-height: 1.8;">
+                        <li>Layered clothing (Moisture-wicking base)</li>
+                        <li>Down jacket & windbreaker</li>
+                        <li>Sturdy trekking boots (broken in)</li>
+                        <li>Sunscreen & polarized sunglasses</li>
+                    </ul>
+                </div>
+                <div style="padding: 25px; background: #fff; border: 1px solid #eee; border-radius: 12px;">
+                    <h5 style="margin: 0 0 15px; color: var(--primary-blue); font-size: 16px; font-weight: 800;">Summer (Monsoon)</h5>
+                    <ul style="margin: 0; padding-left: 20px; color: #666; font-size: 14px; line-height: 1.8;">
+                        <li>Waterproof raincoat & bag covers</li>
+                        <li>Quick-dry clothing & extra socks</li>
+                        <li>Insect repellent (for leeches/mosquitoes)</li>
+                        <li>Sturdy umbrella</li>
+                    </ul>
                 </div>
             </div>
         </div>
@@ -291,4 +439,4 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 </script>
 
-<?php include '../includes/footer.php'; ?>
+<?php include __DIR__ . '/../includes/footer.php'; ?>

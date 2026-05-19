@@ -1,9 +1,9 @@
 <?php return array(
     'root' => array(
         'name' => '__root__',
-        'pretty_version' => '1.0.0+no-version-set',
-        'version' => '1.0.0.0',
-        'reference' => null,
+        'pretty_version' => 'dev-main',
+        'version' => 'dev-main',
+        'reference' => 'de56b71b2a8d20da2907d0b6b9142ebe37ce3d0f',
         'type' => 'library',
         'install_path' => __DIR__ . '/../../',
         'aliases' => array(),
@@ -11,9 +11,9 @@
     ),
     'versions' => array(
         '__root__' => array(
-            'pretty_version' => '1.0.0+no-version-set',
-            'version' => '1.0.0.0',
-            'reference' => null,
+            'pretty_version' => 'dev-main',
+            'version' => 'dev-main',
+            'reference' => 'de56b71b2a8d20da2907d0b6b9142ebe37ce3d0f',
             'type' => 'library',
             'install_path' => __DIR__ . '/../../',
             'aliases' => array(),
@@ -25,6 +25,15 @@
             'reference' => '28aa0694bcfdfa5e2959c394d5a1ee7a5083629e',
             'type' => 'library',
             'install_path' => __DIR__ . '/../firebase/php-jwt',
+            'aliases' => array(),
+            'dev_requirement' => false,
+        ),
+        'fpdf/fpdf' => array(
+            'pretty_version' => '1.86.1',
+            'version' => '1.86.1.0',
+            'reference' => '2034ab9f7b03b8294933d7fd27828d13963368e5',
+            'type' => 'library',
+            'install_path' => __DIR__ . '/../fpdf/fpdf',
             'aliases' => array(),
             'dev_requirement' => false,
         ),

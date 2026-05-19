@@ -44,6 +44,7 @@ class ComposerStaticInit2185d2f99bcd56787481d9357a5972d3
         ),
         'F' =>
         array (
+            'Fpdf\\' => 5,
             'Firebase\\JWT\\' => 13,
         ),
     );
@@ -105,6 +106,10 @@ class ComposerStaticInit2185d2f99bcd56787481d9357a5972d3
         'Google\\' =>
         array (
             0 => __DIR__ . '/..' . '/google/apiclient/src',
+        ),
+        'Fpdf\\' =>
+        array (
+            0 => __DIR__ . '/..' . '/fpdf/fpdf/src/Fpdf',
         ),
         'Firebase\\JWT\\' =>
         array (
