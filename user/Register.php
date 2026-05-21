@@ -5,8 +5,14 @@ session_start();
 require __DIR__ . '/../vendor/autoload.php';
 include 'mail.php';
 require_once __DIR__ . '/../config/db.php';
+require_once __DIR__ . '/../includes/auth_redirect.php';
+
+auth_capture_redirect();
 
 $message = "";
+$redirect_after = auth_get_redirect_url();
+$login_url = auth_build_login_url($redirect_after);
+$register_url_self = auth_build_register_url($redirect_after);
 $message_type = "";
 
 // Restore flash message
@@ -48,7 +54,8 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         $_SESSION['old_phone']            = $phone;
         $_SESSION['old_password']         = $password;
         $_SESSION['old_confirm_password'] = $confirm_password;
-        header("Location: Register.php");
+        $redir = !empty($_GET['redirect']) ? '?redirect=' . urlencode($_GET['redirect']) : '';
+        header("Location: Register.php" . $redir);
         exit;
     };
 
@@ -98,7 +105,8 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $stmt->close();
     $conn->close();
 
-    header("Location: Register.php");
+    $redir = !empty($_GET['redirect']) ? '?redirect=' . urlencode($_GET['redirect']) : '';
+    header("Location: Register.php" . $redir);
     exit;
 }
 
@@ -123,7 +131,7 @@ function old(string $key, array $old): string {
         <div class="form-box">
 
             <h1>Sign Up</h1>
-            <p class="login-text">Already have an account? <a href="login.php">Log In</a></p>
+            <p class="login-text">Already have an account? <a href="<?= htmlspecialchars($login_url) ?>">Log In</a></p>
 
             <div class="social-buttons">
                 <div id="g_id_onload"
@@ -276,6 +284,8 @@ function old(string $key, array $old): string {
 </script>
 
 <script>
+    const REDIRECT_AFTER_AUTH = <?= json_encode($redirect_after, JSON_UNESCAPED_SLASHES) ?>;
+
     function handleGoogleResponse(response) {
         const idToken = response.credential;
         const xhr = new XMLHttpRequest();
@@ -284,7 +294,7 @@ function old(string $key, array $old): string {
         xhr.onload = function () {
             const result = xhr.responseText.trim();
             if (xhr.status === 200 && result === "ok") {
-                window.location.href = "/Nepal-Travel/Public/index.php";
+                window.location.href = REDIRECT_AFTER_AUTH;
             } else if (xhr.status === 200 && result === "set_password") {
                 showSetPasswordModal();
             } else {
@@ -318,7 +328,7 @@ function old(string $key, array $old): string {
 
     function skipSetPassword() {
         document.getElementById('setPasswordModal').style.display = 'none';
-        window.location.href = "/Nepal-Travel/Public/index.php";
+        window.location.href = REDIRECT_AFTER_AUTH;
     }
 
     async function submitSetPassword() {
@@ -346,7 +356,7 @@ function old(string $key, array $old): string {
         const text = await res.text();
         if (res.ok) {
             document.getElementById('setPasswordModal').style.display = 'none';
-            window.location.href = "/Nepal-Travel/Public/index.php";
+            window.location.href = REDIRECT_AFTER_AUTH;
         } else {
             errorEl.textContent = text;
             errorEl.style.display = 'block';
@@ -378,7 +388,7 @@ function old(string $key, array $old): string {
                 xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
                 xhr.onload = function () {
                     if (xhr.status === 200 && xhr.responseText.trim() === "ok") {
-                        window.location.href = "/Nepal-Travel/Public/index.php";
+                        window.location.href = REDIRECT_AFTER_AUTH;
                     } else {
                         alert("Facebook login failed: " + xhr.responseText);
                     }

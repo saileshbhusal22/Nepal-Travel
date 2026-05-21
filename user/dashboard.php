@@ -7,6 +7,7 @@ if (!isset($_SESSION['user_id'])) {
     header('Location: /Nepal-Travel/user/login.php'); exit;
 }
 require_once '../config/db.php';
+require_once '../includes/saved_helpers.php';
 
 // ── AJAX: Cancel booking (called via fetch, returns JSON) ─────────────────
 if (
@@ -109,8 +110,24 @@ $stmtPaid->bind_result($paidTripsCount);
 $stmtPaid->fetch();
 $stmtPaid->close();
 
-$savedCount = count($_SESSION['saved_deals'] ?? []);
+$savedCount = getTotalSavedCount($conn);
+
+// ── SUBSCRIPTIONS FETCH ────────────────────────────────────────────────
+if ($activeTab === 'subscriptions') {
+    $stmt = $conn->prepare("SELECT ues.*, esp.display_name AS name FROM user_event_subscriptions ues JOIN event_subscription_plans esp ON ues.plan_id = esp.id WHERE user_id = ? ORDER BY ues.created_at DESC");
+    $stmt->bind_param("i", $_SESSION['user_id']);
+    $stmt->execute();
+    $event_subscriptions = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+    $stmt->close();
+
+    $stmt = $conn->prepare("SELECT us.*, sp.display_name AS name FROM user_subscriptions us JOIN subscription_plans sp ON us.plan_id = sp.id WHERE user_id = ? ORDER BY us.created_at DESC");
+    $stmt->bind_param("i", $_SESSION['user_id']);
+    $stmt->execute();
+    $deal_subscriptions = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+    $stmt->close();
+}
 // ─────────────────────────────────────────────────────────────────────────
+
 
 // ── SETTINGS: name / password ─────────────────────────────────────────────
 $settings_message = ''; $settings_msg_type = '';
@@ -189,7 +206,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['booking_action']) && 
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>My Nepal Journey — Dashboard</title>
 <link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Outfit:wght@300;400;500;600&family=Space+Mono&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/Nepal-Travel/assets/css/chatbot.css">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -335,7 +351,7 @@ input,button{font-family:var(--ff-body)}
 .badge-ok{display:inline-flex;align-items:center;gap:5px;font-size:11px;color:var(--forest);background:rgba(45,74,45,0.1);padding:3px 10px;border-radius:20px;font-weight:500;}
 
 /* QUICK ACTIONS */
-.qa-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;margin-bottom:48px;}
+.qa-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-bottom:48px;}
 .qa{background:var(--snow);border:1px solid var(--mist);border-radius:12px;padding:26px 22px 22px;position:relative;overflow:hidden;transition:transform 0.2s,border-color 0.2s,box-shadow 0.2s;}
 .qa-accent{position:absolute;top:0;left:0;right:0;height:3px;background:var(--sand);transform:scaleX(0);transform-origin:left;transition:transform 0.25s ease;}
 .qa:hover{transform:translateY(-5px);border-color:rgba(196,168,130,0.6);box-shadow:0 10px 30px rgba(43,38,32,0.1)}
@@ -500,12 +516,7 @@ table.bkt tr.cancelling td{transition:opacity 0.4s, background 0.4s;opacity:0.4;
 </style>
 </head>
 <body>
-<!-- Sherpa AI user meta (read by chatbot.js) -->
-<span id="sherpa-user-meta" style="display:none"
-  data-logged-in="1"
-  data-user-id="<?php echo (int)$_SESSION['user_id']; ?>"
-  data-user-name="<?php echo htmlspecialchars($userName); ?>"
-></span>
+
 
 <!-- TOPBAR -->
 <header class="topbar">
@@ -592,10 +603,11 @@ table.bkt tr.cancelling td{transition:opacity 0.4s, background 0.4s;opacity:0.4;
     <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
     Settings
   </a>
-  <a href="?tab=sherpa" class="tab <?php echo $activeTab==='sherpa'?'on':''; ?>" style="<?php echo $activeTab==='sherpa'?'border-bottom-color:#3b82f6;color:#1e293b':''; ?>">
-    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"/></svg>
-    Sherpa AI
+  <a href="?tab=subscriptions" class="tab <?php echo $activeTab==='subscriptions'?'on':''; ?>">
+    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 4H4c-1.11 0-1.99.89-1.99 2L2 18c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V6c0-1.11-.89-2-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z"/></svg>
+    My Subscriptions
   </a>
+
   <div class="tab-gap"></div>
   <a href="/Nepal-Travel/Public/experience.php" class="tab-explore">
     <svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
@@ -668,12 +680,7 @@ table.bkt tr.cancelling td{transition:opacity 0.4s, background 0.4s;opacity:0.4;
       <div class="qa-t">Deals &amp; Packages</div><div class="qa-s">Special offers</div>
       <span class="qa-arr">↗</span>
     </a>
-    <a href="?tab=sherpa" class="qa" style="border-color:rgba(59,130,246,0.25)">
-      <div class="qa-accent" style="background:linear-gradient(135deg,#3b82f6,#1e40af)"></div>
-      <div class="qa-ico" style="background:rgba(59,130,246,0.08);border-color:rgba(59,130,246,0.2)"><svg viewBox="0 0 24 24" fill="#3b82f6"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"/></svg></div>
-      <div class="qa-t">Sherpa AI</div><div class="qa-s">Your travel assistant</div>
-      <span class="qa-arr">↗</span>
-    </a>
+
     <a href="?tab=bookings" class="qa">
       <div class="qa-accent"></div>
       <div class="qa-ico"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M17 3H7c-1.1 0-1.99.9-1.99 2L5 21l7-3 7 3V5c0-1.1-.9-2-2-2z"/></svg></div>
@@ -808,21 +815,44 @@ table.bkt tr.cancelling td{transition:opacity 0.4s, background 0.4s;opacity:0.4;
   </div>
 
 <?php elseif ($activeTab === 'saved'):
-    $saved_ids = $_SESSION['saved_deals'] ?? [];
-    $saved_deals = [];
-    if (!empty($saved_ids)) {
-        $ids = implode(',', array_map('intval', $saved_ids));
-        $result = $conn->query("SELECT * FROM deals WHERE id IN ($ids)");
-        $saved_deals = $result->fetch_all(MYSQLI_ASSOC);
-    }
+    $saved_deals = getSavedDeals($conn);
+    $saved_experiences = getSavedExperiencePosts($conn, (int)$_SESSION['user_id']);
 ?>
 
   <div class="sh">
-    <span class="sh-title">Saved Places</span>
+    <span class="sh-title">Saved Items</span>
     <div class="sh-rule"></div>
-    <a href="/Nepal-Travel/Public/deals-and-packages.php" class="sh-link">Browse all →</a>
+    <a href="/Nepal-Travel/Public/saved.php" class="sh-link">View full page →</a>
   </div>
 
+  <h3 style="font-family:var(--ff-serif); font-size:20px; color:var(--stone); margin-bottom:16px;">Experience Posts</h3>
+  <?php if (empty($saved_experiences)): ?>
+    <div class="saved-ph" style="margin-bottom:32px;"><div class="saved-ph-glyph">📸</div><p>Bookmark posts on the Experience page to see them here.</p></div>
+    <div class="cta-row" style="margin-bottom:40px;">
+      <a href="/Nepal-Travel/Public/experience.php" class="btn-plan">Browse Experiences →</a>
+    </div>
+  <?php else: ?>
+    <div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:20px; margin-bottom:44px;">
+      <?php foreach ($saved_experiences as $post): ?>
+      <div style="background:var(--snow); border:1px solid var(--mist); border-radius:12px; overflow:hidden;">
+        <a href="/Nepal-Travel/Public/experience.php#post-card-<?= (int)$post['id'] ?>">
+          <img src="<?= htmlspecialchars(formatSavedExperienceImage($post['image_path'])) ?>" alt="" style="width:100%; height:180px; object-fit:cover; display:block;">
+        </a>
+        <div style="padding:16px 18px;">
+          <div style="font-size:10px; font-weight:700; color:var(--ember); text-transform:uppercase; margin-bottom:6px;">
+            <?= htmlspecialchars($post['username'] ?? 'Traveler') ?>
+          </div>
+          <p style="font-size:13px; color:var(--soil); line-height:1.5; margin:0 0 12px;">
+            <?= htmlspecialchars(strlen($post['caption'] ?? '') > 90 ? substr($post['caption'], 0, 90) . '…' : ($post['caption'] ?? '')) ?>
+          </p>
+          <a href="/Nepal-Travel/Public/saved.php" style="font-size:11px; font-weight:700; color:var(--stone); text-decoration:none;">Manage saved →</a>
+        </div>
+      </div>
+      <?php endforeach; ?>
+    </div>
+  <?php endif; ?>
+
+  <h3 style="font-family:var(--ff-serif); font-size:20px; color:var(--stone); margin-bottom:16px;">Deals &amp; Packages</h3>
   <?php if (empty($saved_deals)): ?>
     <div class="saved-cards">
       <div class="saved-ph"><div class="saved-ph-glyph">⛺</div><p>Save trekking camps &amp; base camps</p></div>
@@ -830,12 +860,12 @@ table.bkt tr.cancelling td{transition:opacity 0.4s, background 0.4s;opacity:0.4;
       <div class="saved-ph"><div class="saved-ph-glyph">🕌</div><p>Favourite temples &amp; heritage sites</p></div>
     </div>
     <div class="cta-row">
-      <a href="/Nepal-Travel/Public/deals-and-packages.php" class="btn-plan">Explore &amp; Save Places →</a>
+      <a href="/Nepal-Travel/Public/deals-and-packages.php" class="btn-plan">Explore &amp; Save Deals →</a>
     </div>
   <?php else: ?>
     <div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:22px; margin-bottom:40px;">
       <?php foreach ($saved_deals as $deal): ?>
-      <div style="background:var(--snow); border:1px solid var(--mist); border-radius:12px; overflow:hidden; display:flex; flex-direction:column; transition:transform 0.2s,box-shadow 0.2s;" onmouseover="this.style.transform='translateY(-4px)';this.style.boxShadow='0 12px 32px rgba(43,38,32,0.12)'" onmouseout="this.style.transform='';this.style.boxShadow=''">
+      <div style="background:var(--snow); border:1px solid var(--mist); border-radius:12px; overflow:hidden; display:flex; flex-direction:column;">
         <a href="/Nepal-Travel/Public/deal-details.php?id=<?= (int)$deal['id'] ?>" style="display:block; position:relative;">
           <img src="<?= htmlspecialchars($deal['image_url']) ?>" alt="<?= htmlspecialchars($deal['title']) ?>" style="width:100%; height:200px; object-fit:cover; display:block;">
           <?php if (!empty($deal['category'])): ?>
@@ -850,25 +880,15 @@ table.bkt tr.cancelling td{transition:opacity 0.4s, background 0.4s;opacity:0.4;
             📍 <?= htmlspecialchars($deal['location']) ?>
           </span>
           <?php endif; ?>
-          <a href="/Nepal-Travel/pages/deal-details.php?id=<?= (int)$deal['id'] ?>" style="font-family:var(--ff-serif); font-size:17px; font-weight:700; color:var(--stone); text-decoration:none; line-height:1.3;">
+          <a href="/Nepal-Travel/Public/deal-details.php?id=<?= (int)$deal['id'] ?>" style="font-family:var(--ff-serif); font-size:17px; font-weight:700; color:var(--stone); text-decoration:none; line-height:1.3;">
             <?= htmlspecialchars($deal['title']) ?>
           </a>
-          <div style="display:flex; gap:14px; font-size:12px; color:var(--soil); margin-top:2px;">
-            <?php if (!empty($deal['days'])): ?>
-            <span>📅 <?= (int)$deal['days'] ?> days</span>
-            <?php endif; ?>
-            <?php if (!empty($deal['rating'])): ?>
-            <span>⭐ <?= number_format((float)$deal['rating'], 1) ?></span>
-            <?php endif; ?>
-          </div>
           <div style="margin-top:auto; padding-top:14px; border-top:1px solid var(--mist); display:flex; justify-content:space-between; align-items:center;">
             <span style="font-family:var(--ff-serif); font-size:16px; font-weight:700; color:var(--stone);">
               NPR <?= number_format((float)$deal['price']) ?>
             </span>
             <a href="/Nepal-Travel/Public/save_deal.php?id=<?= (int)$deal['id'] ?>&action=remove"
-               style="font-size:11px; font-weight:600; color:var(--flag-r); background:rgba(192,57,43,0.08); border:1px solid rgba(192,57,43,0.2); border-radius:4px; padding:6px 14px; text-decoration:none;"
-               onmouseover="this.style.background='var(--flag-r)';this.style.color='#fff'"
-               onmouseout="this.style.background='rgba(192,57,43,0.08)';this.style.color='var(--flag-r)'">
+               style="font-size:11px; font-weight:600; color:var(--flag-r); background:rgba(192,57,43,0.08); border:1px solid rgba(192,57,43,0.2); border-radius:4px; padding:6px 14px; text-decoration:none;">
                ✕ Remove
             </a>
           </div>
@@ -878,6 +898,92 @@ table.bkt tr.cancelling td{transition:opacity 0.4s, background 0.4s;opacity:0.4;
     </div>
   <?php endif; ?>
 
+
+<?php elseif ($activeTab === 'subscriptions'): ?>
+
+  <div class="sh"><span class="sh-title">My Subscriptions</span><div class="sh-rule"></div></div>
+
+  <!-- EVENT SUBSCRIPTIONS -->
+  <div class="bk-card" style="margin-bottom:30px;">
+    <div class="bk-hd">
+      <span class="bk-hd-t">Event Subscriptions</span>
+    </div>
+    <?php if (empty($event_subscriptions)): ?>
+      <div class="empty-st" style="padding:40px 20px;">
+        <div class="empty-glyph">🎫</div>
+        <div class="empty-h" style="font-size:18px;">No event subscriptions</div>
+        <p class="empty-p" style="margin-bottom:0;">You haven't purchased any event hosting plans.</p>
+      </div>
+    <?php else: ?>
+      <div style="overflow-x:auto">
+        <table class="bkt">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Plan</th>
+              <th>Price</th>
+              <th>Method</th>
+              <th>Status</th>
+              <th>Expires</th>
+            </tr>
+          </thead>
+          <tbody>
+            <?php foreach ($event_subscriptions as $sub): ?>
+            <tr>
+              <td class="bk-id">#<?php echo str_pad($sub['id'], 6, '0', STR_PAD_LEFT); ?></td>
+              <td class="bk-dest"><?php echo htmlspecialchars($sub['name']); ?></td>
+              <td>NPR <?php echo number_format($sub['amount_paid']); ?></td>
+              <td><?php echo ucfirst($sub['payment_method'] ?? 'manual'); ?></td>
+              <td><span class="pill pill-<?php echo $sub['status']; ?>"><?php echo ucfirst($sub['status']); ?></span></td>
+              <td><?php echo $sub['expires_at'] ? date('M j, Y', strtotime($sub['expires_at'])) : '—'; ?></td>
+            </tr>
+            <?php endforeach; ?>
+          </tbody>
+        </table>
+      </div>
+    <?php endif; ?>
+  </div>
+
+  <!-- DEAL SUBSCRIPTIONS -->
+  <div class="bk-card">
+    <div class="bk-hd">
+      <span class="bk-hd-t">Deals & Packages Subscriptions</span>
+    </div>
+    <?php if (empty($deal_subscriptions)): ?>
+      <div class="empty-st" style="padding:40px 20px;">
+        <div class="empty-glyph">🏔</div>
+        <div class="empty-h" style="font-size:18px;">No deal subscriptions</div>
+        <p class="empty-p" style="margin-bottom:0;">You haven't purchased any plans to post deals.</p>
+      </div>
+    <?php else: ?>
+      <div style="overflow-x:auto">
+        <table class="bkt">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Plan</th>
+              <th>Price</th>
+              <th>Method</th>
+              <th>Status</th>
+              <th>Expires</th>
+            </tr>
+          </thead>
+          <tbody>
+            <?php foreach ($deal_subscriptions as $sub): ?>
+            <tr>
+              <td class="bk-id">#<?php echo str_pad($sub['id'], 6, '0', STR_PAD_LEFT); ?></td>
+              <td class="bk-dest"><?php echo htmlspecialchars($sub['name']); ?></td>
+              <td>NPR <?php echo number_format($sub['amount_paid']); ?></td>
+              <td><?php echo ucfirst($sub['payment_method'] ?? 'manual'); ?></td>
+              <td><span class="pill pill-<?php echo $sub['status']; ?>"><?php echo ucfirst($sub['status']); ?></span></td>
+              <td><?php echo $sub['expires_at'] ? date('M j, Y', strtotime($sub['expires_at'])) : '—'; ?></td>
+            </tr>
+            <?php endforeach; ?>
+          </tbody>
+        </table>
+      </div>
+    <?php endif; ?>
+  </div>
 
 <?php elseif ($activeTab === 'settings'): ?>
 
@@ -936,353 +1042,6 @@ table.bkt tr.cancelling td{transition:opacity 0.4s, background 0.4s;opacity:0.4;
       </button>
     </div>
   </div>
-
-<?php elseif ($activeTab === 'sherpa'): ?>
-
-  <style>
-  .sherpa-dash-wrap{display:flex;gap:0;height:calc(100vh - 180px);min-height:560px;background:#fff;border-radius:16px;overflow:hidden;border:1px solid rgba(196,168,130,0.3);box-shadow:0 4px 24px rgba(43,38,32,0.08);}
-  .sdash-sidebar{width:260px;flex-shrink:0;border-right:1px solid #f0ede8;display:flex;flex-direction:column;background:#fdfcfa;}
-  .sdash-sidebar-hd{padding:20px 18px 14px;border-bottom:1px solid #f0ede8;}
-  .sdash-sidebar-hd h3{font-family:var(--ff-serif);font-size:16px;font-weight:700;color:var(--stone);margin-bottom:2px;}
-  .sdash-sidebar-hd p{font-size:12px;color:var(--soil);}
-  .sdash-new-btn{display:flex;align-items:center;gap:8px;margin:12px 14px;background:linear-gradient(135deg,#3b82f6,#1e40af);color:#fff;border:none;border-radius:8px;padding:10px 16px;font-size:13px;font-weight:600;cursor:pointer;transition:opacity 0.2s;font-family:var(--ff-body);}
-  .sdash-new-btn:hover{opacity:0.9;}
-  .sdash-conv-list{flex:1;overflow-y:auto;}
-  .sdash-conv-list::-webkit-scrollbar{width:4px;}
-  .sdash-conv-list::-webkit-scrollbar-thumb{background:#e2d8cc;border-radius:4px;}
-  .sdash-conv-item{padding:11px 16px;cursor:pointer;border-bottom:1px solid #f5f2ee;transition:background 0.15s;position:relative;}
-  .sdash-conv-item:hover{background:#f7f4ef;}
-  .sdash-conv-item.active{background:#eff6ff;border-left:3px solid #3b82f6;}
-  .sdash-conv-title{font-size:13px;font-weight:600;color:var(--stone);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:3px;}
-  .sdash-conv-preview{font-size:11px;color:var(--soil);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:2px;}
-  .sdash-conv-date{font-size:11px;color:#aaa;}
-  .sdash-del-btn{position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;font-size:13px;cursor:pointer;opacity:0;transition:opacity 0.15s;padding:4px;border-radius:4px;}
-  .sdash-conv-item:hover .sdash-del-btn{opacity:1;}
-  .sdash-del-btn:hover{background:rgba(239,68,68,0.1);}
-  .sdash-main{flex:1;display:flex;flex-direction:column;overflow:hidden;}
-  .sdash-chat-hd{padding:16px 24px;border-bottom:1px solid #f0ede8;display:flex;align-items:center;justify-content:space-between;background:#fdfcfa;flex-shrink:0;}
-  .sdash-chat-hd-title{font-family:var(--ff-serif);font-size:18px;font-weight:700;color:var(--stone);}
-  .sdash-chat-hd-sub{font-size:12px;color:var(--soil);margin-top:2px;}
-  .sdash-messages{flex:1;overflow-y:auto;padding:24px;display:flex;flex-direction:column;gap:16px;background:linear-gradient(180deg,#fdfcfa 0%,#f7f4ef 100%);}
-  .sdash-messages::-webkit-scrollbar{width:6px;}
-  .sdash-messages::-webkit-scrollbar-thumb{background:#e2d8cc;border-radius:6px;}
-  .sdash-msg-wrap{display:flex;flex-direction:column;}
-  .sdash-msg-wrap--user{align-items:flex-end;}
-  .sdash-msg-wrap--assistant{align-items:flex-start;}
-  .sdash-bubble{padding:13px 17px;border-radius:18px;max-width:75%;font-size:14px;line-height:1.55;word-wrap:break-word;}
-  .sdash-bubble--user{background:linear-gradient(135deg,#3b82f6,#1e40af);color:#fff;border-bottom-right-radius:4px;box-shadow:0 3px 12px rgba(59,130,246,0.2);}
-  .sdash-bubble--assistant{background:#fff;color:var(--stone);border:1px solid rgba(0,0,0,0.06);border-bottom-left-radius:4px;box-shadow:0 3px 12px rgba(43,38,32,0.06);}
-  .sdash-meta{font-size:11px;color:#aaa;margin-top:4px;padding:0 4px;}
-  .sdash-input-row{display:flex;gap:12px;padding:16px 20px;border-top:1px solid #f0ede8;background:#fdfcfa;flex-shrink:0;}
-  .sdash-input{flex:1;border:1px solid rgba(0,0,0,0.1);border-radius:24px;padding:11px 20px;font-size:14px;font-family:var(--ff-body);outline:none;background:#fff;transition:border-color 0.2s,box-shadow 0.2s;resize:none;line-height:1.4;max-height:100px;overflow-y:auto;}
-  .sdash-input:focus{border-color:#3b82f6;box-shadow:0 0 0 3px rgba(59,130,246,0.12);}
-  .sdash-send-btn{background:linear-gradient(135deg,#3b82f6,#1e40af);color:#fff;border:none;border-radius:24px;padding:0 24px;font-size:14px;font-weight:600;cursor:pointer;transition:opacity 0.2s,transform 0.15s;font-family:var(--ff-body);display:flex;align-items:center;gap:8px;}
-  .sdash-send-btn:hover:not(:disabled){opacity:0.92;transform:translateY(-1px);}
-  .sdash-send-btn:disabled{background:#cbd5e1;cursor:not-allowed;}
-  .sdash-sugg-row{display:flex;gap:8px;flex-wrap:wrap;padding:0 20px 14px;}
-  .sdash-sugg-btn{background:#fff;border:1px solid rgba(59,130,246,0.25);color:#3b82f6;border-radius:20px;padding:7px 14px;font-size:12px;font-weight:500;cursor:pointer;transition:all 0.2s;font-family:var(--ff-body);}
-  .sdash-sugg-btn:hover{background:linear-gradient(135deg,#3b82f6,#1e40af);color:#fff;border-color:transparent;}
-  .sdash-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;text-align:center;padding:40px 24px;}
-  .sdash-empty-icon{font-size:56px;margin-bottom:18px;opacity:0.6;}
-  .sdash-empty h3{font-family:var(--ff-serif);font-size:22px;color:var(--bark);margin-bottom:8px;}
-  .sdash-empty p{font-size:14px;color:var(--soil);line-height:1.6;}
-  .sdash-markdown h1,.sdash-markdown h2,.sdash-markdown h3{font-weight:700;margin:10px 0 6px;font-family:var(--ff-serif);}
-  .sdash-markdown h2{font-size:15px;}
-  .sdash-markdown h3{font-size:14px;}
-  .sdash-markdown p{margin:6px 0;}
-  .sdash-markdown ul,.sdash-markdown ol{margin:6px 0 6px 18px;}
-  .sdash-markdown li{margin:4px 0;}
-  .sdash-markdown strong{font-weight:700;}
-  .sdash-markdown table{border-collapse:collapse;width:100%;margin:10px 0;font-size:13px;display:block;overflow-x:auto;}
-  .sdash-markdown th,.sdash-markdown td{border:1px solid rgba(0,0,0,0.1);padding:7px 11px;text-align:left;}
-  .sdash-markdown th{background:rgba(0,0,0,0.03);font-weight:600;}
-  .sdash-loading-dots{display:flex;gap:5px;padding:14px 18px;}
-  .sdash-dot{width:8px;height:8px;border-radius:50%;background:#cbd5e1;animation:sdash-blink 1.4s infinite;}
-  .sdash-dot:nth-child(2){animation-delay:0.2s;}
-  .sdash-dot:nth-child(3){animation-delay:0.4s;}
-  @keyframes sdash-blink{0%,60%,100%{opacity:0.3;}30%{opacity:1;}}
-  @media(max-width:768px){.sherpa-dash-wrap{flex-direction:column;height:auto;}.sdash-sidebar{width:100%;height:200px;border-right:none;border-bottom:1px solid #f0ede8;}.sdash-conv-list{display:flex;overflow-y:hidden;overflow-x:auto;gap:0;}.sdash-conv-item{min-width:180px;border-bottom:none;border-right:1px solid #f0ede8;}.sdash-main{height:500px;}.sdash-bubble{max-width:90%;}}
-  </style>
-
-  <div class="sh"><span class="sh-title">🏔️ Sherpa AI — Travel Assistant</span><div class="sh-rule"></div></div>
-
-  <div class="sherpa-dash-wrap">
-
-    <!-- Sidebar: conversation list -->
-    <div class="sdash-sidebar">
-      <div class="sdash-sidebar-hd">
-        <h3>Chat History</h3>
-        <p>Your saved conversations</p>
-      </div>
-      <button class="sdash-new-btn" id="sdash-new-btn">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="white"><path d="M19 13H13v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
-        New Conversation
-      </button>
-      <div class="sdash-conv-list" id="sdash-conv-list">
-        <div style="padding:20px;text-align:center;font-size:13px;color:#aaa;">Loading…</div>
-      </div>
-    </div>
-
-    <!-- Main chat area -->
-    <div class="sdash-main">
-      <div class="sdash-chat-hd">
-        <div>
-          <div class="sdash-chat-hd-title" id="sdash-chat-title">Sherpa AI</div>
-          <div class="sdash-chat-hd-sub" id="sdash-chat-sub">Start a conversation or pick one from the left</div>
-        </div>
-        <div style="display:flex;gap:8px;">
-          <select id="sdash-lang" style="border:1px solid #e2d8cc;border-radius:6px;padding:6px 10px;font-size:12px;font-family:var(--ff-body);background:#fff;color:var(--stone);cursor:pointer;">
-            <option value="english">🌐 English</option>
-            <option value="nepali">🇳🇵 Nepali</option>
-            <option value="hindi">🇮🇳 Hindi</option>
-          </select>
-        </div>
-      </div>
-
-      <div class="sdash-messages" id="sdash-messages">
-        <div class="sdash-empty" id="sdash-empty">
-          <div class="sdash-empty-icon">🏔️</div>
-          <h3>Namaste, <?php echo $userName; ?>!</h3>
-          <p>Ask Sherpa anything about Nepal travel — trekking routes, budget planning, cultural experiences, and more.</p>
-        </div>
-      </div>
-
-      <!-- Quick suggestion chips -->
-      <div class="sdash-sugg-row" id="sdash-sugg-row">
-        <button class="sdash-sugg-btn" onclick="sdashSend('Plan a 7-day Everest Base Camp trek')">🏔️ Everest trek plan</button>
-        <button class="sdash-sugg-btn" onclick="sdashSend('Best places in Kathmandu valley')">🏙️ Kathmandu guide</button>
-        <button class="sdash-sugg-btn" onclick="sdashSend('Budget trip Nepal under $500')">💰 Budget tips</button>
-        <button class="sdash-sugg-btn" onclick="sdashSend('Pokhara 3-day itinerary')">🌊 Pokhara trip</button>
-      </div>
-
-      <div class="sdash-input-row">
-        <textarea class="sdash-input" id="sdash-input" placeholder="Ask Sherpa about Nepal travel…" rows="1"></textarea>
-        <button class="sdash-send-btn" id="sdash-send-btn" onclick="sdashSend()">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-          Send
-        </button>
-      </div>
-    </div>
-  </div>
-
-  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-  <script>
-  (function(){
-    const HIST = '/Nepal-Travel/user/chatbot_history_api.php';
-    const API  = '/Nepal-Travel/user/chatbot_api.php';
-    const USER_NAME = <?php echo json_encode($userName); ?>;
-    let convId = null, msgs = [], streaming = false, lang = 'english';
-
-    const listEl  = document.getElementById('sdash-conv-list');
-    const msgsEl  = document.getElementById('sdash-messages');
-    const inputEl = document.getElementById('sdash-input');
-    const sendBtn = document.getElementById('sdash-send-btn');
-    const emptyEl = document.getElementById('sdash-empty');
-    const titleEl = document.getElementById('sdash-chat-title');
-    const subEl   = document.getElementById('sdash-chat-sub');
-    const langSel = document.getElementById('sdash-lang');
-    const suggRow = document.getElementById('sdash-sugg-row');
-
-    langSel.addEventListener('change', e => lang = e.target.value);
-
-    // ── Load history ──────────────────────────────────────────────────────
-    async function loadHistory() {
-      listEl.innerHTML = '<div style="padding:16px;text-align:center;font-size:13px;color:#aaa;">Loading…</div>';
-      const res  = await fetch(HIST + '?action=list_conversations').catch(() => null);
-      if (!res || !res.ok) { listEl.innerHTML = '<div style="padding:16px;font-size:13px;color:#aaa;text-align:center;">Could not load history.</div>'; return; }
-      const data = await res.json();
-      if (!data.success || !data.conversations.length) {
-        listEl.innerHTML = '<div style="padding:20px;text-align:center;font-size:12px;color:#aaa;">No conversations yet.<br>Start a new chat!</div>';
-        return;
-      }
-      listEl.innerHTML = '';
-      data.conversations.forEach(c => {
-        const item = document.createElement('div');
-        item.className = 'sdash-conv-item' + (c.id == convId ? ' active' : '');
-        item.dataset.id = c.id;
-        const date = new Date(c.updated_at).toLocaleDateString('en-US',{month:'short',day:'numeric'});
-        const preview = (c.last_message || '').substring(0,50);
-        item.innerHTML = `
-          <div class="sdash-conv-title">${esc(c.title)}</div>
-          <div class="sdash-conv-preview">${esc(preview) || 'No messages yet'}</div>
-          <div class="sdash-conv-date">${date} &middot; ${c.msg_count} msg${c.msg_count!=1?'s':''}</div>
-          <button class="sdash-del-btn" data-id="${c.id}" title="Delete">🗑</button>`;
-        item.addEventListener('click', e => { if(e.target.closest('.sdash-del-btn')) return; loadConv(c.id, c.title); });
-        item.querySelector('.sdash-del-btn').addEventListener('click', e => { e.stopPropagation(); delConv(c.id, item); });
-        listEl.appendChild(item);
-      });
-    }
-
-    // ── Load conversation ─────────────────────────────────────────────────
-    async function loadConv(id, title) {
-      convId = id; msgs = [];
-      msgsEl.innerHTML = '';
-      if(emptyEl) emptyEl.style.display = 'none';
-      suggRow.style.display = 'none';
-      titleEl.textContent = title;
-      subEl.textContent   = 'Loading messages…';
-      listEl.querySelectorAll('.sdash-conv-item').forEach(el => {
-        el.classList.toggle('active', el.dataset.id == id);
-      });
-      const res  = await fetch(HIST + `?action=get_messages&conversation_id=${id}`).catch(() => null);
-      if (!res || !res.ok) { subEl.textContent = 'Failed to load.'; return; }
-      const data = await res.json();
-      if (!data.success) { subEl.textContent = 'Error loading.'; return; }
-      data.messages.forEach(m => {
-        msgs.push({role: m.role, content: m.content});
-        appendMsg(m.role, m.content, new Date(m.created_at));
-      });
-      subEl.textContent = `${data.messages.length} message${data.messages.length!=1?'s':''} — click Send to continue`;
-      if (data.conversation.language) lang = data.conversation.language;
-      langSel.value = lang;
-    }
-
-    // ── Delete conversation ───────────────────────────────────────────────
-    async function delConv(id, el) {
-      if (!confirm('Delete this conversation?')) return;
-      const res = await fetch(HIST + '?action=delete_conversation', {
-        method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({conversation_id: id})
-      }).catch(()=>null);
-      const data = res ? await res.json() : null;
-      if (data && data.success) {
-        el.remove();
-        if (id == convId) newChat();
-        if (!listEl.children.length) listEl.innerHTML = '<div style="padding:20px;text-align:center;font-size:12px;color:#aaa;">No conversations yet.</div>';
-      }
-    }
-
-    // ── New chat ──────────────────────────────────────────────────────────
-    function newChat() {
-      convId = null; msgs = [];
-      msgsEl.innerHTML = '';
-      if(emptyEl){ emptyEl.style.display='flex'; }
-      else {
-        msgsEl.innerHTML = `<div class="sdash-empty"><div class="sdash-empty-icon">🏔️</div><h3>Namaste, ${esc(USER_NAME)}!</h3><p>Ask Sherpa anything about Nepal travel.</p></div>`;
-      }
-      suggRow.style.display = 'flex';
-      titleEl.textContent = 'Sherpa AI';
-      subEl.textContent   = 'Start a conversation or pick one from the left';
-      listEl.querySelectorAll('.sdash-conv-item').forEach(el => el.classList.remove('active'));
-      inputEl.focus();
-    }
-
-    document.getElementById('sdash-new-btn').addEventListener('click', newChat);
-
-    // ── Send message ──────────────────────────────────────────────────────
-    window.sdashSend = async function(text) {
-      text = (text || inputEl.value).trim();
-      if (!text || streaming) return;
-      inputEl.value = ''; inputEl.style.height = 'auto';
-      if(emptyEl) emptyEl.style.display = 'none';
-      suggRow.style.display = 'none';
-      streaming = true; sendBtn.disabled = true; inputEl.disabled = true;
-
-      // Create conversation if none
-      if (!convId) {
-        const title = text.substring(0,60) + (text.length>60?'…':'');
-        const cr = await fetch(HIST + '?action=create_conversation', {
-          method:'POST', headers:{'Content-Type':'application/json'},
-          body: JSON.stringify({title, language: lang})
-        }).catch(()=>null);
-        if (cr && cr.ok) { const cd = await cr.json(); if(cd.success) convId = cd.conversation_id; }
-        titleEl.textContent = title;
-        subEl.textContent   = 'New conversation';
-      }
-
-      msgs.push({role:'user', content:text});
-      appendMsg('user', text);
-
-      // Save user msg
-      if (convId) fetch(HIST+'?action=save_message',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({conversation_id:convId,role:'user',content:text})}).catch(()=>{});
-
-      // Thinking indicator
-      const thinkWrap = document.createElement('div');
-      thinkWrap.className = 'sdash-msg-wrap sdash-msg-wrap--assistant';
-      thinkWrap.innerHTML = '<div class="sdash-bubble sdash-bubble--assistant"><div class="sdash-loading-dots"><div class="sdash-dot"></div><div class="sdash-dot"></div><div class="sdash-dot"></div></div></div>';
-      msgsEl.appendChild(thinkWrap);
-      msgsEl.scrollTop = msgsEl.scrollHeight;
-
-      // Stream
-      let full = '';
-      try {
-        const payload = {messages: msgs.filter(m=>m.role!=='system'), language: lang, conversation_id: convId};
-        const res = await fetch(API, {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
-        if (res.status === 401) { thinkWrap.remove(); window.location.href='/Nepal-Travel/user/login.php'; return; }
-        thinkWrap.remove();
-
-        const bubbleWrap = document.createElement('div');
-        bubbleWrap.className = 'sdash-msg-wrap sdash-msg-wrap--assistant';
-        const bubble = document.createElement('div');
-        bubble.className = 'sdash-bubble sdash-bubble--assistant sdash-markdown';
-        bubbleWrap.appendChild(bubble);
-        msgsEl.appendChild(bubbleWrap);
-
-        const reader  = res.body.getReader();
-        const decoder = new TextDecoder();
-        let buffer    = '';
-        while(true) {
-          const {done, value} = await reader.read();
-          if(done) break;
-          buffer += decoder.decode(value, {stream:true});
-          const lines = buffer.split('\n'); buffer = lines.pop();
-          for(const line of lines) {
-            if(!line.startsWith('data:')) continue;
-            const raw = line.slice(5).trim();
-            if(raw==='[DONE]') break;
-            try {
-              const p = JSON.parse(raw);
-              const delta = p.choices?.[0]?.delta?.content;
-              if(delta){ full+=delta; bubble.innerHTML = typeof marked!=='undefined' ? marked.parse(full) : full.replace(/\n/g,'<br>'); msgsEl.scrollTop=msgsEl.scrollHeight; }
-            } catch(_){}
-          }
-        }
-        // Meta row
-        const meta = document.createElement('div');
-        meta.className='sdash-meta';
-        meta.textContent = new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
-        bubbleWrap.appendChild(meta);
-
-        if(full){
-          msgs.push({role:'assistant',content:full});
-          if(convId) fetch(HIST+'?action=save_message',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({conversation_id:convId,role:'assistant',content:full})}).catch(()=>{});
-        }
-        subEl.textContent = `${msgs.filter(m=>m.role==='user').length} message${msgs.filter(m=>m.role==='user').length!=1?'s':''} — click Send to continue`;
-        loadHistory();
-      } catch(e) {
-        if(thinkWrap.parentElement) thinkWrap.remove();
-        appendMsg('assistant', '⚠️ Connection error. Please try again.');
-      } finally {
-        streaming=false; sendBtn.disabled=false; inputEl.disabled=false; inputEl.focus();
-      }
-    };
-
-    // ── Append message ────────────────────────────────────────────────────
-    function appendMsg(role, content, dateObj) {
-      const wrap = document.createElement('div');
-      wrap.className = `sdash-msg-wrap sdash-msg-wrap--${role}`;
-      const bubble = document.createElement('div');
-      bubble.className = `sdash-bubble sdash-bubble--${role}${role==='assistant'?' sdash-markdown':''}`;
-      if(role==='assistant') bubble.innerHTML = typeof marked!=='undefined' ? marked.parse(content) : content.replace(/\n/g,'<br>');
-      else bubble.textContent = content;
-      const meta = document.createElement('div');
-      meta.className='sdash-meta';
-      const ts = dateObj || new Date();
-      meta.textContent = ts.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
-      wrap.appendChild(bubble); wrap.appendChild(meta);
-      msgsEl.appendChild(wrap);
-      msgsEl.scrollTop = msgsEl.scrollHeight;
-    }
-
-    function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
-
-    // ── Input auto-resize ─────────────────────────────────────────────────
-    inputEl.addEventListener('keydown', e => { if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sdashSend();} });
-    inputEl.addEventListener('input', () => { inputEl.style.height='auto'; inputEl.style.height=Math.min(inputEl.scrollHeight,100)+'px'; });
-
-    loadHistory();
-  })();
-  </script>
 
 <?php endif; ?>
 
@@ -1580,8 +1339,6 @@ table.bkt tr.cancelling td{transition:opacity 0.4s, background 0.4s;opacity:0.4;
 })();
 </script>
 
-<!-- Sherpa AI chatbot widget (floating, for all tabs) -->
-<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-<script src="/Nepal-Travel/assets/js/chatbot.js"></script>
+
 </body>
 </html>

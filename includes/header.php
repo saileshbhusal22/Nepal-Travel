@@ -3,6 +3,9 @@ ob_start();
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
+require_once __DIR__ . '/auth_redirect.php';
+$auth_login_url    = auth_build_login_url();
+$auth_register_url = auth_build_register_url();
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -637,6 +640,8 @@ if (session_status() === PHP_SESSION_NONE) {
   data-logged-in="<?php echo isset($_SESSION['user_id']) ? '1' : '0'; ?>"
   data-user-id="<?php echo isset($_SESSION['user_id']) ? (int)$_SESSION['user_id'] : ''; ?>"
   data-user-name="<?php echo isset($_SESSION['user_name']) ? htmlspecialchars($_SESSION['user_name']) : ''; ?>"
+  data-login-url="<?php echo htmlspecialchars($auth_login_url); ?>"
+  data-register-url="<?php echo htmlspecialchars($auth_register_url); ?>"
 ></span>
 
 <?php
@@ -666,6 +671,13 @@ if (session_status() === PHP_SESSION_NONE) {
             }
         }
         $initials = strtoupper(substr($_SESSION['user_name'] ?? 'U', 0, 1));
+    }
+
+    $headerSavedCount = 0;
+    if (isset($_SESSION['user_id']) || !empty($_SESSION['saved_deals'])) {
+        require_once __DIR__ . '/../config/db.php';
+        require_once __DIR__ . '/saved_helpers.php';
+        $headerSavedCount = getTotalSavedCount($conn);
     }
 
     $navLinks = [
@@ -739,7 +751,7 @@ if (session_status() === PHP_SESSION_NONE) {
     <div class="drawer-utility">
         <a href="/Nepal-Travel/Public/saved.php" onclick="closeDrawer();">
             <span class="drawer-utility-icon">❤️</span>
-            <span>Saved Places</span>
+            <span>Saved<?php if ($headerSavedCount > 0): ?> (<?= (int)$headerSavedCount ?>)<?php endif; ?></span>
         </a>
         <a href="#" id="mobileSearchBtn" onclick="openSearch(); closeDrawer();">
             <span class="drawer-utility-icon">🔍</span>
@@ -759,10 +771,10 @@ if (session_status() === PHP_SESSION_NONE) {
         <?php else: ?>
             <!-- Not Logged In - Show Login & Signup -->
             <div class="drawer-footer-auth">
-                <a href="/Nepal-Travel/user/login.php" class="drawer-btn-login">
+                <a href="<?= htmlspecialchars($auth_login_url) ?>" class="drawer-btn-login">
                     Login
                 </a>
-                <a href="/Nepal-Travel/user/Register.php" class="drawer-btn-signup">
+                <a href="<?= htmlspecialchars($auth_register_url) ?>" class="drawer-btn-signup">
                     Sign Up
                 </a>
             </div>
@@ -779,15 +791,15 @@ if (session_status() === PHP_SESSION_NONE) {
         <div class="utility-inner">
             <div class="utility-left">
                 <span>Foreign Visitors: 
-                    <a href="#" style="color:#fff;text-decoration:underline;">Nepal Digital Arrival Card (NDAC)</a>
+                    <a href="https://immigration.gov.np/en/page/arrival-departure-information-1" style="color:#fff;text-decoration:underline;">Nepal Digital Arrival Card (NDAC)</a>
                 </span>
             </div>
             <div class="utility-right">
-                <a href="/Nepal-Travel/Public/saved.php" class="util-saved-link">
+                <a href="/Nepal-Travel/Public/saved.php" class="util-saved-link" style="display:inline-flex; align-items:center; gap:6px;">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M20.8 4.6a5.5 5.5 0 0 0-7.7 0l-1.1 1-1.1-1a5.5 5.5 0 0 0-7.8 7.8l1 1 7.9 8 7.8-7.9 1-1a5.5 5.5 0 0 0 0-7.8z"/>
                     </svg>
-                    SAVED
+                    SAVED<?php if ($headerSavedCount > 0): ?><span style="background:#f5a623;color:#111;font-size:10px;font-weight:800;padding:2px 7px;border-radius:10px;min-width:18px;text-align:center;"><?= (int)$headerSavedCount ?></span><?php endif; ?>
                 </a>
                 <button id="openSearchBtn" style="cursor: pointer;">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -811,8 +823,8 @@ if (session_status() === PHP_SESSION_NONE) {
                     </a>
                     <a href="/Nepal-Travel/user/logout.php" style="color:#fff;text-decoration:none;">Logout</a>
                 <?php else: ?>
-                    <a href="/Nepal-Travel/user/login.php" style="color:#fff;text-decoration:none;font-weight:600;">Login</a>
-                    <a href="/Nepal-Travel/user/Register.php" style="background:#fbbf24;color:#0f172a;padding:6px 16px;border-radius:20px;text-decoration:none;font-weight:800;font-family:'Montserrat',sans-serif;box-shadow:0 4px 10px rgba(251,191,36,0.3);transition:all 0.3s ease;">Signup</a>
+                    <a href="<?= htmlspecialchars($auth_login_url) ?>" style="color:#fff;text-decoration:none;font-weight:600;">Login</a>
+                    <a href="<?= htmlspecialchars($auth_register_url) ?>" style="background:#fbbf24;color:#0f172a;padding:6px 16px;border-radius:20px;text-decoration:none;font-weight:800;font-family:'Montserrat',sans-serif;box-shadow:0 4px 10px rgba(251,191,36,0.3);transition:all 0.3s ease;">Signup</a>
                 <?php endif; ?>
             </div>
         </div>
@@ -1007,24 +1019,3 @@ if (clearSearchInput) {
 console.log('Header script loaded successfully');
 </script>
 
-</body>
-</html>
-<!-- Markdown library -->
-<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-
-<!-- Markdown configuration -->
-<script>
-    marked.setOptions({
-        breaks: true,
-        gfm: true
-    });
-</script>
-
-<!-- Chatbot script -->
-<script src="../assets/js/chatbot.js"></script>
-
-<!-- Live Support Chat Widget -->
-<script src="../assets/js/support_chat.js"></script>
-
-<!-- Discovery Portal Modal -->
-<div class="discovery-portal-wrapper" id="discoveryPortal">

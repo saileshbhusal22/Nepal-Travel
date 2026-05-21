@@ -112,6 +112,7 @@ if (isset($_GET['msg'])) {
         'esewa_success'      => '✓ eSewa payment verified! Your subscription is now active.',
         'payment_cancelled'  => '✗ Payment was cancelled. Please try again.',
         'payment_failed'     => '✗ Payment verification failed. Please contact support.',
+        'khalti_success'     => '✓ Khalti payment verified! Your subscription is now active.',
         'amount_mismatch'    => '✗ Payment amount mismatch detected. Please contact support.',
         'already_activated'  => '✓ Your subscription is already active.',
         'already_subscribed' => '✓ You already have an active or pending subscription for this plan.',
@@ -125,6 +126,12 @@ if (isset($_GET['msg'])) {
 // ── eSewa error from redirect ──────────────────────────────────
 if (isset($_GET['esewa_error']) && empty($msg)) {
     $msg      = '✗ ' . htmlspecialchars($_GET['esewa_error']);
+    $msg_type = 'error';
+}
+
+// ── Khalti error from redirect ──────────────────────────────────
+if (isset($_GET['khalti_error']) && empty($msg)) {
+    $msg      = '✗ ' . htmlspecialchars($_GET['khalti_error']);
     $msg_type = 'error';
 }
 
@@ -499,6 +506,15 @@ tbody tr:hover td{background:rgba(255,255,255,.02)}
         </button>
       </form>
 
+      <!-- ── KHALTI BUTTON ── -->
+      <form method="POST" action="khalti_initiate.php" id="khaltiForm">
+        <input type="hidden" name="action"  value="khalti_pay">
+        <input type="hidden" name="plan_id" id="khalti_plan_id">
+        <button type="submit" class="btn-submit btn-khalti" style="background:#5c2d91;color:#fff;margin-bottom:12px">
+          Pay with Khalti
+        </button>
+      </form>
+
       <!-- Divider -->
       <div class="divider">
         <div class="divider-line"></div>
@@ -626,6 +642,7 @@ const planIcons = {
 function openPayModal(planId, planName, planPrice) {
   document.getElementById('pay_plan_id').value    = planId;
   document.getElementById('esewa_plan_id').value  = planId;
+  document.getElementById('khalti_plan_id').value = planId;
   document.getElementById('mps_name').textContent = planName;
   document.getElementById('mps_price').textContent= 'NPR ' + Number(planPrice).toLocaleString();
   document.getElementById('mps_icon').textContent = planIcons[String(planId)] || '📦';

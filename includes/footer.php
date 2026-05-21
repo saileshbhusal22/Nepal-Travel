@@ -192,6 +192,17 @@
     </div>
 </footer>
 
+<!-- Markdown library -->
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<!-- Markdown configuration -->
+<script>
+    marked.setOptions({
+        breaks: true,
+        gfm: true
+    });
+</script>
+<!-- Chatbot script -->
+<script src="../assets/js/chatbot.js"></script>
 <script src="../assets/js/script.js"></script>
 
 </body>

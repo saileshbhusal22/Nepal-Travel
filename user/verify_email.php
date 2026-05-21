@@ -2,6 +2,7 @@
 session_start();
 
 require_once __DIR__ . '/../config/db.php';
+require_once __DIR__ . '/../includes/auth_redirect.php';
 if (isset($_GET['token'])) {
     $token = $_GET['token'];
 
@@ -22,13 +23,11 @@ if (isset($_GET['token'])) {
         $_SESSION['message'] = "Email verified successfully! You are now logged in.";
         $_SESSION['message_type'] = "success";
 
-        // ✅ Redirect to index.php after successful verification
-        header("Location: ../Public/index.php");
-        exit;
+        auth_redirect_after_login('user');
     } else {
         $_SESSION['message'] = "Invalid or expired token.";
         $_SESSION['message_type'] = "error";
-        header("Location: ../Public/index.php");
+        header('Location: ' . auth_get_redirect_url());
         exit;
     }
 }

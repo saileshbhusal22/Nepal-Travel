@@ -20,6 +20,10 @@ $admin_avatar   = $admin_info['profile_image'] ?? '';
 // ── Auto-expire ──────────────────────────────────────────────────
 $conn->query("UPDATE user_deals SET status='expired' WHERE status='approved' AND visible_until IS NOT NULL AND visible_until < NOW()");
 $conn->query("UPDATE user_subscriptions SET status='expired' WHERE status='active' AND expires_at IS NOT NULL AND expires_at < NOW()");
+$exp_sub_table_exists = $conn->query("SHOW TABLES LIKE 'user_experience_subscriptions'")->num_rows > 0;
+if ($exp_sub_table_exists) {
+    $conn->query("UPDATE user_experience_subscriptions SET status='expired' WHERE status='active' AND expires_at IS NOT NULL AND expires_at < NOW()");
+}
 
 // ════════════════════════════════════════════════════════════════
 //  ALL POST ACTIONS — must be before any output
@@ -91,6 +95,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'delet
     header('Location: dashboard.php?tab=subscriptions&msg=' . urlencode('Deal deleted.') . '&mt=success'); exit;
 }
 
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'approve_experience_sub' && $exp_sub_table_exists) {
+    $sub_id  = (int)$_POST['sub_id'];
+    $sub_row = $conn->query("SELECT ues.*, esp.duration_days FROM user_experience_subscriptions ues JOIN experience_subscription_plans esp ON esp.id=ues.plan_id WHERE ues.id=$sub_id");
+    if ($sub_row && ($sub = $sub_row->fetch_assoc())) {
+        $starts  = date('Y-m-d H:i:s');
+        $expires = date('Y-m-d H:i:s', strtotime("+{$sub['duration_days']} days"));
+        $conn->query("UPDATE user_experience_subscriptions SET status='active', starts_at='$starts', expires_at='$expires', approved_at=NOW() WHERE id=$sub_id");
+    }
+    header('Location: dashboard.php?tab=subscriptions&subtab=experience&msg=' . urlencode('✓ Experience subscription activated!') . '&mt=success'); exit;
+}
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'reject_experience_sub' && $exp_sub_table_exists) {
+    $sub_id = (int)$_POST['sub_id'];
+    $conn->query("UPDATE user_experience_subscriptions SET status='cancelled' WHERE id=$sub_id");
+    header('Location: dashboard.php?tab=subscriptions&subtab=experience&msg=' . urlencode('Experience subscription rejected.') . '&mt=error'); exit;
+}
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'delete_experience_sub' && $exp_sub_table_exists) {
+    $sub_id = (int)$_POST['sub_id'];
+    $conn->query("DELETE FROM user_experience_subscriptions WHERE id=$sub_id");
+    header('Location: dashboard.php?tab=subscriptions&subtab=experience&msg=' . urlencode('Experience subscription deleted.') . '&mt=success'); exit;
+}
+
 // ════════════════════════════════════════════════════════════════
 //  DATA FETCHING
 // ════════════════════════════════════════════════════════════════
@@ -102,11 +129,6 @@ $total_bookings = $conn->query("SELECT COUNT(*) FROM bookings")->fetch_row()[0];
 $confirmed      = $conn->query("SELECT COUNT(*) FROM bookings WHERE status='confirmed'")->fetch_row()[0];
 $cancelled      = $conn->query("SELECT COUNT(*) FROM bookings WHERE status='booking cancel' OR status='cancelled'")->fetch_row()[0];
 $pending        = $conn->query("SELECT COUNT(*) FROM bookings WHERE status='active'")->fetch_row()[0];
-
-// ── Support Chat stats ───────────────────────────────────────────
-$support_table_exists = $conn->query("SHOW TABLES LIKE 'support_sessions'")->num_rows > 0;
-$open_support   = $support_table_exists ? $conn->query("SELECT COUNT(*) FROM support_sessions WHERE status='open'")->fetch_row()[0] : 0;
-$unread_support = $support_table_exists ? $conn->query("SELECT COALESCE(SUM(unread_admin),0) FROM support_sessions WHERE status='open'")->fetch_row()[0] : 0;
 
 // ── Fetch users ──────────────────────────────────────────────────
 // ── Users ────────────────────────────────────────────────────────
@@ -123,13 +145,29 @@ $subs = $subs_result ? $subs_result->fetch_all(MYSQLI_ASSOC) : [];
 $deals_result = $conn->query("SELECT ud.*, u.full_name AS user_name, u.email AS user_email, sp.display_name AS plan_display, sp.duration_days FROM user_deals ud LEFT JOIN users u ON u.id = ud.user_id LEFT JOIN user_subscriptions us ON us.id = ud.subscription_id LEFT JOIN subscription_plans sp ON sp.id = us.plan_id ORDER BY ud.created_at DESC");
 $deals = $deals_result ? $deals_result->fetch_all(MYSQLI_ASSOC) : [];
 
+$experience_subs = [];
+if ($exp_sub_table_exists) {
+    $exp_subs_result = $conn->query("
+        SELECT ues.*, esp.display_name, esp.duration_days,
+               u.full_name AS user_name, u.email AS user_email,
+               (SELECT COUNT(*) FROM posts p WHERE p.user_id = ues.user_id) AS posts_count
+        FROM user_experience_subscriptions ues
+        JOIN experience_subscription_plans esp ON esp.id = ues.plan_id
+        LEFT JOIN users u ON u.id = ues.user_id
+        ORDER BY ues.created_at DESC
+    ");
+    $experience_subs = $exp_subs_result ? $exp_subs_result->fetch_all(MYSQLI_ASSOC) : [];
+}
+
 $total_deal_reviews      = (int)($conn->query("SELECT COUNT(*) FROM deal_reviews")->fetch_row()[0] ?? 0);
 $total_user_deal_reviews = (int)($conn->query("SELECT COUNT(*) FROM user_deal_reviews")->fetch_row()[0] ?? 0);
 $total_reviews           = $total_deal_reviews + $total_user_deal_reviews;
 
 $pending_subs  = count(array_filter($subs,  fn($s) => $s['status'] === 'pending'));
+$pending_experience_subs = count(array_filter($experience_subs, fn($s) => $s['status'] === 'pending'));
 $pending_deals = count(array_filter($deals, fn($d) => $d['status'] === 'pending'));
 $sub_revenue   = array_sum(array_column(array_filter($subs, fn($s) => in_array($s['status'], ['active','expired'])), 'amount_paid'));
+$experience_revenue = array_sum(array_column(array_filter($experience_subs, fn($s) => in_array($s['status'], ['active','expired'])), 'amount_paid'));
 
 // ── Chat unread count ────────────────────────────────────────────
 $chat_table_exists = $conn->query("SHOW TABLES LIKE 'chat_messages'")->num_rows > 0;
@@ -479,21 +517,13 @@ tbody tr:hover td{background:rgba(255,255,255,0.02)}
         Bookings
         <span class="sb-badge"><?= $total_bookings ?></span>
       </a>
-      <a href="?tab=support" class="sb-link <?= $activeTab==='support'?'on':'' ?>">
-        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>
-        Support Chat
-        <?php if($unread_support > 0): ?>
-        <span class="sb-badge" style="background:rgba(224,85,85,0.2);color:var(--red2);border:1px solid rgba(224,85,85,0.25)"><?= $unread_support ?></span>
-        <?php endif; ?>
-      </a>
-
       <a href="subscription_admin.php" class="sb-link <?= $activeTab==='subscriptions'?'on':'' ?>">
         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 4H4c-1.11 0-1.99.89-1.99 2L2 18c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V6c0-1.11-.89-2-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z"/></svg>
         Subscriptions
-        <?php if ($pending_subs + $pending_deals > 0): ?>
-          <span class="sb-badge sb-badge-alert"><?= $pending_subs + $pending_deals ?></span>
+        <?php if ($pending_subs + $pending_deals + $pending_experience_subs > 0): ?>
+          <span class="sb-badge sb-badge-alert"><?= $pending_subs + $pending_deals + $pending_experience_subs ?></span>
         <?php else: ?>
-          <span class="sb-badge"><?= count($subs) ?></span>
+          <span class="sb-badge"><?= count($subs) + count($experience_subs) ?></span>
         <?php endif; ?>
       </a>
 
@@ -531,6 +561,11 @@ tbody tr:hover td{background:rgba(255,255,255,0.02)}
       <a href="deals_crud.php" class="sb-link">
         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M21.41 11.58l-9-9C12.05 2.22 11.55 2 11 2H4c-1.1 0-2 .9-2 2v7c0 .55.22 1.05.59 1.42l9 9c.36.36.86.58 1.41.58.55 0 1.05-.22 1.41-.59l7-7c.37-.36.59-.86.59-1.41 0-.55-.23-1.06-.59-1.42z"/></svg>
         Deals &amp; Packages
+      </a>
+
+      <a href="travel_ideas_admin.php" class="sb-link">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M9 21c0 .55.45 1 1 1h4c.55 0 1-.45 1-1v-1H9v1zm3-19C8.14 2 5 5.14 5 9c0 2.38 1.19 4.47 3 5.74V17c0 .55.45 1 1 1h6c.55 0 1-.45 1-1v-2.26c1.81-1.27 3-3.36 3-5.74 0-3.86-3.14-7-7-7z"/></svg>
+        Travel Ideas
       </a>
 
       <a href="logout.php" class="sb-link">
@@ -617,18 +652,6 @@ tbody tr:hover td{background:rgba(255,255,255,0.02)}
             <div class="stat-card-n"><?= $cancelled ?></div>
             <div class="stat-card-l">Cancelled</div>
           </div>
-          <a href="?tab=support" style="text-decoration:none">
-          <div class="stat-card" style="--accent:#E05555;cursor:pointer">
-            <div class="stat-card-ico">💬</div>
-            <div class="stat-card-n" style="font-size:28px;display:flex;align-items:baseline;gap:6px">
-              <?= $open_support ?>
-              <?php if($unread_support > 0): ?>
-              <span style="font-size:14px;color:var(--red2);font-family:var(--ff-mono)"><?= $unread_support ?> new</span>
-              <?php endif; ?>
-            </div>
-            <div class="stat-card-l">Open Chats</div>
-          </div>
-          </a>
         </div>
 
         <div class="stats-grid stats-grid-sub" style="margin-bottom:24px">
@@ -748,12 +771,12 @@ tbody tr:hover td{background:rgba(255,255,255,0.02)}
           </div>
         </div>
 
-        <?php if ($pending_subs > 0 || $pending_deals > 0): ?>
+        <?php if ($pending_subs > 0 || $pending_deals > 0 || $pending_experience_subs > 0): ?>
         <div class="tcard" style="border-color:rgba(201,162,39,0.25)">
           <div class="tcard-hd" style="background:rgba(201,162,39,0.05)">
             <div>
               <div class="tcard-hd-title">⚠️ Pending Review</div>
-              <div class="tcard-hd-sub"><?= $pending_subs ?> subscription(s) · <?= $pending_deals ?> deal(s) awaiting action</div>
+              <div class="tcard-hd-sub"><?= $pending_subs ?> deal subscription(s) · <?= $pending_experience_subs ?> experience subscription(s) · <?= $pending_deals ?> deal(s) awaiting action</div>
             </div>
             <a href="subscription_admin.php" style="font-size:11px;color:var(--gold);font-weight:700">Review Now →</a>
           </div>
@@ -953,75 +976,6 @@ tbody tr:hover td{background:rgba(255,255,255,0.02)}
         </div>
 
       <!-- ════════════════════════════════
-           SUPPORT CHAT TAB
-      ════════════════════════════════ -->
-      <?php elseif ($activeTab === 'support'): ?>
-
-        <div class="sec-hd">
-          <h1 class="sec-hd-title">Support Inbox</h1>
-          <div class="sec-hd-rule"></div>
-          <span class="sec-hd-count" id="support-open-count"><?= $open_support ?> OPEN</span>
-        </div>
-
-        <?php if (!$support_table_exists): ?>
-        <div class="tcard" style="padding:40px;text-align:center">
-          <div class="empty-ico">⚠️</div>
-          <p style="color:var(--muted2);margin-top:12px">Support tables not yet created. <a href="/Nepal-Travel/config/create_support_tables.php" style="color:var(--gold)">Click here to run migration →</a></p>
-        </div>
-        <?php else: ?>
-
-        <div id="support-inbox-wrap" style="display:grid;grid-template-columns:320px 1fr;gap:0;border:1px solid var(--border);border-radius:14px;overflow:hidden;height:600px">
-
-          <!-- Sessions List -->
-          <div style="background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;">
-            <div style="padding:14px 16px;background:var(--surface2);border-bottom:1px solid var(--border);display:flex;gap:8px;align-items:center;flex-shrink:0">
-              <button class="filter-btn f-all active" data-filter="open" id="sf-open" onclick="setSupportFilter('open',this)">Open</button>
-              <button class="filter-btn" data-filter="closed" id="sf-closed" onclick="setSupportFilter('closed',this)">Closed</button>
-              <button class="filter-btn" data-filter="all" id="sf-all" onclick="setSupportFilter('all',this)">All</button>
-              <button onclick="loadSessions()" title="Refresh" style="margin-left:auto;background:none;border:none;cursor:pointer;color:var(--muted2);font-size:16px">⟳</button>
-            </div>
-            <div id="support-sessions-list" style="flex:1;overflow-y:auto;">
-              <div style="padding:40px;text-align:center;color:var(--muted2)">Loading…</div>
-            </div>
-          </div>
-
-          <!-- Chat Panel -->
-          <div style="display:flex;flex-direction:column;background:var(--bg);" id="support-chat-panel">
-            <!-- Empty state -->
-            <div id="support-empty-state" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--muted2);gap:12px">
-              <div style="font-size:48px;opacity:0.15">💬</div>
-              <div style="font-size:13px">Select a conversation to reply</div>
-            </div>
-
-            <!-- Active chat (hidden until session selected) -->
-            <div id="support-active-chat" style="display:none;flex-direction:column;height:100%">
-              <!-- Chat header -->
-              <div style="padding:16px 20px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0" id="support-chat-header">
-                <div>
-                  <div style="font-weight:700;font-size:14px" id="sc-guest-name">—</div>
-                  <div style="font-size:11px;color:var(--muted2);font-family:var(--ff-mono)" id="sc-guest-email">—</div>
-                </div>
-                <div style="display:flex;gap:8px;align-items:center">
-                  <span id="sc-status-pill" class="pill"></span>
-                  <button id="sc-close-session-btn" onclick="closeSession()" class="act-btn act-btn-del" style="font-size:11px">Close Chat</button>
-                </div>
-              </div>
-              <!-- Messages -->
-              <div id="support-admin-messages" style="flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:12px;background:#0a0c10"></div>
-              <!-- Reply box -->
-              <div id="support-reply-area" style="padding:14px 16px;background:var(--surface);border-top:1px solid var(--border);display:flex;gap:10px;align-items:flex-end;flex-shrink:0">
-                <textarea id="admin-reply-input" placeholder="Type your reply…" rows="2"
-                  style="flex:1;background:var(--surface2);border:1px solid var(--border2);border-radius:10px;padding:10px 14px;color:var(--text);font-size:13px;resize:none;outline:none;font-family:var(--ff-body);max-height:100px"
-                  onkeydown="handleReplyKey(event)"></textarea>
-                <button onclick="sendAdminReply()" class="save-btn" style="padding:10px 20px;border-radius:10px;font-size:13px">Send ↑</button>
-              </div>
-            </div>
-          </div>
-
-        </div>
-        <?php endif; ?>
-
-      <!-- ════════════════════════════════
            SUBSCRIPTIONS TAB
       ════════════════════════════════ -->
       <?php elseif ($activeTab === 'subscriptions'): ?>
@@ -1053,19 +1007,35 @@ tbody tr:hover td{background:rgba(255,255,255,0.02)}
           <div class="stat-card" style="--accent:#E8C44A">
             <div class="stat-card-ico">💰</div>
             <div class="stat-card-n" style="font-size:22px;padding-top:6px">NPR <?= number_format($sub_revenue) ?></div>
-            <div class="stat-card-l">Total Revenue</div>
+            <div class="stat-card-l">Deal Sub Revenue</div>
+          </div>
+          <div class="stat-card" style="--accent:#9B59B6">
+            <div class="stat-card-ico">📸</div>
+            <div class="stat-card-n"><?= count($experience_subs) ?></div>
+            <div class="stat-card-l">Experience Subs</div>
+            <?php if ($pending_experience_subs > 0): ?><div class="stat-pending-badge"><?= $pending_experience_subs ?> Pending</div><?php endif; ?>
+          </div>
+          <div class="stat-card" style="--accent:#1ABC9C">
+            <div class="stat-card-ico">💵</div>
+            <div class="stat-card-n" style="font-size:22px;padding-top:6px">NPR <?= number_format($experience_revenue) ?></div>
+            <div class="stat-card-l">Experience Revenue</div>
           </div>
         </div>
 
         <div class="sub-tabs">
           <button class="sub-tab-btn active" id="stab-subs" onclick="switchSubTab('subs')">
-            💳 Subscriptions
+            💳 Deal Subscriptions
             <?php if ($pending_subs > 0): ?><span class="sub-tab-badge"><?= $pending_subs ?></span><?php endif; ?>
+          </button>
+          <button class="sub-tab-btn" id="stab-experience" onclick="switchSubTab('experience')">
+            📸 Experience Subscriptions
+            <?php if ($pending_experience_subs > 0): ?><span class="sub-tab-badge"><?= $pending_experience_subs ?></span><?php endif; ?>
           </button>
           <button class="sub-tab-btn" id="stab-deals" onclick="switchSubTab('deals')">
             🏔️ User Deals
             <?php if ($pending_deals > 0): ?><span class="sub-tab-badge"><?= $pending_deals ?></span><?php endif; ?>
           </button>
+          <a href="subscription_admin.php?tab=experience_subscriptions" class="sub-tab-btn" style="text-decoration:none;margin-left:auto;font-size:12px">Full manager →</a>
         </div>
 
         <div id="spanel-subs">
@@ -1130,6 +1100,74 @@ tbody tr:hover td{background:rgba(255,255,255,0.02)}
                 </tbody>
               </table>
             </div>
+          </div>
+        </div>
+
+        <div id="spanel-experience" style="display:none">
+          <div class="tcard">
+            <div class="tcard-hd">
+              <div>
+                <div class="tcard-hd-title">Experience Subscriptions</div>
+                <div class="tcard-hd-sub">Users who paid via Khalti/eSewa to post after 5 free experiences</div>
+              </div>
+            </div>
+            <?php if (!$exp_sub_table_exists): ?>
+              <div class="empty"><div class="empty-ico">📸</div><p>Run <code>sql/create_experience_subscriptions.sql</code> to enable this section.</p></div>
+            <?php else: ?>
+            <div class="tcard-search">
+              <input type="text" class="search-inp" placeholder="Search by user, plan, status…" oninput="filterTable2('experienceSubTable', this.value)">
+            </div>
+            <div class="tscroll">
+              <table id="experienceSubTable">
+                <thead>
+                  <tr><th>ID</th><th>User</th><th>Posts</th><th>Plan</th><th>Amount</th><th>Method</th><th>Ref</th><th>Status</th><th>Starts</th><th>Expires</th><th>Actions</th></tr>
+                </thead>
+                <tbody>
+                  <?php if(empty($experience_subs)): ?>
+                    <tr><td colspan="11"><div class="empty"><div class="empty-ico">📸</div><p>No experience subscriptions yet.</p></div></td></tr>
+                  <?php endif; ?>
+                  <?php foreach($experience_subs as $s): ?>
+                  <tr>
+                    <td class="mono">#<?= $s['id'] ?></td>
+                    <td>
+                      <div style="font-weight:600"><?= htmlspecialchars($s['user_name'] ?? 'User #'.$s['user_id']) ?></div>
+                      <div class="mono"><?= htmlspecialchars($s['user_email'] ?? '') ?></div>
+                    </td>
+                    <td class="mono"><?= (int)$s['posts_count'] ?></td>
+                    <td><span class="pill pill-active" style="font-size:9px"><?= htmlspecialchars($s['display_name']) ?></span></td>
+                    <td class="mono">NPR <?= number_format((float)$s['amount_paid']) ?></td>
+                    <td class="mono"><?= htmlspecialchars($s['payment_method'] ?? '—') ?></td>
+                    <td class="mono" style="max-width:120px;overflow:hidden;text-overflow:ellipsis" title="<?= htmlspecialchars($s['payment_ref'] ?? '') ?>">
+                      <?= htmlspecialchars($s['payment_ref'] ?: '—') ?>
+                    </td>
+                    <td><span class="pill pill-<?= $s['status'] ?>"><?= ucfirst($s['status']) ?></span></td>
+                    <td class="mono"><?= $s['starts_at'] ? date('M d, Y', strtotime($s['starts_at'])) : '—' ?></td>
+                    <td class="mono"><?= $s['expires_at'] ? date('M d, Y', strtotime($s['expires_at'])) : '—' ?></td>
+                    <td>
+                      <div class="act-row">
+                        <?php if($s['status'] === 'pending'): ?>
+                          <form method="POST" style="display:inline">
+                            <input type="hidden" name="action" value="approve_experience_sub">
+                            <input type="hidden" name="sub_id" value="<?= $s['id'] ?>">
+                            <button type="submit" class="btn btn-approve">✓ Approve</button>
+                          </form>
+                          <button class="btn btn-reject" onclick="openRejectExperienceSub(<?= $s['id'] ?>)">✕ Reject</button>
+                        <?php elseif($s['status'] === 'active'): ?>
+                          <span style="font-size:11px;color:var(--green2)">● Active</span>
+                        <?php endif; ?>
+                        <form method="POST" style="display:inline" onsubmit="return confirm('Delete this experience subscription?')">
+                          <input type="hidden" name="action" value="delete_experience_sub">
+                          <input type="hidden" name="sub_id" value="<?= $s['id'] ?>">
+                          <button type="submit" class="btn btn-delete">🗑</button>
+                        </form>
+                      </div>
+                    </td>
+                  </tr>
+                  <?php endforeach; ?>
+                </tbody>
+              </table>
+            </div>
+            <?php endif; ?>
           </div>
         </div>
 
@@ -1217,10 +1255,13 @@ tbody tr:hover td{background:rgba(255,255,255,0.02)}
       ════════════════════════════════ -->
       <?php elseif ($activeTab === 'chat'): ?>
 
-        <div class="sec-hd">
+        <div class="sec-hd" style="flex-wrap:wrap;gap:12px">
           <h1 class="sec-hd-title">Live Chat</h1>
           <div class="sec-hd-rule"></div>
           <span class="sec-hd-count" id="chat-session-count">Loading sessions…</span>
+          <button type="button" class="btn btn-delete" id="delete-all-chats-btn" onclick="deleteAllChats()" style="margin-left:auto;padding:8px 16px;font-size:12px">
+            🗑 Delete All Chats
+          </button>
         </div>
 
         <div class="chat-layout">
@@ -1300,6 +1341,24 @@ tbody tr:hover td{background:rgba(255,255,255,0.02)}
       <form method="POST">
         <input type="hidden" name="action" value="reject_sub">
         <input type="hidden" name="sub_id" id="reject_sub_id">
+        <button type="submit" class="btn-confirm btn-confirm-red">Confirm Reject</button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- ══ REJECT EXPERIENCE SUBSCRIPTION MODAL ══ -->
+<div class="modal-bd" id="rejectExperienceSubModal" onclick="closeBd(event,'rejectExperienceSubModal')">
+  <div class="modal-box">
+    <div class="modal-hd">
+      <div class="modal-hd-title">Reject Experience Subscription</div>
+      <button class="modal-close" onclick="closeM('rejectExperienceSubModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:13px;color:var(--muted);margin-bottom:16px">Reject this experience subscription?</p>
+      <form method="POST">
+        <input type="hidden" name="action" value="reject_experience_sub">
+        <input type="hidden" name="sub_id" id="reject_experience_sub_id">
         <button type="submit" class="btn-confirm btn-confirm-red">Confirm Reject</button>
       </form>
     </div>
@@ -1401,11 +1460,18 @@ function filterBookings(){
 
 // ── Subscription sub-tabs ─────────────────────────────────────────
 function switchSubTab(tab){
-  ['subs','deals'].forEach(t=>{
-    document.getElementById('spanel-'+t).style.display = t===tab?'block':'none';
-    document.getElementById('stab-'+t).classList.toggle('active', t===tab);
+  ['subs','experience','deals'].forEach(t=>{
+    const panel = document.getElementById('spanel-'+t);
+    const btn = document.getElementById('stab-'+t);
+    if(panel) panel.style.display = t===tab?'block':'none';
+    if(btn) btn.classList.toggle('active', t===tab);
   });
 }
+<?php if(isset($_GET['subtab']) && $_GET['subtab']==='experience'): ?>
+document.addEventListener('DOMContentLoaded',()=>switchSubTab('experience'));
+<?php elseif(($pending_deals > 0) && isset($_GET['subtab']) && $_GET['subtab']==='deals'): ?>
+document.addEventListener('DOMContentLoaded',()=>switchSubTab('deals'));
+<?php endif; ?>
 <?php if(($pending_deals > 0) && isset($_GET['subtab']) && $_GET['subtab']==='deals'): ?>
 document.addEventListener('DOMContentLoaded',()=>switchSubTab('deals'));
 <?php endif; ?>
@@ -1417,6 +1483,7 @@ function closeBd(e,id){ if(e.target===document.getElementById(id)) closeM(id); }
 document.addEventListener('keydown',e=>{ if(e.key==='Escape') document.querySelectorAll('.modal-bd.open').forEach(m=>{m.classList.remove('open');document.body.style.overflow='';}) });
 
 function openRejectSub(id){ document.getElementById('reject_sub_id').value=id; openM('rejectSubModal'); }
+function openRejectExperienceSub(id){ document.getElementById('reject_experience_sub_id').value=id; openM('rejectExperienceSubModal'); }
 function openRejectDeal(id){ document.getElementById('reject_deal_id').value=id; openM('rejectDealModal'); }
 
 function viewDealDetail(d){
@@ -1661,6 +1728,35 @@ function viewDealDetail(d){
     return d.innerHTML;
   }
 
+  window.deleteAllChats = function(){
+    if(!confirm('Delete ALL live chat messages permanently? This cannot be undone.')) return;
+    const btn = document.getElementById('delete-all-chats-btn');
+    if(btn) btn.disabled = true;
+    fetch(CHAT_HANDLER, {
+      method: 'POST',
+      headers: {'Content-Type':'application/x-www-form-urlencoded'},
+      body: 'action=admin_delete_all'
+    })
+    .then(r=>r.json())
+    .then(d=>{
+      if(!d.ok){ alert(d.error || 'Failed to delete chats.'); return; }
+      sessions = [];
+      activeSession = null;
+      lastMsgId = 0;
+      globalLastId = 0;
+      renderSessions([]);
+      msgsEl.innerHTML = '';
+      noSessEl.style.display = 'flex';
+      activePaneEl.style.display = 'none';
+      countEl.textContent = '0 conversations';
+      if(totalBadgeEl) totalBadgeEl.style.display = 'none';
+      if(sbBadgeEl) sbBadgeEl.style.display = 'none';
+      alert('All chats deleted (' + (d.deleted ?? 0) + ' messages).');
+    })
+    .catch(()=> alert('Could not delete chats. Please try again.'))
+    .finally(()=>{ if(btn) btn.disabled = false; });
+  };
+
   initialLoad();
   pollTimer = setInterval(poll, 3000);
 })();
@@ -1683,167 +1779,6 @@ function viewDealDetail(d){
   }, 10000);
 })();
 <?php endif; ?>
-// ══════════════════════════════════════════════════════════
-// SUPPORT CHAT ADMIN LOGIC
-// ══════════════════════════════════════════════════════════
-const ADMIN_API = '/Nepal-Travel/admin/support_chat_admin_api.php';
-let currentSessionId = null;
-let adminLastMsgId   = 0;
-let adminPollTimer   = null;
-let supportFilter    = 'open';
-
-function setSupportFilter(f, btn) {
-  supportFilter = f;
-  document.querySelectorAll('[data-filter]').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  loadSessions();
-}
-
-async function loadSessions() {
-  const listEl = document.getElementById('support-sessions-list');
-  if (!listEl) return;
-  try {
-    const res  = await fetch(`${ADMIN_API}?action=list_sessions&filter=${supportFilter}`);
-    const data = await res.json();
-    if (!data.success) return;
-    if (data.sessions.length === 0) {
-      listEl.innerHTML = '<div style="padding:40px;text-align:center;color:var(--muted2);font-size:13px">No conversations found.</div>';
-      return;
-    }
-    listEl.innerHTML = data.sessions.map(s => {
-      const name    = s.guest_name || 'Guest';
-      const initial = name.charAt(0).toUpperCase();
-      const time    = s.last_message_at ? new Date(s.last_message_at).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}) : '';
-      const preview = s.last_message ? s.last_message.substring(0,45) + (s.last_message.length>45?'…':'') : 'No messages';
-      const unread  = parseInt(s.unread_admin) > 0 ? `<span style="background:var(--red2);color:#fff;border-radius:50%;width:18px;height:18px;font-size:10px;font-weight:700;display:inline-flex;align-items:center;justify-content:center">${s.unread_admin}</span>` : '';
-      const statusDot = s.status==='open' ? '#4CAF7D' : '#666';
-      const isActive  = s.id == currentSessionId ? 'background:var(--surface2);border-left:3px solid var(--gold)' : 'border-left:3px solid transparent';
-      return `<div onclick="openSession(${s.id})" style="padding:14px 16px;cursor:pointer;border-bottom:1px solid var(--border);${isActive};display:flex;gap:10px;align-items:flex-start;transition:background 0.15s" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background=${s.id==currentSessionId?"'var(--surface2)'":"'transparent'"};">
-        <div style="width:36px;height:36px;border-radius:50%;background:rgba(201,162,39,0.15);border:1px solid rgba(201,162,39,0.2);display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--gold);font-size:14px;flex-shrink:0">${initial}</div>
-        <div style="flex:1;min-width:0">
-          <div style="display:flex;justify-content:space-between;align-items:center">
-            <span style="font-size:13px;font-weight:600">${name}</span>
-            <span style="font-size:10px;color:var(--muted2);font-family:var(--ff-mono)">${time}</span>
-          </div>
-          <div style="font-size:11px;color:var(--muted2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:3px">${preview}</div>
-        </div>
-        ${unread}
-      </div>`;
-    }).join('');
-  } catch(e) { console.error(e); }
-}
-
-async function openSession(sid) {
-  currentSessionId = sid;
-  adminLastMsgId   = 0;
-  document.getElementById('support-empty-state').style.display = 'none';
-  document.getElementById('support-active-chat').style.display = 'flex';
-  document.getElementById('support-admin-messages').innerHTML = '';
-  clearInterval(adminPollTimer);
-  await fetchAdminMessages();
-  adminPollTimer = setInterval(fetchAdminMessages, 3000);
-  loadSessions(); // refresh session list to clear unread badge
-}
-
-async function fetchAdminMessages() {
-  if (!currentSessionId) return;
-  try {
-    const res  = await fetch(`${ADMIN_API}?action=get_session_messages&session_id=${currentSessionId}&last_id=${adminLastMsgId}`);
-    const data = await res.json();
-    if (!data.success) return;
-
-    // Update header
-    if (data.session) {
-      document.getElementById('sc-guest-name').textContent  = data.session.guest_name || 'Guest';
-      document.getElementById('sc-guest-email').textContent = data.session.guest_email || 'No email';
-      const pill = document.getElementById('sc-status-pill');
-      pill.className = 'pill ' + (data.session.status==='open' ? 'pill-confirmed' : 'pill-cancelled');
-      pill.innerHTML = `<span class="dot"></span>${data.session.status.toUpperCase()}`;
-      const closeBtn = document.getElementById('sc-close-session-btn');
-      if (closeBtn) closeBtn.style.display = data.session.status==='open' ? '' : 'none';
-    }
-
-    data.messages.forEach(msg => {
-      if (parseInt(msg.id) <= adminLastMsgId) return;
-      adminLastMsgId = parseInt(msg.id);
-      appendAdminMessage(msg);
-    });
-  } catch(e) { console.error(e); }
-}
-
-function appendAdminMessage(msg) {
-  const el    = document.getElementById('support-admin-messages');
-  const isAdmin = msg.sender === 'admin';
-  const time    = new Date(msg.sent_at).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
-  const wrap    = document.createElement('div');
-  wrap.style.cssText = `display:flex;flex-direction:column;align-items:${isAdmin?'flex-end':'flex-start'};gap:4px;animation:support-slide-up 0.3s ease`;
-  wrap.innerHTML = `
-    <div style="max-width:75%;padding:10px 14px;border-radius:16px;font-size:13px;line-height:1.55;word-break:break-word;
-      background:${isAdmin?'linear-gradient(135deg,#C9A227,#a07818)':'var(--surface)'};
-      color:${isAdmin?'#000':'var(--text)'};
-      border-bottom-${isAdmin?'right':'left'}-radius:4px;
-      box-shadow:0 2px 8px rgba(0,0,0,0.2);">
-      ${msg.message.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>')}
-    </div>
-    <div style="font-size:10px;color:var(--muted2);padding:0 4px;font-family:var(--ff-mono)">${isAdmin?'You':'User'} · ${time}</div>
-  `;
-  el.appendChild(wrap);
-  el.scrollTop = el.scrollHeight;
-}
-
-async function sendAdminReply() {
-  const input = document.getElementById('admin-reply-input');
-  const text  = input.value.trim();
-  if (!text || !currentSessionId) return;
-  input.value = '';
-  input.style.height = 'auto';
-
-  // Optimistic render
-  appendAdminMessage({ sender:'admin', message:text, sent_at:new Date().toISOString(), id:'tmp' });
-
-  try {
-    await fetch(`${ADMIN_API}?action=send_reply`, {
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({session_id:currentSessionId, message:text})
-    });
-    loadSessions();
-  } catch(e) { console.error(e); }
-}
-
-async function closeSession() {
-  if (!currentSessionId) return;
-  if (!confirm('Close this support conversation?')) return;
-  try {
-    await fetch(`${ADMIN_API}?action=close_session`, {
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({session_id:currentSessionId})
-    });
-    clearInterval(adminPollTimer);
-    currentSessionId = null;
-    document.getElementById('support-empty-state').style.display = 'flex';
-    document.getElementById('support-active-chat').style.display = 'none';
-    loadSessions();
-    showToast('✓ Conversation closed');
-  } catch(e) {}
-}
-
-function handleReplyKey(e) {
-  if (e.key==='Enter' && !e.shiftKey) { e.preventDefault(); sendAdminReply(); }
-}
-
-// Auto-resize reply textarea
-document.addEventListener('DOMContentLoaded', () => {
-  const ta = document.getElementById('admin-reply-input');
-  if (ta) ta.addEventListener('input', () => { ta.style.height='auto'; ta.style.height=Math.min(ta.scrollHeight,120)+'px'; });
-
-  // Load sessions if on support tab
-  if (window.location.search.includes('tab=support')) {
-    loadSessions();
-    setInterval(loadSessions, 10000); // refresh list every 10s
-  }
-});
 </script>
 </body>
 </html>

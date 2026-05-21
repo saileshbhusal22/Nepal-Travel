@@ -12,6 +12,11 @@ $admin_id = (int)($_SESSION['user_id'] ?? 1);
 // ── Auto-expire deals past visible_until ────────────────────────
 $conn->query("UPDATE user_deals SET status='expired' WHERE status='approved' AND visible_until IS NOT NULL AND visible_until < NOW()");
 $conn->query("UPDATE user_subscriptions SET status='expired' WHERE status='active' AND expires_at IS NOT NULL AND expires_at < NOW()");
+$conn->query("UPDATE user_event_subscriptions SET status='expired' WHERE status='active' AND expires_at IS NOT NULL AND expires_at < NOW()");
+$exp_sub_table_exists = $conn->query("SHOW TABLES LIKE 'user_experience_subscriptions'")->num_rows > 0;
+if ($exp_sub_table_exists) {
+    $conn->query("UPDATE user_experience_subscriptions SET status='expired' WHERE status='active' AND expires_at IS NOT NULL AND expires_at < NOW()");
+}
 
 $msg = ''; $msg_type = '';
 $tab = $_GET['tab'] ?? 'subscriptions';
@@ -21,7 +26,7 @@ $tab = $_GET['tab'] ?? 'subscriptions';
 // ═══════════════════════════════════════════
 
 // ── Approve Subscription ────────────────────────────────────────
-if ($_POST['action'] ?? '' === 'approve_sub') {
+if (($_POST['action'] ?? '') === 'approve_sub') {
     $sub_id  = (int)$_POST['sub_id'];
     $sub_row = $conn->query("SELECT us.*, sp.duration_days FROM user_subscriptions us JOIN subscription_plans sp ON sp.id=us.plan_id WHERE us.id=$sub_id");
     if ($sub_row && ($sub = $sub_row->fetch_assoc())) {
@@ -33,29 +38,82 @@ if ($_POST['action'] ?? '' === 'approve_sub') {
 }
 
 // ── Reject Subscription ─────────────────────────────────────────
-if ($_POST['action'] ?? '' === 'reject_sub') {
+if (($_POST['action'] ?? '') === 'reject_sub') {
     $sub_id = (int)$_POST['sub_id'];
     $conn->query("UPDATE user_subscriptions SET status='cancelled' WHERE id=$sub_id");
     $msg = 'Subscription rejected.'; $msg_type = 'error';
 }
 
 // ── Delete Subscription ─────────────────────────────────────────
-if ($_POST['action'] ?? '' === 'delete_sub') {
+if (($_POST['action'] ?? '') === 'delete_sub') {
     $sub_id = (int)$_POST['sub_id'];
     $conn->query("DELETE FROM user_deals WHERE subscription_id=$sub_id");
     $conn->query("DELETE FROM user_subscriptions WHERE id=$sub_id");
     $msg = 'Subscription deleted.'; $msg_type = 'success';
 }
 
+// ── Approve Event Subscription ────────────────────────────────────────
+if (($_POST['action'] ?? '') === 'approve_event_sub') {
+    $sub_id  = (int)$_POST['sub_id'];
+    $sub_row = $conn->query("SELECT ues.*, esp.duration_days FROM user_event_subscriptions ues JOIN event_subscription_plans esp ON esp.id=ues.plan_id WHERE ues.id=$sub_id");
+    if ($sub_row && ($sub = $sub_row->fetch_assoc())) {
+        $starts  = date('Y-m-d H:i:s');
+        $expires = date('Y-m-d H:i:s', strtotime("+{$sub['duration_days']} days"));
+        $conn->query("UPDATE user_event_subscriptions SET status='active', starts_at='$starts', expires_at='$expires', approved_by=$admin_id, approved_at=NOW() WHERE id=$sub_id");
+        $msg = 'Event Subscription activated!'; $msg_type = 'success';
+    }
+}
+
+// ── Reject Event Subscription ─────────────────────────────────────────
+if (($_POST['action'] ?? '') === 'reject_event_sub') {
+    $sub_id = (int)$_POST['sub_id'];
+    $conn->query("UPDATE user_event_subscriptions SET status='cancelled' WHERE id=$sub_id");
+    $msg = 'Event Subscription rejected.'; $msg_type = 'error';
+}
+
+// ── Delete Event Subscription ─────────────────────────────────────────
+if (($_POST['action'] ?? '') === 'delete_event_sub') {
+    $sub_id = (int)$_POST['sub_id'];
+    $conn->query("DELETE FROM events WHERE subscription_id=$sub_id");
+    $conn->query("DELETE FROM user_event_subscriptions WHERE id=$sub_id");
+    $msg = 'Event Subscription deleted.'; $msg_type = 'success';
+}
+
+// ── Approve Experience Subscription ───────────────────────────────────
+if (($_POST['action'] ?? '') === 'approve_experience_sub' && $exp_sub_table_exists) {
+    $sub_id  = (int)$_POST['sub_id'];
+    $sub_row = $conn->query("SELECT ues.*, esp.duration_days FROM user_experience_subscriptions ues JOIN experience_subscription_plans esp ON esp.id=ues.plan_id WHERE ues.id=$sub_id");
+    if ($sub_row && ($sub = $sub_row->fetch_assoc())) {
+        $starts  = date('Y-m-d H:i:s');
+        $expires = date('Y-m-d H:i:s', strtotime("+{$sub['duration_days']} days"));
+        $conn->query("UPDATE user_experience_subscriptions SET status='active', starts_at='$starts', expires_at='$expires', approved_at=NOW() WHERE id=$sub_id");
+        $msg = 'Experience subscription activated!'; $msg_type = 'success';
+    }
+}
+
+// ── Reject Experience Subscription ────────────────────────────────────
+if (($_POST['action'] ?? '') === 'reject_experience_sub' && $exp_sub_table_exists) {
+    $sub_id = (int)$_POST['sub_id'];
+    $conn->query("UPDATE user_experience_subscriptions SET status='cancelled' WHERE id=$sub_id");
+    $msg = 'Experience subscription rejected.'; $msg_type = 'error';
+}
+
+// ── Delete Experience Subscription ──────────────────────────────────────
+if (($_POST['action'] ?? '') === 'delete_experience_sub' && $exp_sub_table_exists) {
+    $sub_id = (int)$_POST['sub_id'];
+    $conn->query("DELETE FROM user_experience_subscriptions WHERE id=$sub_id");
+    $msg = 'Experience subscription deleted.'; $msg_type = 'success';
+}
+
 // ── Delete All Subscriptions ────────────────────────────────────
-if ($_POST['action'] ?? '' === 'delete_all_subs') {
+if (($_POST['action'] ?? '') === 'delete_all_subs') {
     $conn->query("DELETE FROM user_deals WHERE subscription_id IS NOT NULL");
     $conn->query("DELETE FROM user_subscriptions");
     $msg = 'All subscriptions deleted.'; $msg_type = 'success';
 }
 
 // ── Approve Deal ────────────────────────────────────────────────
-if ($_POST['action'] ?? '' === 'approve_deal') {
+if (($_POST['action'] ?? '') === 'approve_deal') {
     $deal_id = (int)$_POST['deal_id'];
     // Get subscription duration for this deal
     $drow = $conn->query("
@@ -79,7 +137,7 @@ if ($_POST['action'] ?? '' === 'approve_deal') {
 }
 
 // ── Reject Deal ─────────────────────────────────────────────────
-if ($_POST['action'] ?? '' === 'reject_deal') {
+if (($_POST['action'] ?? '') === 'reject_deal') {
     $deal_id = (int)$_POST['deal_id'];
     $reason  = $conn->real_escape_string(trim($_POST['reason'] ?? 'Does not meet our guidelines.'));
     $conn->query("UPDATE user_deals SET status='rejected', rejection_reason='$reason' WHERE id=$deal_id");
@@ -87,14 +145,19 @@ if ($_POST['action'] ?? '' === 'reject_deal') {
 }
 
 // ── Delete Deal ─────────────────────────────────────────────────
-if ($_POST['action'] ?? '' === 'delete_deal') {
+if (($_POST['action'] ?? '') === 'delete_deal') {
     $deal_id = (int)$_POST['deal_id'];
     $conn->query("DELETE FROM user_deals WHERE id=$deal_id");
     $msg = 'Deal deleted.'; $msg_type = 'success';
 }
 
 // ─── Redirect flash ─────────────────────────────────────────────
-if ($msg) { header("Location: subscription_admin.php?tab=$tab&msg=" . urlencode($msg) . "&mt=$msg_type"); exit; }
+if ($msg) {
+    $experience_actions = ['approve_experience_sub', 'reject_experience_sub', 'delete_experience_sub'];
+    $redirect_tab = in_array($_POST['action'] ?? '', $experience_actions, true) ? 'experience_subscriptions' : $tab;
+    header("Location: subscription_admin.php?tab=$redirect_tab&msg=" . urlencode($msg) . "&mt=$msg_type");
+    exit;
+}
 if (isset($_GET['msg'])) { $msg = $_GET['msg']; $msg_type = $_GET['mt'] ?? 'success'; }
 
 // ═══════════════════════════════════════════
@@ -110,6 +173,31 @@ $subs = $conn->query("
     ORDER BY us.created_at DESC
 ")->fetch_all(MYSQLI_ASSOC);
 
+// Event Subscriptions
+$event_subs = $conn->query("
+    SELECT ues.*, esp.name AS plan_name, esp.display_name, esp.duration_days, esp.event_limit,
+           u.full_name AS user_name, u.email AS user_email
+    FROM user_event_subscriptions ues
+    JOIN event_subscription_plans esp ON esp.id = ues.plan_id
+    LEFT JOIN users u ON u.id = ues.user_id
+    ORDER BY ues.created_at DESC
+")->fetch_all(MYSQLI_ASSOC);
+
+// Experience Subscriptions
+$experience_subs = [];
+if ($exp_sub_table_exists) {
+    $exp_result = $conn->query("
+        SELECT ues.*, esp.name AS plan_name, esp.display_name, esp.duration_days,
+               u.full_name AS user_name, u.email AS user_email,
+               (SELECT COUNT(*) FROM posts p WHERE p.user_id = ues.user_id) AS posts_count
+        FROM user_experience_subscriptions ues
+        JOIN experience_subscription_plans esp ON esp.id = ues.plan_id
+        LEFT JOIN users u ON u.id = ues.user_id
+        ORDER BY ues.created_at DESC
+    ");
+    $experience_subs = $exp_result ? $exp_result->fetch_all(MYSQLI_ASSOC) : [];
+}
+
 // User deals
 $deals = $conn->query("
     SELECT ud.*, u.full_name AS user_name, u.email AS user_email,
@@ -123,6 +211,8 @@ $deals = $conn->query("
 
 // Counts
 $pending_subs  = count(array_filter($subs,  fn($s) => $s['status'] === 'pending'));
+$pending_event_subs = count(array_filter($event_subs, fn($s) => $s['status'] === 'pending'));
+$pending_experience_subs = count(array_filter($experience_subs, fn($s) => $s['status'] === 'pending'));
 $pending_deals = count(array_filter($deals, fn($d) => $d['status'] === 'pending'));
 ?>
 <!DOCTYPE html>
@@ -322,6 +412,11 @@ tbody tr:hover td{background:rgba(255,255,255,0.02)}
           <div class="stat-label">Active Subscribers</div>
         </div>
         <div class="stat-card">
+          <div class="stat-val"><?= count($experience_subs) ?></div>
+          <div class="stat-label">Experience Subs</div>
+          <?php if ($pending_experience_subs > 0): ?><div class="stat-badge"><?= $pending_experience_subs ?> Pending</div><?php endif; ?>
+        </div>
+        <div class="stat-card">
           <div class="stat-val"><?= count($deals) ?></div>
           <div class="stat-label">Total User Deals</div>
           <?php if ($pending_deals > 0): ?><div class="stat-badge"><?= $pending_deals ?> Pending</div><?php endif; ?>
@@ -337,6 +432,14 @@ tbody tr:hover td{background:rgba(255,255,255,0.02)}
         <button class="tab-btn <?= $tab === 'subscriptions' ? 'active' : '' ?>" onclick="switchTab('subscriptions')">
           💳 Subscriptions
           <?php if ($pending_subs > 0): ?><span class="tab-badge"><?= $pending_subs ?></span><?php endif; ?>
+        </button>
+        <button class="tab-btn <?= $tab === 'event_subscriptions' ? 'active' : '' ?>" onclick="switchTab('event_subscriptions')">
+          🎟️ Event Subscriptions
+          <?php if ($pending_event_subs > 0): ?><span class="tab-badge"><?= $pending_event_subs ?></span><?php endif; ?>
+        </button>
+        <button class="tab-btn <?= $tab === 'experience_subscriptions' ? 'active' : '' ?>" onclick="switchTab('experience_subscriptions')">
+          📸 Experience Subscriptions
+          <?php if ($pending_experience_subs > 0): ?><span class="tab-badge"><?= $pending_experience_subs ?></span><?php endif; ?>
         </button>
         <button class="tab-btn <?= $tab === 'deals' ? 'active' : '' ?>" onclick="switchTab('deals')">
           🏔️ User Deals
@@ -413,6 +516,144 @@ tbody tr:hover td{background:rgba(255,255,255,0.02)}
               </tbody>
             </table>
           </div>
+        </div>
+      </div>
+
+      <!-- ════════════ EVENT SUBSCRIPTIONS TAB ════════════ -->
+      <div id="tab-event_subscriptions" style="display:<?= $tab === 'event_subscriptions' ? 'block' : 'none' ?>">
+        <div class="tcard">
+          <div class="tcard-hd">
+            <div class="tcard-hd-title">Event Subscriptions</div>
+          </div>
+          <div class="tcard-search">
+            <input type="text" class="search-inp" placeholder="Search by user, plan, status…" oninput="filterTable('eventSubTable',this.value)">
+          </div>
+          <div class="tscroll">
+            <table id="eventSubTable">
+              <thead>
+                <tr>
+                  <th>ID</th><th>User</th><th>Plan</th><th>Amount</th>
+                  <th>Method</th><th>Ref</th><th>Status</th>
+                  <th>Starts</th><th>Expires</th><th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <?php if (empty($event_subs)): ?>
+                  <tr><td colspan="10"><div class="empty"><div class="empty-ico">🎟️</div><p>No event subscriptions yet.</p></div></td></tr>
+                <?php endif; ?>
+                <?php foreach ($event_subs as $s): ?>
+                <tr>
+                  <td class="mono">#<?= $s['id'] ?></td>
+                  <td>
+                    <div style="font-weight:600"><?= htmlspecialchars($s['user_name'] ?? 'User #'.$s['user_id']) ?></div>
+                    <div class="mono"><?= htmlspecialchars($s['user_email'] ?? '') ?></div>
+                  </td>
+                  <td><span class="pill pill-active" style="font-size:9px"><?= htmlspecialchars($s['display_name']) ?></span></td>
+                  <td class="mono">NPR <?= number_format($s['amount_paid']) ?></td>
+                  <td class="mono"><?= htmlspecialchars($s['payment_method']) ?></td>
+                  <td class="mono" style="max-width:120px;overflow:hidden;text-overflow:ellipsis" title="<?= htmlspecialchars($s['payment_ref']) ?>">
+                    <?= htmlspecialchars($s['payment_ref'] ?: '—') ?>
+                  </td>
+                  <td><span class="pill pill-<?= $s['status'] ?>"><?= ucfirst($s['status']) ?></span></td>
+                  <td class="mono"><?= $s['starts_at'] ? date('M d, Y', strtotime($s['starts_at'])) : '—' ?></td>
+                  <td class="mono"><?= $s['expires_at'] ? date('M d, Y', strtotime($s['expires_at'])) : '—' ?></td>
+                  <td>
+                    <div class="act-row">
+                      <?php if ($s['payment_proof']): ?>
+                        <a href="<?= htmlspecialchars($s['payment_proof']) ?>" target="_blank" class="btn btn-view">🖼 Proof</a>
+                      <?php endif; ?>
+                      <?php if ($s['status'] === 'pending'): ?>
+                        <form method="POST" style="display:inline">
+                          <input type="hidden" name="action" value="approve_event_sub">
+                          <input type="hidden" name="sub_id" value="<?= $s['id'] ?>">
+                          <button type="submit" class="btn btn-approve">✓ Approve</button>
+                        </form>
+                        <button class="btn btn-reject" onclick="openRejectEventSub(<?= $s['id'] ?>)">✕ Reject</button>
+                      <?php elseif ($s['status'] === 'active'): ?>
+                        <span style="font-size:11px;color:var(--green);margin-right:8px">● Active</span>
+                      <?php endif; ?>
+                      <form method="POST" style="display:inline" onsubmit="return confirm('Delete this event subscription permanently? Associated events will also be deleted.')">
+                        <input type="hidden" name="action" value="delete_event_sub">
+                        <input type="hidden" name="sub_id" value="<?= $s['id'] ?>">
+                        <button type="submit" class="btn btn-delete">🗑</button>
+                      </form>
+                    </div>
+                  </td>
+                </tr>
+                <?php endforeach; ?>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ════════════ EXPERIENCE SUBSCRIPTIONS TAB ════════════ -->
+      <div id="tab-experience_subscriptions" style="display:<?= $tab === 'experience_subscriptions' ? 'block' : 'none' ?>">
+        <div class="tcard">
+          <div class="tcard-hd">
+            <div class="tcard-hd-title">Experience Subscriptions</div>
+          </div>
+          <?php if (!$exp_sub_table_exists): ?>
+            <div class="empty"><div class="empty-ico">📸</div><p>Experience subscription tables not installed. Run <code>sql/create_experience_subscriptions.sql</code>.</p></div>
+          <?php else: ?>
+          <div class="tcard-search">
+            <input type="text" class="search-inp" placeholder="Search by user, plan, status…" oninput="filterTable('experienceSubTable',this.value)">
+          </div>
+          <div class="tscroll">
+            <table id="experienceSubTable">
+              <thead>
+                <tr>
+                  <th>ID</th><th>User</th><th>Posts</th><th>Plan</th><th>Amount</th>
+                  <th>Method</th><th>Ref</th><th>Status</th>
+                  <th>Starts</th><th>Expires</th><th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <?php if (empty($experience_subs)): ?>
+                  <tr><td colspan="11"><div class="empty"><div class="empty-ico">📸</div><p>No experience subscriptions yet.</p></div></td></tr>
+                <?php endif; ?>
+                <?php foreach ($experience_subs as $s): ?>
+                <tr>
+                  <td class="mono">#<?= $s['id'] ?></td>
+                  <td>
+                    <div style="font-weight:600"><?= htmlspecialchars($s['user_name'] ?? 'User #'.$s['user_id']) ?></div>
+                    <div class="mono"><?= htmlspecialchars($s['user_email'] ?? '') ?></div>
+                  </td>
+                  <td class="mono"><?= (int)$s['posts_count'] ?></td>
+                  <td><span class="pill pill-active" style="font-size:9px"><?= htmlspecialchars($s['display_name']) ?></span></td>
+                  <td class="mono">NPR <?= number_format((float)$s['amount_paid']) ?></td>
+                  <td class="mono"><?= htmlspecialchars($s['payment_method'] ?? '—') ?></td>
+                  <td class="mono" style="max-width:120px;overflow:hidden;text-overflow:ellipsis" title="<?= htmlspecialchars($s['payment_ref'] ?? '') ?>">
+                    <?= htmlspecialchars($s['payment_ref'] ?: '—') ?>
+                  </td>
+                  <td><span class="pill pill-<?= $s['status'] ?>"><?= ucfirst($s['status']) ?></span></td>
+                  <td class="mono"><?= $s['starts_at'] ? date('M d, Y', strtotime($s['starts_at'])) : '—' ?></td>
+                  <td class="mono"><?= $s['expires_at'] ? date('M d, Y', strtotime($s['expires_at'])) : '—' ?></td>
+                  <td>
+                    <div class="act-row">
+                      <?php if ($s['status'] === 'pending'): ?>
+                        <form method="POST" style="display:inline">
+                          <input type="hidden" name="action" value="approve_experience_sub">
+                          <input type="hidden" name="sub_id" value="<?= $s['id'] ?>">
+                          <button type="submit" class="btn btn-approve">✓ Approve</button>
+                        </form>
+                        <button class="btn btn-reject" onclick="openRejectExperienceSub(<?= $s['id'] ?>)">✕ Reject</button>
+                      <?php elseif ($s['status'] === 'active'): ?>
+                        <span style="font-size:11px;color:var(--green);margin-right:8px">● Active</span>
+                      <?php endif; ?>
+                      <form method="POST" style="display:inline" onsubmit="return confirm('Delete this experience subscription permanently?')">
+                        <input type="hidden" name="action" value="delete_experience_sub">
+                        <input type="hidden" name="sub_id" value="<?= $s['id'] ?>">
+                        <button type="submit" class="btn btn-delete">🗑</button>
+                      </form>
+                    </div>
+                  </td>
+                </tr>
+                <?php endforeach; ?>
+              </tbody>
+            </table>
+          </div>
+          <?php endif; ?>
         </div>
       </div>
 
@@ -518,6 +759,42 @@ tbody tr:hover td{background:rgba(255,255,255,0.02)}
   </div>
 </div>
 
+<!-- ══ REJECT EVENT SUBSCRIPTION MODAL ══ -->
+<div class="modal-bd" id="rejectEventSubModal" onclick="closeBd(event,'rejectEventSubModal')">
+  <div class="modal-box">
+    <div class="modal-hd">
+      <div class="modal-hd-title">Reject Event Subscription</div>
+      <button class="modal-close" onclick="closeM('rejectEventSubModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:13px;color:var(--muted);margin-bottom:16px">Are you sure you want to reject this event subscription? The user will not be activated.</p>
+      <form method="POST">
+        <input type="hidden" name="action" value="reject_event_sub">
+        <input type="hidden" name="sub_id" id="reject_event_sub_id">
+        <button type="submit" class="btn-confirm btn-confirm-red">Confirm Reject</button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- ══ REJECT EXPERIENCE SUBSCRIPTION MODAL ══ -->
+<div class="modal-bd" id="rejectExperienceSubModal" onclick="closeBd(event,'rejectExperienceSubModal')">
+  <div class="modal-box">
+    <div class="modal-hd">
+      <div class="modal-hd-title">Reject Experience Subscription</div>
+      <button class="modal-close" onclick="closeM('rejectExperienceSubModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:13px;color:var(--muted);margin-bottom:16px">Are you sure you want to reject this experience subscription?</p>
+      <form method="POST">
+        <input type="hidden" name="action" value="reject_experience_sub">
+        <input type="hidden" name="sub_id" id="reject_experience_sub_id">
+        <button type="submit" class="btn-confirm btn-confirm-red">Confirm Reject</button>
+      </form>
+    </div>
+  </div>
+</div>
+
 <!-- ══ REJECT DEAL MODAL ══ -->
 <div class="modal-bd" id="rejectDealModal" onclick="closeBd(event,'rejectDealModal')">
   <div class="modal-box">
@@ -550,11 +827,11 @@ tbody tr:hover td{background:rgba(255,255,255,0.02)}
 
 <script>
 function switchTab(tab) {
-  ['subscriptions','deals'].forEach(t => {
+  ['subscriptions','event_subscriptions','experience_subscriptions','deals'].forEach(t => {
     document.getElementById('tab-'+t).style.display = t === tab ? 'block' : 'none';
   });
   document.querySelectorAll('.tab-btn').forEach((b,i) => {
-    b.classList.toggle('active', ['subscriptions','deals'][i] === tab);
+    b.classList.toggle('active', ['subscriptions','event_subscriptions','experience_subscriptions','deals'][i] === tab);
   });
   history.replaceState(null,'','?tab='+tab);
 }
@@ -572,6 +849,8 @@ function closeBd(e,id){ if(e.target===document.getElementById(id)) closeM(id); }
 document.addEventListener('keydown', e => { if(e.key==='Escape') document.querySelectorAll('.modal-bd.open').forEach(m => { m.classList.remove('open'); document.body.style.overflow=''; }); });
 
 function openRejectSub(id) { document.getElementById('reject_sub_id').value=id; openM('rejectSubModal'); }
+function openRejectEventSub(id) { document.getElementById('reject_event_sub_id').value=id; openM('rejectEventSubModal'); }
+function openRejectExperienceSub(id) { document.getElementById('reject_experience_sub_id').value=id; openM('rejectExperienceSubModal'); }
 function openRejectDeal(id){ document.getElementById('reject_deal_id').value=id; openM('rejectDealModal'); }
 
 function viewDealDetail(d) {

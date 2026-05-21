@@ -3,8 +3,14 @@
 session_start();
 
 require_once __DIR__ . '/../config/db.php';
+require_once __DIR__ . '/../includes/auth_redirect.php';
+
+auth_capture_redirect();
 
 $message = "";
+$redirect_after = auth_get_redirect_url();
+$login_url_self = auth_build_login_url($redirect_after);
+$register_url = auth_build_register_url($redirect_after);
 
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $login_input = trim($_POST['login_input'] ?? '');
@@ -43,12 +49,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             $_SESSION['user_name'] = $user['full_name'];
             $_SESSION['role']      = $user['role'];
 
-            if ($user['role'] === 'admin') {
-                header("Location: ../admin/dashboard.php");
-            } else {
-                header("Location: ../Public/index.php");
-            }
-            exit;
+            auth_redirect_after_login($user['role']);
         }
     }
 }
@@ -236,7 +237,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 <div class="login-left">
     <div class="form-content">
         <h2>Login</h2>
-        <p class="subtitle">Don't have an account? <a href="/Nepal-Travel/user/register.php">Sign Up</a></p>
+        <p class="subtitle">Don't have an account? <a href="<?= htmlspecialchars($register_url) ?>">Sign Up</a></p>
 
         <?php if (!empty($message)): ?>
             <p class="message"><?php echo htmlspecialchars($message); ?></p>

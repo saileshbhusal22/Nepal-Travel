@@ -30,17 +30,23 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // 3. Smooth scrolling for anchor links
+    // 3. Smooth scrolling for in-page anchor links only
     document.querySelectorAll('a[href^="#"]').forEach(anchor => {
         anchor.addEventListener('click', function (e) {
-            e.preventDefault();
-            const target = document.querySelector(this.getAttribute('href'));
-            if (target) {
-                target.scrollIntoView({
-                    behavior: 'smooth',
-                    block: 'start'
-                });
+            const href = this.getAttribute('href') || '';
+            // Skip placeholder or external URLs (e.g. Google Maps/Calendar set after load)
+            if (!href.startsWith('#') || href === '#' || href.length < 2) {
+                return;
             }
+            const target = document.querySelector(href);
+            if (!target) {
+                return;
+            }
+            e.preventDefault();
+            target.scrollIntoView({
+                behavior: 'smooth',
+                block: 'start'
+            });
         });
     });
 

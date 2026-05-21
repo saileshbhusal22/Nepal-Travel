@@ -31,30 +31,64 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const feedContainer = document.getElementById("feedContainer");
     const openPostModalBtn = document.getElementById("openPostModalBtn");
+    const openPostModalBtnSide = document.getElementById("openPostModalBtnSide");
     const postModal = document.getElementById("postModal");
     const closePostModal = document.getElementById("closePostModal");
     const createPostForm = document.getElementById("createPostForm");
     const postImage = document.getElementById("postImage");
     const imagePreview = document.getElementById("imagePreview");
-    
+    const SUBSCRIPTION_URL = (window.NT_AUTH && window.NT_AUTH.subscriptionUrl) || '/Nepal-Travel/Public/experience-subscription.php';
+    const LOGIN_URL = (window.NT_AUTH && window.NT_AUTH.loginUrl) || '/Nepal-Travel/user/login.php?redirect=' + encodeURIComponent('/Nepal-Travel/Public/experience.php');
+
+    let postQuota = null;
+
+    function updateQuotaUI() {
+        const banner = document.getElementById("postQuotaBanner");
+        if (!banner || !postQuota) return;
+
+        if (postQuota.has_active_subscription) {
+            const exp = postQuota.subscription_expires_at
+                ? new Date(postQuota.subscription_expires_at).toLocaleDateString()
+                : '';
+            banner.innerHTML = `<span style="color:#3ca341;">✓ Unlimited posting active${exp ? ' until ' + exp : ''}.</span>`;
+            banner.style.display = 'block';
+        } else if (postQuota.requires_subscription) {
+            banner.innerHTML = `You've used all ${postQuota.free_limit} free posts. <a href="${SUBSCRIPTION_URL}" style="color:#f5a623;font-weight:800;">Subscribe with Khalti or eSewa</a> to keep sharing.`;
+            banner.style.display = 'block';
+        } else {
+            banner.innerHTML = `${postQuota.free_remaining} of ${postQuota.free_limit} free posts remaining.`;
+            banner.style.display = 'block';
+        }
+    }
+
+    function openPostModalOrSubscribe() {
+        if (postQuota && postQuota.requires_subscription) {
+            showToast('Subscribe to post more experiences.', 'error');
+            window.location.href = SUBSCRIPTION_URL;
+            return;
+        }
+        if (postModal) postModal.style.display = 'block';
+    }
+
     // Load Dashboard Stats
     async function loadUserStats() {
         if (!currentUserId || currentUserId == 0) return;
         try {
             const url = BASE_API_PATH + "fetch_user_stats.php";
-            console.log('Fetching user stats from:', url);
             const res = await fetch(url);
             if (!res.ok) {
                 console.error("Stats API error:", res.status, res.statusText);
                 return;
             }
-            const text = await res.text();
-            console.log('Stats response:', text);
-            const data = JSON.parse(text);
+            const data = JSON.parse(await res.text());
             if (data.success) {
                 document.getElementById("userPostCount").innerText = data.stats.posts;
                 document.getElementById("userLikeCount").innerText = data.stats.likes;
                 document.getElementById("userSaveCount").innerText = data.stats.saves;
+                if (data.quota) {
+                    postQuota = data.quota;
+                    updateQuotaUI();
+                }
             }
         } catch (err) { console.error("Stats fail", err); }
     }
@@ -172,17 +206,11 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // Modal Logic
-    if(openPostModalBtn) {
-        openPostModalBtn.addEventListener("click", () => {
-            postModal.style.display = "block";
-        });
+    if (openPostModalBtn) {
+        openPostModalBtn.addEventListener("click", openPostModalOrSubscribe);
     }
-
-    const openPostModalBtnSide = document.getElementById("openPostModalBtnSide");
-    if(openPostModalBtnSide) {
-        openPostModalBtnSide.addEventListener("click", () => {
-            postModal.style.display = "block";
-        });
+    if (openPostModalBtnSide) {
+        openPostModalBtnSide.addEventListener("click", openPostModalOrSubscribe);
     }
 
     if(closePostModal) {
@@ -267,6 +295,15 @@ document.addEventListener("DOMContentLoaded", () => {
                 return;
             }
             
+            const captionInput = createPostForm.querySelector('textarea[name="caption"]');
+            if (captionInput && !captionInput.value.trim()) {
+                if(errorDiv) {
+                    errorDiv.innerText = "Please write a caption for your experience.";
+                    errorDiv.style.display = "block";
+                }
+                return;
+            }
+            
             const submitBtn = createPostForm.querySelector('button[type="submit"]');
             const originalBtnText = submitBtn.innerText;
             submitBtn.innerText = "Processing...";
@@ -296,6 +333,13 @@ document.addEventListener("DOMContentLoaded", () => {
                         loadUserStats(); 
                         showToast("Your experience has been shared!", "success");
                     } else {
+                        if (data.subscription_required) {
+                            showToast(data.message || "Subscription required.", "error");
+                            setTimeout(() => {
+                                window.location.href = data.subscription_url || SUBSCRIPTION_URL;
+                            }, 1500);
+                            return;
+                        }
                         if(errorDiv) {
                             errorDiv.innerText = data.message || "Failed to share post.";
                             errorDiv.style.display = "block";
@@ -501,9 +545,6 @@ document.addEventListener("DOMContentLoaded", () => {
                             </div>
                             <div class="post-user-info">
                                 <h4><a href="profile.php?id=${post.user_id}" style="text-decoration:none; color:inherit;">${username}</a> ${destTag}</h4>
-                            <div class="user-avatar" style="background: ${isOwner ? 'linear-gradient(135deg, #1b3a5a, #2c537a)' : '#1b3a5a'}">${avatarText}</div>
-                            <div class="post-user-info">
-                                <h4>${username} ${destTag}</h4>
                                 <span class="post-date">${new Date(post.created_at).toLocaleDateString(undefined, {year: 'numeric', month: 'long', day: 'numeric'})}</span>
                             </div>
                             ${optionsBtn}
@@ -511,7 +552,6 @@ document.addEventListener("DOMContentLoaded", () => {
                         
                         <div class="post-image-wrapper">
                             <img src="${normalizeImagePath(post.image_path)}" alt="Experience" class="post-image" loading="lazy" onerror="this.onerror=null; this.src='/Nepal-Travel/images/annapurna_trek.png';">
-                            <img src="${normalizeImagePath(post.image_path)}" alt="Experience" class="post-image" loading="lazy">
                         </div>
 
                         <div style="padding: 15px 20px 0;">
@@ -738,7 +778,7 @@ document.addEventListener("DOMContentLoaded", () => {
                             icon.innerText = "🔖";
                             icon.style.transform = "scale(1.2)";
                             setTimeout(() => icon.style.transform = "scale(1)", 200);
-                            showToast("Post saved to your collection.", "success");
+                            showToast("Saved! View it in header SAVED or your dashboard.", "success");
                         } else {
                             this.classList.remove("saved");
                             icon.innerText = "📑";

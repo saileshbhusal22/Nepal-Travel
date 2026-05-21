@@ -20,7 +20,7 @@
  */
 
 $action = $_REQUEST['action'] ?? '';
-if (in_array($action, ['admin_poll', 'admin_reply', 'unread_count']) && isset($_COOKIE['nepal_admin_session'])) {
+if (in_array($action, ['admin_poll', 'admin_reply', 'unread_count', 'admin_delete_all']) && isset($_COOKIE['nepal_admin_session'])) {
     session_name('nepal_admin_session');
 }
 session_start();
@@ -54,75 +54,32 @@ function fail($msg)     { jsonOut(['ok' => false, 'error' => $msg]); }
 $isAdmin = isset($_SESSION['role']) && $_SESSION['role'] === 'admin';
 $userId  = (!$isAdmin && isset($_SESSION['user_id'])) ? (int)$_SESSION['user_id'] : null;
 
-
-// ── Resolve chat session ID ───────────────────────────────────────
-// KEY FIX: If the user is logged in, derive a stable session ID from
-// their user_id so it survives logout → login cycles.
-// Guests get a persistent cookie-based ID so their history also survives
-// a page reload until they log in (at which point it merges).
-function resolveChatSession($conn, $userId) {
-    if ($userId) {
-        // Logged-in users always use a deterministic session key
-        return 'user_' . $userId;
+function requireLoggedInUser(): void {
+    global $userId;
+    if (!$userId) {
+        jsonOut(['ok' => false, 'error' => 'Please log in to use chat.', 'login_required' => true]);
     }
-
-    // Guest: use a long-lived cookie (not the PHP session, which dies on logout)
-    $cookieName = 'nt_chat_sess';
-    if (!empty($_COOKIE[$cookieName])) {
-        $val = preg_replace('/[^a-f0-9]/', '', $_COOKIE[$cookieName]);
-        if (strlen($val) === 32) {
-            return 'guest_' . $val;
-        }
-    }
-    // Create a new guest cookie valid for 90 days
-    $token = bin2hex(random_bytes(16));
-    setcookie($cookieName, $token, [
-        'expires'  => time() + 90 * 86400,
-        'path'     => '/',
-        'httponly' => true,
-        'samesite' => 'Lax',
-    ]);
-    return 'guest_' . $token;
 }
 
-$chatSession = resolveChatSession($conn, $userId);
-
-// ── When a user just logged in, merge any prior guest messages ────
-// If the user had a guest cookie before logging in, move those messages
-// over to their user_ session so history is not lost.
-if ($userId && !empty($_COOKIE['nt_chat_sess'])) {
-    $guestToken = preg_replace('/[^a-f0-9]/', '', $_COOKIE['nt_chat_sess']);
-    if (strlen($guestToken) === 32) {
-        $guestSess = $conn->real_escape_string('guest_' . $guestToken);
-        $userSess  = $conn->real_escape_string($chatSession);
-        // Only merge if the guest session actually has messages
-        $chk = $conn->query("SELECT COUNT(*) FROM chat_messages WHERE session_id='$guestSess'");
-        if ($chk && (int)$chk->fetch_row()[0] > 0) {
-            // Re-assign guest messages to user session and attach user_id
-            $conn->query("
-                UPDATE chat_messages
-                SET session_id = '$userSess',
-                    user_id    = IF(sender = 'user', $userId, user_id)
-                WHERE session_id = '$guestSess'
-            ");
-        }
-    }
+function userChatSessionId(int $uid): string {
+    return 'user_' . $uid;
 }
 
 // ══════════════════════════════════════════════════════════════════
 //  ACTION: user sends a message
 // ══════════════════════════════════════════════════════════════════
 if ($action === 'send') {
+    requireLoggedInUser();
+
     $raw = trim($_POST['message'] ?? '');
     if ($raw === '') fail('Empty message.');
 
-    $msg     = $conn->real_escape_string(htmlspecialchars($raw, ENT_QUOTES, 'UTF-8'));
-    $uid_sql = $userId ? $userId : 'NULL';
-    $sess    = $conn->real_escape_string($chatSession);
+    $msg  = $conn->real_escape_string(htmlspecialchars($raw, ENT_QUOTES, 'UTF-8'));
+    $sess = $conn->real_escape_string(userChatSessionId($userId));
 
     $conn->query("
         INSERT INTO chat_messages (session_id, user_id, sender, message)
-        VALUES ('$sess', $uid_sql, 'user', '$msg')
+        VALUES ('$sess', $userId, 'user', '$msg')
     ");
 
     jsonOut(['ok' => true, 'id' => $conn->insert_id]);
@@ -160,8 +117,10 @@ if ($action === 'admin_reply') {
 //  ACTION: poll for new messages (user side)
 // ══════════════════════════════════════════════════════════════════
 if ($action === 'poll') {
+    requireLoggedInUser();
+
     $since = (int)($_GET['since'] ?? 0);
-    $sess  = $conn->real_escape_string($chatSession);
+    $sess  = $conn->real_escape_string(userChatSessionId($userId));
 
     $res = $conn->query("
         SELECT id, sender, message, created_at
@@ -174,7 +133,6 @@ if ($action === 'poll') {
 
     $rows = $res ? $res->fetch_all(MYSQLI_ASSOC) : [];
 
-    // Mark admin messages as read when user polls
     $conn->query("
         UPDATE chat_messages
         SET is_read = 1
@@ -182,6 +140,18 @@ if ($action === 'poll') {
     ");
 
     jsonOut(['ok' => true, 'messages' => $rows]);
+}
+
+// ══════════════════════════════════════════════════════════════════
+//  ACTION: logged-in user deletes their own chat history
+// ══════════════════════════════════════════════════════════════════
+if ($action === 'delete_my_chat') {
+    requireLoggedInUser();
+
+    $sess = $conn->real_escape_string(userChatSessionId($userId));
+    $conn->query("DELETE FROM chat_messages WHERE session_id = '$sess'");
+
+    jsonOut(['ok' => true, 'deleted' => (int)$conn->affected_rows]);
 }
 
 // ══════════════════════════════════════════════════════════════════
@@ -266,6 +236,15 @@ if ($action === 'unread_count') {
     if (!$isAdmin) fail('Unauthorized.');
     $r = $conn->query("SELECT COUNT(*) FROM chat_messages WHERE sender='user' AND is_read=0");
     jsonOut(['ok' => true, 'count' => (int)$r->fetch_row()[0]]);
+}
+
+// ══════════════════════════════════════════════════════════════════
+//  ACTION: admin deletes all live chat messages
+// ══════════════════════════════════════════════════════════════════
+if ($action === 'admin_delete_all') {
+    if (!$isAdmin) fail('Unauthorized.');
+    $conn->query('DELETE FROM chat_messages');
+    jsonOut(['ok' => true, 'deleted' => (int)$conn->affected_rows]);
 }
 
 fail('Unknown action.');

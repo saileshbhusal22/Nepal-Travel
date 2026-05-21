@@ -1,0 +1,18 @@
+POST Data: Array
+(
+    [title] => Test Event from script
+    [start_date] => 2026-06-01
+    [is_paid] => 0
+    [description] => Test
+    [what_to_expect] => Test
+)
+
+POST Data: Array
+(
+    [title] => Test Event from script
+    [start_date] => 2026-06-01
+    [is_paid] => 0
+    [description] => Test
+    [what_to_expect] => Test
+)
+

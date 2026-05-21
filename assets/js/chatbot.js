@@ -176,14 +176,16 @@
   // 2. AUTH CHECK
   // ═══════════════════════════════════════════════════════════════════════
   function checkAuth() {
-    // Read from meta tags injected by PHP header
     const meta = document.getElementById("sherpa-user-meta");
     if (meta) {
       isLoggedIn = meta.dataset.loggedIn === "1";
       currentUserId = meta.dataset.userId || null;
       currentUserName = meta.dataset.userName || "Traveller";
+      const loginLink = loginBanner?.querySelector(".slb-btn");
+      const regLink = loginBanner?.querySelector(".slb-signup");
+      if (meta.dataset.loginUrl && loginLink) loginLink.href = meta.dataset.loginUrl;
+      if (meta.dataset.registerUrl && regLink) regLink.href = meta.dataset.registerUrl;
     } else {
-      // Fallback: call history API; 401 = not logged in
       isLoggedIn = false;
     }
   }
@@ -237,6 +239,23 @@
       "assistant",
       `**Namaste ${firstName}! 🙏**\n\nI'm **Sherpa**, your personal Nepal travel AI. I can help you plan trips, find the best destinations, estimate budgets, and discover hidden gems across Nepal.\n\nWhat adventure are you planning? 🏔️`,
     );
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // 4B. LANGUAGE TOGGLE
+  // ═══════════════════════════════════════════════════════════════════════
+  function cycleLanguage() {
+    const lb = document.getElementById("sherpa-lang-btn");
+    if (language === "english") {
+      language = "nepali";
+      lb.textContent = "NP";
+    } else if (language === "nepali") {
+      language = "hindi";
+      lb.textContent = "HI";
+    } else {
+      language = "english";
+      lb.textContent = "EN";
+    }
   }
 
   // ═══════════════════════════════════════════════════════════════════════

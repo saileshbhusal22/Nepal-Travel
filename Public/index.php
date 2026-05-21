@@ -100,6 +100,14 @@ if ($udTableCheck && $udTableCheck->num_rows > 0) {
         }
     }
 }
+
+// ── FETCH TRAVEL IDEAS ──
+$bento_query = "SELECT title, slug, image_path, province_slug FROM travel_ideas WHERE status='published' ORDER BY created_at DESC LIMIT 8";
+$bento_res = $conn->query($bento_query);
+$bento_ideas = [];
+if ($bento_res) {
+    while($r = $bento_res->fetch_assoc()){ $bento_ideas[] = $r; }
+}
 ?>
 
 <!-- Modern Hero Section -->
@@ -130,78 +138,51 @@ if ($udTableCheck && $udTableCheck->num_rows > 0) {
     </script>
     
     <div class="mh-content" style="padding-top: 80px; display: flex; flex-direction: column; align-items: center;">
-        <!-- Hero Logo Style -->
-        <div style="display: flex; flex-direction: column; align-items: center; line-height: 1; position: relative; margin-bottom: 20px;">
-            <div style="margin-right: -60px; margin-bottom: -20px; z-index: 1;">
-                <span style="font-family: 'Montserrat', sans-serif; font-size: 32px; color: #e31c25; font-weight: 900; text-transform: uppercase; letter-spacing: 4px; text-shadow: 0 4px 8px rgba(0,0,0,0.5);">Nepal Unforgettable  journey</span>
+        <div style="display: flex; flex-direction: column; align-items: center; line-height: 1; position: relative; margin-top: 60px; margin-bottom: 20px;">
+            <div style="text-align: center; z-index: 1;">
+                <span style="font-family: 'Montserrat', sans-serif; font-size: 24px; color: white; font-weight: 700; text-transform: uppercase; letter-spacing: 8px; text-shadow: 0 2px 4px rgba(0,0,0,0.5); display: block; margin-bottom: 5px;">DISCOVER</span>
+                <span style="font-family: 'Montserrat', sans-serif; font-size: 150px; color: white; font-weight: 900; text-transform: uppercase; letter-spacing: 6px; text-shadow: 0 4px 20px rgba(0,0,0,0.6); display: block;">NEPAL</span>
             </div>
-            
         </div>
-        
-        <form id="heroAjaxForm" action="deals-and-packages.php" method="GET" class="box-glass" style="margin-top: 40px; padding: 20px 40px; border-radius: 50px; display: flex; gap: 30px; align-items: center;">
-            <div style="text-align: left;">
-                <div style="font-size: 10px; font-weight: 800; letter-spacing: 2px; color: var(--primary-yellow); margin-bottom: 5px;">WHERE TO?</div>
-                <input type="text" name="q" placeholder="Search destinations..." style="background: transparent; border: none; font-size: 16px; color: white; width: 200px; outline: none; font-family: inherit;">
-            </div>
-            <div style="width: 1px; height: 30px; background: rgba(255,255,255,0.3);"></div>
-            <div style="text-align: left;">
-                <div style="font-size: 10px; font-weight: 800; letter-spacing: 2px; color: var(--primary-yellow); margin-bottom: 5px;">EXPLORE</div>
-                <select name="category" style="background: transparent; border: none; font-size: 16px; color: white; outline: none; font-family: inherit; appearance: none; cursor: pointer;">
-                    <option value="" style="color: black;">All Experiences</option>
-                    <option value="Trekking" style="color: black;">Trekking & Adventure</option>
-                    <option value="Culture" style="color: black;">Culture & Heritage</option>
-                </select>
-            </div>
-            <button type="submit" class="btn btn-primary" style="padding: 12px 30px; border-radius: 30px; border: none;">DISCOVER</button>
-        </form>
         
         <div style="margin-top: 20px; display: flex; align-items: center; justify-content: center; gap: 10px; color: rgba(255,255,255,0.9); font-size: 13px; font-weight: 600; text-shadow: 0 2px 4px rgba(0,0,0,0.5);">
             <svg style="width: 18px; height: 18px; fill: var(--primary-yellow);" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
             <span>Best Time to Visit: <span style="color: var(--primary-yellow);">Sept - Nov</span> & <span style="color: var(--primary-yellow);">Mar - May</span></span>
-include __DIR__ . '/../includes/header.php'; 
-require_once __DIR__ . '/../user/db.php';
-<?php include '../includes/header.php'; ?>
-
-<!-- Sanskar Part -->
-<!-- Travel Style Hero Section -->
-<section class="nepal-hero">
-    <div class="mh-bg" style="background-image: url('../images/pokhara_lake.png');"></div>
-    <div class="mh-overlay"></div>
-    
-    <!-- Left/Right Nav Arrows -->
-    <button class="mh-arrow mh-left">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 19l-7-7 7-7"/></svg>
-    </button>
-    <button class="mh-arrow mh-right">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5l7 7-7 7"/></svg>
-    </button>
-
-    <div class="mh-content">
-        <div class="mh-subtitle">WELCOME TO</div>
-        <h1 class="mh-title">NEPAL</h1>
-        <a href="#deals" class="btn mh-btn">LEARN MORE</a>
-    </div>
-
-    <!-- Bottom Category Bar -->
-    <div class="mh-bottom-nav">
-        <div class="container" style="padding: 0;">
-            <ul class="mh-cat-list">
-                <li class="mh-cat-item active">
-                    <a href="#nature" class="mh-cat-link">NATURE & ADVENTURE</a>
-                </li>
-                <li class="mh-cat-item"><a href="#culture" class="mh-cat-link">CULTURE & HERITAGE</a></li>
-                <li class="mh-cat-item"><a href="#food" class="mh-cat-link">FOOD & DRINKS</a></li>
-                <li class="mh-cat-item"><a href="#city" class="mh-cat-link">CITY EXCITEMENT</a></li>
-                <li class="mh-cat-item"><a href="#family" class="mh-cat-link">FAMILY FUN</a></li>
-                <li class="mh-cat-item"><a href="#mountains" class="mh-cat-link">MOUNTAINS & TREKS</a></li>
-                <li class="mh-cat-item"><a href="#deals" class="mh-cat-link">DEALS & PACKAGES</a></li>
-            </ul>
         </div>
     </div>
 </section>
 
+<?php
+$all_facts = [
+    ['val' => '8848m', 'label' => 'Highest Peak'],
+    ['val' => '125+', 'label' => 'Ethnic Groups'],
+    ['val' => '10', 'label' => 'UNESCO Sites'],
+    ['val' => '7000+', 'label' => 'Himalayan Peaks'],
+    ['val' => '123', 'label' => 'Languages'],
+    ['val' => '860+', 'label' => 'Bird Species'],
+    ['val' => '6000+', 'label' => 'Rivers & Rivulets'],
+    ['val' => '20%', 'label' => 'Protected Land'],
+    ['val' => '1st', 'label' => 'Birthplace of Buddha'],
+    ['val' => 'No #1', 'label' => 'Non-Rectangular Flag']
+];
+shuffle($all_facts);
+$display_facts = array_slice($all_facts, 0, 4);
+?>
 
-<!-- Category Sections -->
+<!-- Quick Facts Strip -->
+<div class="facts-strip" style="background: var(--primary-blue); color: white; padding: 40px 0; position: relative; z-index: 10;">
+    <div class="container" style="display: flex; justify-content: space-between; align-items: center; gap: 20px; flex-wrap: wrap;">
+        <?php foreach($display_facts as $index => $fact): ?>
+            <div style="text-align: center; flex: 1; min-width: 150px;">
+                <div style="font-size: 32px; font-weight: 800; color: var(--primary-yellow);"><?php echo $fact['val']; ?></div>
+                <div style="font-size: 11px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; margin-top: 5px;"><?php echo $fact['label']; ?></div>
+            </div>
+            <?php if($index < 3): ?>
+                <div style="width: 1px; height: 40px; background: rgba(255,255,255,0.2);" class="fact-divider"></div>
+            <?php endif; ?>
+        <?php endforeach; ?>
+    </div>
+</div>
 
 <style>
     @media (max-width: 768px) { .fact-divider { display: none; } }
@@ -215,54 +196,27 @@ require_once __DIR__ . '/../user/db.php';
             <h2 class="section-title" style="margin-top: 10px;">Discover Your <span class="script-font" style="font-size:48px;">Journey</span></h2>
         </div>
         <div class="bento-grid">
-            <a href="travel-ideas.php" class="bento-item large">
-                <img src="../images/annapurna_trek.png" alt="Annapurna">
-                <div class="bento-overlay"><span class="bento-category">Mountains</span><h3 class="bento-title">Annapurna Circuit Expedition</h3></div>
-            </a>
-            <a href="travel-ideas.php" class="bento-item">
-                <img src="../images/bhaktapur_temple.png" alt="Bhaktapur">
-                <div class="bento-overlay"><span class="bento-category">Culture</span><h3 class="bento-title">Bhaktapur Heritage Walk</h3></div>
-            </a>
-            <a href="travel-ideas.php" class="bento-item">
-                <img src="../images/food_drinks_nepal.png" alt="Food">
-                <div class="bento-overlay"><span class="bento-category">Cuisine</span><h3 class="bento-title">Authentic Newari Taste</h3></div>
-            </a>
-            <a href="travel-ideas.php" class="bento-item wide">
-                <img src="../images/chitwan_rhino.png" alt="Chitwan">
-                <div class="bento-overlay"><span class="bento-category">Adventure</span><h3 class="bento-title">Chitwan National Park Safari</h3></div>
-            </a>
-            <a href="travel-ideas.php" class="bento-item">
-                <img src="../images/lumbini_temple.png" alt="Lumbini">
-                <div class="bento-overlay"><span class="bento-category">Heritage</span><h3 class="bento-title">Birthplace of Buddha</h3></div>
-            </a>
-            <a href="travel-ideas.php" class="bento-item">
-                <img src="../images/city_excitement_nepal.png" alt="City">
-                <div class="bento-overlay"><span class="bento-category">City Life</span><h3 class="bento-title">Thamel Night Market</h3></div>
-            </a>
-            <a href="travel-ideas.php" class="bento-item">
-                <img src="../images/sarangkot_sunrise.png" alt="Sunrise">
-                <div class="bento-overlay"><span class="bento-category">Nature</span><h3 class="bento-title">Sarangkot Sunrise View</h3></div>
-            </a>
-            <a href="travel-ideas.php" class="bento-item">
-                <img src="../images/pashupatinath_aarti.png" alt="Aarti">
-                <div class="bento-overlay"><span class="bento-category">Spirituality</span><h3 class="bento-title">Pashupatinath Evening Aarti</h3></div>
-            </a>
-<!-- Bijay Part -->
-<!-- 1. Nature & Adventure -->
-<section id="nature" class="container" style="padding-top: 60px;">
-    <h2 class="section-title" style="margin-bottom: 30px;">Nature & <span class="script-font" style="font-size:40px; color:var(--primary-yellow);">Adventure</span></h2>
-    <div class="grid-container">
-        <!-- Card 1 -->
-        <div class="idea-card">
-            <div class="card-badge">3 DAYS 2 NIGHTS</div>
-            <img src="../images/chitwan_rhino.png" alt="Chitwan" class="card-img">
-            <div class="card-overlay"><span class="card-region">Terai Plains</span><h3 class="card-title">Chitwan National Park Jungle Safari</h3></div>
-        </div>
-        <!-- Card 2 -->
-        <div class="idea-card">
-            <div class="card-badge">1 DAY</div>
-            <img src="../images/pokhara_lake.png" alt="Pokhara Lake" class="card-img">
-            <div class="card-overlay"><span class="card-region">Gandaki Zone</span><h3 class="card-title">Phewa Lake Boating River Rafting</h3></div>
+            <?php 
+            if (!empty($bento_ideas)) {
+                foreach($bento_ideas as $idx => $idea) {
+                    $classes = "bento-item";
+                    if ($idx === 0) $classes .= " large";
+                    elseif ($idx === 3) $classes .= " wide";
+                    
+                    $img = !empty($idea['image_path']) ? htmlspecialchars($idea['image_path']) : '../images/sarangkot_sunrise.png';
+                    $category = !empty($idea['province_slug']) ? ucfirst(str_replace('-', ' ', $idea['province_slug'])) : 'Explore';
+                    $title = htmlspecialchars($idea['title']);
+                    $link = "travel-idea-detail.php?id=" . urlencode($idea['slug']);
+                    
+                    echo "<a href=\"{$link}\" class=\"{$classes}\">";
+                    echo "    <img src=\"{$img}\" alt=\"{$title}\">";
+                    echo "    <div class=\"bento-overlay\"><span class=\"bento-category\">{$category}</span><h3 class=\"bento-title\">{$title}</h3></div>";
+                    echo "</a>";
+                }
+            } else {
+                echo "<p style='text-align:center; color:#999; grid-column:1/-1;'>No travel ideas available yet.</p>";
+            }
+            ?>
         </div>
     </div>
 </section>
@@ -309,19 +263,6 @@ require_once __DIR__ . '/../user/db.php';
                     <p style="font-size: 14px; color: #777;">Lower altitude tours and amazing snow views.</p>
                 </div>
             </div>
-<!-- 2. Culture & Heritage -->
-<section id="culture" class="container" style="padding-top: 60px;">
-    <h2 class="section-title" style="margin-bottom: 30px;">Culture & <span class="script-font" style="font-size:40px; color:var(--primary-yellow);">Heritage</span></h2>
-    <div class="grid-container">
-        <div class="idea-card">
-            <div class="card-badge">HALF DAY</div>
-            <img src="../images/bhaktapur_temple.png" alt="Bhaktapur" class="card-img">
-            <div class="card-overlay"><span class="card-region">Kathmandu Valley</span><h3 class="card-title">Bhaktapur Durbar Square Heritage Walk</h3></div>
-        </div>
-        <div class="idea-card">
-            <div class="card-badge">2 DAYS 1 NIGHT</div>
-            <img src="../images/lumbini_temple.png" alt="Lumbini" class="card-img">
-            <div class="card-overlay"><span class="card-region">Lumbini Province</span><h3 class="card-title">Birthplace of Buddha Spiritual Tour</h3></div>
         </div>
     </div>
 </section>
@@ -443,20 +384,6 @@ require_once __DIR__ . '/../user/db.php';
             .home-deal-price small { display: block; font-size: 11px; color: #aaa; font-weight: 400; text-decoration: line-through; }
             .home-deal-btn { display: inline-block; padding: 10px 20px; background: #285da1; color: white; font-size: 11px; font-weight: 800; border-radius: 30px; letter-spacing: 1px; }
         </style>
-        <?php include __DIR__ . '/../includes/deals-data.php'; ?>
-        
-        <!-- Grid -->
-        <div id="dealsGridContainer" class="deals-options-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 30px; margin-bottom: 60px;">
-            <?php foreach($deals as $deal): ?>
-            <a href="deal.php?id=<?php echo htmlspecialchars($deal['id']); ?>" style="display: flex; flex-direction: column; background: white; text-decoration: none; position: relative; border: 1px solid #eee; transition: all 0.3s ease; border-radius: 12px; overflow: hidden; box-shadow: 0 5px 15px rgba(0,0,0,0.05);">
-                
-                <div style="position: relative;">
-                    <img src="<?php echo htmlspecialchars($deal['image']); ?>" style="width: 100%; height: 260px; object-fit: cover; display: block;">
-                    <div style="position: absolute; top: 15px; right: 15px; display: flex; flex-direction: column; gap: 5px; align-items: flex-end;">
-                        <span style="background: <?php echo htmlspecialchars($deal['badge_color']); ?>; color: white; padding: 6px 14px; font-size: 11px; font-weight: 800; letter-spacing: 1px; border-radius: 4px; text-transform: uppercase; box-shadow: 0 4px 10px rgba(0,0,0,0.2);"><?php echo htmlspecialchars($deal['category_badge']); ?></span>
-                        <span style="background: white; color: #333; padding: 4px 10px; font-size: 10px; font-weight: 800; border-radius: 4px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);"><?php echo htmlspecialchars($deal['duration']); ?></span>
-                    </div>
-                </div>
 
         <?php
         $badge_colors = [
@@ -567,14 +494,6 @@ require_once __DIR__ . '/../user/db.php';
                 </div>
             </a>
             <?php endforeach; ?>
-<!-- 3. Food & Drinks -->
-<section id="food" class="container" style="padding-top: 60px;">
-    <h2 class="section-title" style="margin-bottom: 30px;">Food & <span class="script-font" style="font-size:40px; color:var(--primary-yellow);">Drinks</span></h2>
-    <div class="grid-container">
-        <div class="idea-card">
-            <div class="card-badge">1 DAY</div>
-            <img src="../images/food_drinks_nepal.png" alt="Food" class="card-img">
-            <div class="card-overlay"><span class="card-region">Kathmandu</span><h3 class="card-title">Authentic Newari Cuisine Tasting</h3></div>
         </div>
 
         <div style="text-align: center; margin-top: -20px; margin-bottom: 20px;">
@@ -621,16 +540,15 @@ require_once __DIR__ . '/../user/db.php';
                     $img_path = htmlspecialchars($post['image_path']);
                     if (strpos(strtolower($img_path), 'logo') !== false || empty($img_path)) {
                         $img_path = '../images/sarangkot_sunrise.png';
-                    } else {
-                        // Ensure the path is correct relative to the Public folder
-                        $img_path = '../' . ltrim(preg_replace('/^Nepal-Travel\//i', '', $img_path), '/');
+                    } elseif (strpos($img_path, '../') !== 0 && strpos($img_path, 'http') !== 0) {
+                        $img_path = '../' . ltrim($img_path, '/');
                     }
                 ?>
                 <a href="experience.php?post_id=<?php echo $post['id']; ?>" class="community-item">
-                    <img src="<?php echo $img_path; ?>" alt="Experience" onerror="this.onerror=null; this.src='../images/annapurna_trek.png';">
+                    <img src="<?php echo $img_path; ?>" alt="Experience">
                     <div class="insta-overlay" style="position: absolute; inset: 0; background: linear-gradient(to bottom, transparent, rgba(27, 58, 90, 0.8)); opacity: 0; transition: opacity 0.3s; display: flex; flex-direction: column; justify-content: flex-end; padding: 20px; color: white;">
-                        <span style="font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: #f5a623; font-weight: 800;">@<?php echo htmlspecialchars($post['username']); ?></span>
-                        <h4 style="font-size: 14px; margin: 5px 0 0; line-height: 1.3;"><?php echo mb_strimwidth(htmlspecialchars($post['caption']), 0, 50, "..."); ?></h4>
+                        <span style="font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: #f5a623; font-weight: 800;">@<?php echo htmlspecialchars($post['username'] ?? 'User'); ?></span>
+                        <h4 style="font-size: 14px; margin: 5px 0 0; line-height: 1.3;"><?php echo mb_strimwidth(htmlspecialchars($post['caption'] ?? ''), 0, 50, "..."); ?></h4>
                     </div>
                 </a>
                 <?php endforeach; ?>
@@ -640,15 +558,6 @@ require_once __DIR__ . '/../user/db.php';
         <div style="text-align: center; display: flex; gap: 15px; justify-content: center; margin-top: 30px;">
             <button type="button" id="loadMoreCommunityBtn" style="padding: 14px 40px; font-weight: 800; cursor: pointer; border-radius: 30px; border: 2px solid #285da1; background: transparent; color: #285da1; font-family: inherit; font-size: 14px; letter-spacing: 1px;">LOAD MORE STORIES</button>
             <a href="experience.php" style="padding: 14px 40px; font-weight: 800; cursor: pointer; border-radius: 30px; background: #285da1; color: white; text-decoration: none; font-family: inherit; font-size: 14px; letter-spacing: 1px;">EXPLORE COMMUNITY</a>
-<!-- Ramal Part -->
-<!-- 4. City Excitement -->
-<section id="city" class="container" style="padding-top: 60px;">
-    <h2 class="section-title" style="margin-bottom: 30px;">City <span class="script-font" style="font-size:40px; color:var(--primary-yellow);">Excitement</span></h2>
-    <div class="grid-container">
-        <div class="idea-card">
-            <div class="card-badge">1 DAY</div>
-            <img src="../images/city_excitement_nepal.png" alt="City" class="card-img">
-            <div class="card-overlay"><span class="card-region">Thamel</span><h3 class="card-title">Thamel Night Market & Live Music</h3></div>
         </div>
     </div>
 </section>
@@ -670,14 +579,6 @@ require_once __DIR__ . '/../user/db.php';
         </div>
         <div style="text-align: center; margin-top: 80px;">
             <button id="postStoryBtn" style="padding: 16px 45px; background: var(--primary-yellow); color: #111; border: none; border-radius: 50px; font-size: 13px; font-weight: 800; letter-spacing: 2px; cursor: pointer; transition: all 0.3s; box-shadow: 0 4px 15px rgba(245, 166, 35, 0.2);">SHARE YOUR STORY</button>
-<!-- 5. Family Fun -->
-<section id="family" class="container" style="padding-top: 60px;">
-    <h2 class="section-title" style="margin-bottom: 30px;">Family <span class="script-font" style="font-size:40px; color:var(--primary-yellow);">Fun</span></h2>
-    <div class="grid-container">
-        <div class="idea-card">
-            <div class="card-badge">4 DAYS 3 NIGHTS</div>
-            <img src="../images/family_fun_nepal.png" alt="Family" class="card-img">
-            <div class="card-overlay"><span class="card-region">Chitwan</span><h3 class="card-title">Elephant Breeding Center & Village Walk</h3></div>
         </div>
     </div>
 </section>
@@ -734,19 +635,13 @@ require_once __DIR__ . '/../user/db.php';
     <div class="container map-layout">
         <div class="map-visual" id="nepal-svg-container">
             <?php include __DIR__ . '/../includes/map.php'; ?>
-<!-- 6. Mountains & Treks -->
-<section id="mountains" class="container" style="padding-top: 60px;">
-    <h2 class="section-title" style="margin-bottom: 30px;">Mountains & <span class="script-font" style="font-size:40px; color:var(--primary-yellow);">Treks</span></h2>
-    <div class="grid-container">
-        <div class="idea-card">
-            <div class="card-badge">14 DAYS 13 NIGHTS</div>
-            <img src="../images/annapurna_trek.png" alt="Annapurna" class="card-img">
-            <div class="card-overlay"><span class="card-region">Annapurna Region</span><h3 class="card-title">Annapurna Circuit Expedition</h3></div>
         </div>
-        <div class="idea-card">
-            <div class="card-badge">12 DAYS 11 NIGHTS</div>
-            <img src="../images/everest_trek.png" alt="Everest" class="card-img">
-            <div class="card-overlay"><span class="card-region">Sagarmatha Zone</span><h3 class="card-title">Everest Base Camp Trekking</h3></div>
+        <div class="map-details">
+            <div class="province-card">
+                <h3 id="province-title" class="province-name">Select a District</h3>
+                <p id="province-desc" class="province-description">Experience the beautiful district of Nepal, a pristine destination waiting to be discovered.</p>
+                <a href="travel-ideas.php" class="btn btn-outline" style="padding: 12px 30px; font-size: 12px; margin-top: 20px; display:inline-block;">Explore Region</a>
+            </div>
         </div>
     </div>
 </section>
@@ -792,7 +687,7 @@ require_once __DIR__ . '/../user/db.php';
 #nt-chat-toggle {
     position: fixed;
     bottom: 28px;
-    right: 28px;
+    left: 28px;
     width: 58px;
     height: 58px;
     border-radius: 50%;
@@ -836,7 +731,7 @@ require_once __DIR__ . '/../user/db.php';
 #nt-chat-window {
     position: fixed;
     bottom: 100px;
-    right: 28px;
+    left: 28px;
     width: 360px;
     max-width: calc(100vw - 40px);
     height: 500px;
@@ -879,6 +774,42 @@ require_once __DIR__ . '/../user/db.php';
 .nch-header-info { flex: 1; }
 .nch-header-name { font-size: 14px; font-weight: 800; color: white; }
 .nch-header-status { font-size: 11px; color: rgba(255,255,255,0.7); display: flex; align-items: center; gap: 5px; margin-top: 2px; }
+.nch-delete-btn {
+    background: rgba(255,255,255,0.12);
+    border: 1px solid rgba(255,255,255,0.25);
+    color: white;
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    flex-shrink: 0;
+    transition: background 0.15s;
+}
+.nch-delete-btn:hover { background: rgba(224,85,85,0.35); }
+.nch-login-gate {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 32px 24px;
+    text-align: center;
+    background: #f7f9fc;
+    gap: 12px;
+}
+.nch-login-gate h4 { color: #1b3a5a; font-size: 16px; margin: 0; }
+.nch-login-gate p { color: #666; font-size: 13px; line-height: 1.6; margin: 0; }
+.nch-login-btn {
+    display: inline-block;
+    margin-top: 8px;
+    padding: 10px 22px;
+    background: linear-gradient(135deg, #285da1, #1b3a5a);
+    color: white;
+    text-decoration: none;
+    border-radius: 8px;
+    font-weight: 700;
+    font-size: 13px;
+}
 .nch-status-dot { width: 6px; height: 6px; border-radius: 50%; background: #4caf50; animation: pulse-green 2s infinite; }
 @keyframes pulse-green { 0%,100%{opacity:1} 50%{opacity:0.5} }
 
@@ -1010,6 +941,8 @@ require_once __DIR__ . '/../user/db.php';
     <span id="nt-chat-badge"></span>
 </button>
 
+<?php $chat_user_logged_in = isset($_SESSION['user_id']); ?>
+
 <!-- Chat Window -->
 <div id="nt-chat-window">
     <div class="nch-header">
@@ -1018,14 +951,27 @@ require_once __DIR__ . '/../user/db.php';
             <div class="nch-header-name">Nepal Travel Support</div>
             <div class="nch-header-status">
                 <span class="nch-status-dot"></span>
-                We're online — usually reply instantly
+                <?= $chat_user_logged_in ? "We're online — usually reply instantly" : 'Login required to chat' ?>
             </div>
         </div>
+        <?php if ($chat_user_logged_in): ?>
+        <button type="button" class="nch-delete-btn" id="nch-delete-chat" title="Delete my chat history">🗑</button>
+        <?php endif; ?>
     </div>
+
+    <?php if (!$chat_user_logged_in): ?>
+    <div class="nch-login-gate" id="nch-login-gate">
+        <div style="font-size:40px;opacity:0.25">🔒</div>
+        <h4>Login to Chat</h4>
+        <p>Sign in to message our support team and view your conversation history.</p>
+        <a href="<?= htmlspecialchars($auth_login_url) ?>" class="nch-login-btn">Log In</a>
+        <a href="<?= htmlspecialchars($auth_register_url) ?>" style="font-size:12px;color:#285da1;text-decoration:none">Create an account →</a>
+    </div>
+    <?php else: ?>
 
     <div class="nch-messages" id="nch-messages">
         <div class="nch-welcome">
-            <strong>👋 Welcome to Nepal Travel!</strong>
+            <strong>👋 Welcome<?= !empty($_SESSION['user_name']) ? ', ' . htmlspecialchars($_SESSION['user_name']) : '' ?>!</strong>
             Have a question about trekking, bookings, or Nepal in general? Ask us anything!
         </div>
         <div class="nch-typing" id="nch-typing">
@@ -1044,11 +990,14 @@ require_once __DIR__ . '/../user/db.php';
             <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
         </button>
     </div>
+    <?php endif; ?>
 </div>
 
 <script>
 (function () {
-    const HANDLER = 'chat_handler.php'; // adjust path if needed
+    const HANDLER = 'chat_handler.php';
+    const CHAT_LOGGED_IN = <?= $chat_user_logged_in ? 'true' : 'false' ?>;
+    const LOGIN_URL = <?= json_encode($auth_login_url, JSON_UNESCAPED_SLASHES) ?>;
     const toggle  = document.getElementById('nt-chat-toggle');
     const win     = document.getElementById('nt-chat-window');
     const msgBox  = document.getElementById('nch-messages');
@@ -1056,47 +1005,88 @@ require_once __DIR__ . '/../user/db.php';
     const sendBtn = document.getElementById('nch-send');
     const badge   = document.getElementById('nt-chat-badge');
     const typing  = document.getElementById('nch-typing');
+    const deleteBtn = document.getElementById('nch-delete-chat');
 
     let isOpen     = false;
     let lastMsgId  = 0;
     let pollTimer  = null;
     let unreadCnt  = 0;
 
+    function handleAuthError(d) {
+        if (d && d.login_required) {
+            window.location.href = LOGIN_URL;
+            return true;
+        }
+        return false;
+    }
+
     // ── Toggle open/close ──────────────────────────────────────
     toggle.addEventListener('click', () => {
         isOpen = !isOpen;
         toggle.classList.toggle('open', isOpen);
         win.classList.toggle('open', isOpen);
+        if (!CHAT_LOGGED_IN) return;
         if (isOpen) {
             clearUnread();
-            input.focus();
+            if (input) input.focus();
+            loadHistory();
             startPolling();
         } else {
             stopPolling();
         }
     });
 
-    // ── Auto-resize textarea ───────────────────────────────────
-    input.addEventListener('input', () => {
-        input.style.height = 'auto';
-        input.style.height = Math.min(input.scrollHeight, 100) + 'px';
-    });
+    if (input) {
+        input.addEventListener('input', () => {
+            input.style.height = 'auto';
+            input.style.height = Math.min(input.scrollHeight, 100) + 'px';
+        });
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+    }
+    if (sendBtn) sendBtn.addEventListener('click', sendMessage);
 
-    // ── Send on Enter (Shift+Enter = newline) ─────────────────
-    input.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' && !e.shiftKey) {
-            e.preventDefault();
-            sendMessage();
-        }
-    });
-    sendBtn.addEventListener('click', sendMessage);
+    if (deleteBtn) {
+        deleteBtn.addEventListener('click', deleteMyChat);
+    }
+
+    function deleteMyChat() {
+        if (!confirm('Delete all your chat messages? This cannot be undone.')) return;
+        fetch(HANDLER, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: 'action=delete_my_chat'
+        })
+        .then(r => r.json())
+        .then(d => {
+            if (handleAuthError(d)) return;
+            if (!d.ok) { alert(d.error || 'Could not delete chat.'); return; }
+            lastMsgId = 0;
+            if (msgBox) {
+                msgBox.innerHTML = `
+                    <div class="nch-welcome">
+                        <strong>Chat cleared</strong>
+                        Start a new conversation anytime.
+                    </div>
+                    <div class="nch-typing" id="nch-typing"><span></span><span></span><span></span></div>`;
+            }
+        })
+        .catch(() => alert('Could not delete chat. Please try again.'));
+    }
 
     // ── Send message ───────────────────────────────────────────
     function sendMessage() {
+        if (!CHAT_LOGGED_IN) {
+            window.location.href = LOGIN_URL;
+            return;
+        }
         const txt = input.value.trim();
         if (!txt) return;
 
-        // Optimistic render
         appendBubble('user', txt, 'Just now');
         input.value = '';
         input.style.height = 'auto';
@@ -1109,6 +1099,7 @@ require_once __DIR__ . '/../user/db.php';
         })
         .then(r => r.json())
         .then(d => {
+            if (handleAuthError(d)) return;
             if (d.ok) lastMsgId = Math.max(lastMsgId, d.id);
         })
         .catch(console.error)
@@ -1117,7 +1108,7 @@ require_once __DIR__ . '/../user/db.php';
 
     // ── Append bubble ──────────────────────────────────────────
     function appendBubble(sender, text, time) {
-        // Remove welcome message if still present
+        if (!msgBox) return;
         const welcome = msgBox.querySelector('.nch-welcome');
         if (welcome) welcome.remove();
 
@@ -1136,13 +1127,31 @@ require_once __DIR__ . '/../user/db.php';
 
         wrap.appendChild(bbl);
         wrap.appendChild(t);
-        // Insert before typing indicator
-        msgBox.insertBefore(wrap, typing);
+        const typingInd = document.getElementById('nch-typing');
+        if (typingInd) msgBox.insertBefore(wrap, typingInd);
+        else msgBox.appendChild(wrap);
         scrollToBottom();
     }
 
     function scrollToBottom() {
-        msgBox.scrollTop = msgBox.scrollHeight;
+        if (msgBox) msgBox.scrollTop = msgBox.scrollHeight;
+    }
+
+    function loadHistory() {
+        lastMsgId = 0;
+        fetch(`${HANDLER}?action=poll&since=0`)
+        .then(r => r.json())
+        .then(d => {
+            if (handleAuthError(d)) return;
+            if (!d.ok || !msgBox) return;
+            const welcome = msgBox.querySelector('.nch-welcome');
+            if (welcome) welcome.remove();
+            (d.messages || []).forEach(m => {
+                appendBubble(m.sender, m.message, formatTime(m.created_at));
+                lastMsgId = Math.max(lastMsgId, +m.id);
+            });
+        })
+        .catch(console.error);
     }
 
     function formatTime(dateStr) {
@@ -1161,9 +1170,11 @@ require_once __DIR__ . '/../user/db.php';
     }
 
     function poll() {
+        if (!CHAT_LOGGED_IN) return;
         fetch(`${HANDLER}?action=poll&since=${lastMsgId}`)
         .then(r => r.json())
         .then(d => {
+            if (handleAuthError(d)) return;
             if (!d.ok || !d.messages.length) return;
             d.messages.forEach(m => {
                 if (+m.id <= lastMsgId) return;
@@ -1190,26 +1201,26 @@ require_once __DIR__ . '/../user/db.php';
         badge.classList.remove('show');
     }
 
-    // Start polling silently even when closed so badge updates
-    setTimeout(() => {
-        setInterval(() => {
-            if (isOpen) return; // handled by startPolling
-            fetch(`${HANDLER}?action=poll&since=${lastMsgId}`)
-            .then(r => r.json())
-            .then(d => {
-                if (!d.ok || !d.messages.length) return;
-                d.messages.forEach(m => {
-                    if (+m.id <= lastMsgId) return;
-                    lastMsgId = +m.id;
-                    if (m.sender === 'admin') bumpUnread();
-                });
-            })
-            .catch(()=>{});
-        }, 8000);
-    }, 5000);
+    if (CHAT_LOGGED_IN) {
+        setTimeout(() => {
+            setInterval(() => {
+                if (isOpen) return;
+                fetch(`${HANDLER}?action=poll&since=${lastMsgId}`)
+                .then(r => r.json())
+                .then(d => {
+                    if (handleAuthError(d)) return;
+                    if (!d.ok || !d.messages.length) return;
+                    d.messages.forEach(m => {
+                        if (+m.id <= lastMsgId) return;
+                        lastMsgId = +m.id;
+                        if (m.sender === 'admin') bumpUnread();
+                    });
+                })
+                .catch(()=>{});
+            }, 8000);
+        }, 5000);
+    }
 })();
 </script>
 
-<?php include '../includes/footer.php'; ?>
-<?php include __DIR__ . '/../includes/footer.php'; ?>
 <?php include '../includes/footer.php'; ?>

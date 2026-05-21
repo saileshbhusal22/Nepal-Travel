@@ -14,7 +14,7 @@
         <?php if (isset($_SESSION['user_id'])): ?>
             <button id="openPostModalBtn" class="premium-btn">Create a Post</button>
         <?php else: ?>
-            <a href="../user/login.php" class="premium-btn" style="text-decoration: none;">Log In to Post</a>
+            <a href="<?= htmlspecialchars($auth_login_url) ?>" class="premium-btn" style="text-decoration: none;">Log In to Post</a>
         <?php endif; ?>
     </div>
 </section>
@@ -58,7 +58,7 @@
         <h1 style="font-family: 'Playfair Display', serif; font-size: 56px; margin: 0; line-height: 1.1;">Nepal Through Your Eyes</h1>
         <p style="font-size: 18px; max-width: 600px; margin: 20px auto 0; opacity: 0.9;">Join a community of explorers sharing raw, authentic moments from every corner of the Himalayas.</p>
         <?php if (!isset($_SESSION['user_id'])): ?>
-            <a href="user/login.php" class="premium-btn" style="margin-top: 30px; display: inline-block; text-decoration: none;">Start Sharing Your Story</a>
+            <a href="<?= htmlspecialchars($auth_login_url) ?>" class="premium-btn" style="margin-top: 30px; display: inline-block; text-decoration: none;">Start Sharing Your Story</a>
         <?php else: ?>
             <button id="openPostModalBtn" class="premium-btn" style="margin-top: 30px; border: none;">Share Your Latest Adventure</button>
         <?php endif; ?>
@@ -108,6 +108,8 @@
                         </div>
                         <h3 style="font-family: 'Playfair Display', serif; font-size: 20px;">Welcome, <?php echo htmlspecialchars($_SESSION['user_name'] ?? $_SESSION['username'] ?? 'Traveler'); ?>!</h3>
                         
+                        <div id="postQuotaBanner" style="display:none;font-size:12px;line-height:1.5;color:#666;background:#fff8e8;border:1px solid #f5a62333;border-radius:10px;padding:10px 12px;margin:12px 0;text-align:left;"></div>
+
                         <div class="user-stats" style="display: flex; justify-content: center; gap: 20px; margin: 15px 0;">
                             <div class="stat-item" style="text-align: center;">
                                 <span id="userPostCount" style="display: block; font-weight: 800; font-size: 18px; color: #1b3a5a;">-</span>
@@ -125,6 +127,7 @@
 
                         <div class="sidebar-actions" style="margin-top: 20px; display: flex; flex-direction: column; gap: 10px;">
                             <button id="openPostModalBtnSide" class="premium-btn" style="width: 100%; border: none;">Create a Post</button>
+                            <a href="experience-subscription.php" class="premium-btn outline" style="width: 100%; text-align: center; text-decoration: none; background: transparent; border: 2px solid #f5a623; color: #c47d00; box-sizing: border-box;">Subscription (Khalti / eSewa)</a>
                             <?php if(isset($_SESSION['user_id'])): ?>
                                 <button id="myPostsFilterBtn" class="premium-btn outline" style="width: 100%; background: transparent; border: 2px solid #1b3a5a; color: #1b3a5a;">My Shared Memories</button>
                             <?php endif; ?>
@@ -137,7 +140,7 @@
                         </div>
                         <h3 style="font-family: 'Playfair Display', serif; font-size: 20px;">Join the Community</h3>
                         <p style="margin-bottom: 20px;">Share your personal travel moments and connect with a world of explorers.</p>
-                        <a href="user/login.php" class="premium-btn small-btn" style="text-decoration: none; display: block; border: none;">Log In to Share</a>
+                        <a href="<?= htmlspecialchars($auth_login_url) ?>" class="premium-btn small-btn" style="text-decoration: none; display: block; border: none;">Log In to Share</a>
                     </div>
                 <?php endif; ?>
             </div>
@@ -177,7 +180,7 @@
         <form id="createPostForm" enctype="multipart/form-data">
             <div class="form-group">
                 <label>Upload Image</label>
-                <input type="file" name="image" id="postImage" accept="image/*" required>
+                <input type="file" name="image" id="postImage" accept="image/*">
             </div>
             <div class="image-preview-container" style="display:none; text-align: center; margin: 15px 0;">
                 <div style="max-height: 400px; overflow: hidden; border-radius: 8px; background: #f4f4f4;">
@@ -214,7 +217,7 @@
             </div>
             <div class="form-group">
                 <label>Write a Caption</label>
-                <textarea name="caption" rows="4" placeholder="What was the highlight of this experience?" required></textarea>
+                <textarea name="caption" rows="4" placeholder="What was the highlight of this experience?"></textarea>
             </div>
             <button type="submit" class="premium-btn" style="width: 100%;">Share Experience</button>
             <div id="postError" style="color: red; margin-top: 10px; display: none;"></div>
@@ -224,6 +227,11 @@
 
 <script>
     const currentUserId = <?php echo isset($_SESSION['user_id']) ? $_SESSION['user_id'] : 0; ?>;
+    window.NT_AUTH = {
+        loginUrl: <?= json_encode($auth_login_url, JSON_UNESCAPED_SLASHES) ?>,
+        registerUrl: <?= json_encode($auth_register_url, JSON_UNESCAPED_SLASHES) ?>,
+        subscriptionUrl: '/Nepal-Travel/Public/experience-subscription.php'
+    };
 </script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
 <script src="../assets/js/experience.js"></script>

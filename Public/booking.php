@@ -708,7 +708,7 @@ include '../includes/header.php';
   <?php if ($ud_id > 0): ?>
     <a href="Ud_deal_details.php?ud=<?= $ud_id ?>" class="back-link">← Back to Deal</a>
   <?php elseif ($deal_id > 0): ?>
-    <a href="deal_details.php?id=<?= $deal_id ?>" class="back-link">← Back to Deal</a>
+    <a href="deal-details.php?id=<?= $deal_id ?>" class="back-link">← Back to Deal</a>
   <?php else: ?>
     <a href="deals.php" class="back-link">← Back to Deals &amp; Packages</a>
   <?php endif; ?>

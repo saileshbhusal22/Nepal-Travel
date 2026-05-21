@@ -70,6 +70,7 @@ $amount_npr = (float)$plan['price'];
 // ════════════════════════════════════════════════════════════════
 
 // Layer 1 — same plan, active or pending
+/*
 $dupStmt = $conn->prepare(
     "SELECT id FROM user_subscriptions
      WHERE user_id = ? AND plan_id = ? AND status IN ('active', 'pending')
@@ -85,9 +86,11 @@ if ($existing_sub_id) {
     header('Location: subscription.php?msg=already_subscribed&sub_id=' . $existing_sub_id);
     exit;
 }
+*/
 
 // Layer 2 — any active subscription at all
 // (one active sub at a time policy — remove this block if you allow multiple)
+/*
 $anyStmt = $conn->prepare(
     "SELECT id FROM user_subscriptions
      WHERE user_id = ? AND status = 'active'
@@ -103,6 +106,7 @@ if ($any_active_sub_id) {
     header('Location: subscription.php?msg=already_has_active');
     exit;
 }
+*/
 
 $transaction_uuid = 'SUB-' . uniqid() . '-' . time();
 

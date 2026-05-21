@@ -91,6 +91,7 @@ body {
 .social-buttons {
   display: flex;
   flex-direction: column;
+  align-items: center;
   gap: 10px;
   margin-bottom: 18px;
   width: 100%;
@@ -98,17 +99,20 @@ body {
 
 #googleButtonContainer {
   width: 100%;
+  display: flex;
+  justify-content: center;
 }
 #googleButtonContainer > div {
-  width: 100% !important;
+  width: auto !important;
 }
 #googleButtonContainer iframe {
-  width: 100% !important;
+  width: auto !important;
 }
 
 .social-btn {
-  width: 100%;
-  height: 44px;
+  width: 300px;
+  max-width: 100%;
+  height: 40px;
   padding: 0 16px;
   border-radius: 6px;
   border: 1px solid rgba(255,255,255,0.2);
@@ -481,7 +485,7 @@ small {
     margin-bottom: 10px;
   }
   .social-btn {
-    height: 46px;
+    height: 40px;
     font-size: 14px;
   }
   .create-btn {
