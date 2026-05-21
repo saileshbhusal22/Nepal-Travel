@@ -25,6 +25,10 @@ if (empty($query)) {
 // ═══════════════════════════════════════════════════════════════════════════
 // INTENT DETECTION: Classify query type
 // ═══════════════════════════════════════════════════════════════════════════
+/**
+ * Maps common travel terms to specific "intents". This allows the API to
+ * understand if the user is looking for a trek, a budget deal, food, etc.
+ */
 $intents = [
     'budget'    => ['budget', 'cheap', 'affordable', 'under', 'price', 'cost', 'rupees', 'npr'],
     'trek'      => ['trek', 'hike', 'hiking', 'mountain', 'trail', 'climbing', 'altitude'],
@@ -62,6 +66,11 @@ foreach ($locations as $loc) {
 $recommendations = [];
 
 // 1. ADMIN DEALS (from deals table)
+/**
+ * Queries the main `deals` table based on the detected intents and locations.
+ * Dynamically constructs SQL WHERE clauses to filter results and calculates
+ * the average rating from the `deal_reviews` table.
+ */
 if (!empty($detected_intents) || !empty($detected_locations)) {
     $where_clauses = [];
     
@@ -145,6 +154,10 @@ if (!empty($detected_intents) || !empty($detected_locations)) {
 }
 
 // 2. USER-SUBMITTED DEALS (approved and visible)
+/**
+ * Queries the `user_deals` table to find community-submitted travel packages.
+ * Ensures only deals that are 'approved' and within their visible date range are shown.
+ */
 $user_deals_query = "
     SELECT 
         ud.id,
@@ -186,6 +199,10 @@ if ($result = $conn->query($user_deals_query)) {
 }
 
 // 3. EVENTS (hardcoded but we can enhance with keyword matching)
+/**
+ * Appends upcoming static events to the recommendations list if the user's 
+ * detected intent matches categories like 'event', 'food', or 'adventure'.
+ */
 // For now, return related hardcoded events based on intent
 $all_events = [
     ['id' => 1, 'type' => 'event', 'title' => 'Buddha Jayanti Celebration', 'description' => 'Join the grand spiritual celebration at the birthplace of Lord Buddha.', 'date' => '12 MAY 2026', 'category' => 'Festival', 'detail_link' => '/Nepal-Travel/Public/events.php#buddha-jayanti'],

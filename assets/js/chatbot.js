@@ -239,6 +239,10 @@
   // ═══════════════════════════════════════════════════════════════════════
   // 4. WELCOME MESSAGE
   // ═══════════════════════════════════════════════════════════════════════
+  /**
+   * Displays the initial personalized welcome message from Sherpa AI
+   * to get the conversation started.
+   */
   function showWelcome() {
     const firstName = currentUserName.split(" ")[0];
     appendMessage(
@@ -261,6 +265,10 @@
     historyPanel.classList.remove("shp-open");
   }
 
+  /**
+   * Fetches the user's past conversations from the backend database
+   * and populates them into the history sidebar UI.
+   */
   async function loadHistory() {
     historyList.innerHTML = '<div class="shp-loading">Loading…</div>';
     try {
@@ -372,6 +380,10 @@
   // ═══════════════════════════════════════════════════════════════════════
   // 6. NEW CHAT
   // ═══════════════════════════════════════════════════════════════════════
+  /**
+   * Resets the chat interface and internal state variables to begin
+   * a fresh, empty conversation.
+   */
   function startNewChat() {
     if (!isLoggedIn) {
       showLoginBanner();
@@ -566,6 +578,11 @@
   // ═══════════════════════════════════════════════════════════════════════
   // 8B. RECOMMENDATIONS
   // ═══════════════════════════════════════════════════════════════════════
+  /**
+   * Queries the backend for dynamic travel recommendations (deals, tours, etc.)
+   * based on the context of the user's latest message.
+   * @param {string} userQuery - The text of the user's most recent message.
+   */
   async function fetchRecommendations(userQuery) {
     if (!isLoggedIn || !userQuery) return;
     try {
