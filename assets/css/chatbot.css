@@ -1,5 +1,9 @@
 /* ========== SHERPA CHATBOT - PREMIUM CSS ========== */
 
+/**
+ * Root CSS variables defining the design system, colors, and shadows.
+ * These variables ensure consistency across the chatbot UI.
+ */
 :root {
   --sherpa-primary: #0f172a;
   --sherpa-accent: #3b82f6;
@@ -111,6 +115,10 @@
 
 /* ========== MAIN CHATBOT CONTAINER ========== */
 
+/**
+ * The main container for the chat interface. Uses a glassmorphism effect
+ * and smooth transitions for opening and closing.
+ */
 .sherpa-chatbot {
   position: fixed;
   bottom: 100px;
@@ -198,6 +206,10 @@
 
 /* ========== MESSAGES AREA ========== */
 
+/**
+ * Scrollable container for the chat bubbles. Includes custom styling
+ * for smooth scrolling and spacing.
+ */
 .sherpa-messages {
   flex: 1;
   overflow-y: auto;

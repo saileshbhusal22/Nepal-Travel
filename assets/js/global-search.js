@@ -1,536 +1,305 @@
-// Global Search Portal Functionality
 document.addEventListener("DOMContentLoaded", function () {
-  // Get DOM elements
-  const searchPortal = document.getElementById("searchPortal");
-  const openSearchBtn = document.getElementById("openSearchBtn");
-  const openSearchBtn2 = document.getElementById("openSearchBtn2");
-  const closeSearchBtn = document.getElementById("closeSearch");
+  const searchTrigger = document.querySelector('a[href="#search-portal"]');
+  const searchOverlay = document.getElementById("searchPortal");
+  const searchClose = document.getElementById("closeSearch");
   const searchInput = document.getElementById("globalSearchInput");
-  const clearSearchBtn = document.getElementById("clearSearchInput");
-  const searchPulse = document.getElementById("searchPulse");
-  const resultsGrid = document.getElementById("searchResultsGrid");
-  const searchTabs = document.querySelectorAll(".search-tab-btn");
+  const clearInputBtn = document.getElementById("clearSearchInput");
+  const pulse = document.getElementById("searchPulse");
+  const resultsContainer = document.getElementById("searchResultsGrid");
   const suggestionsPanel = document.getElementById("suggestionsPanel");
-  const suggestionChips = document.querySelectorAll(".suggestion-chip");
+  const recentBlock = document.getElementById("recentSearchesBlock");
+  const recentChips = document.getElementById("recentSearchesChips");
+  const tabBtns = document.querySelectorAll(".search-tab-btn");
 
+  let searchTimeout = null;
+  let currentResults = null;
   let currentTab = "all";
-  let searchResults = {
-    all: [],
-    experiences: [],
-    ideas: [],
-    deals: [],
+
+  const ICONS = {
+    experience: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 5px; vertical-align: middle;"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>`,
+    idea: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 5px; vertical-align: middle;"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"></polygon><line x1="8" y1="2" x2="8" y2="18"></line><line x1="16" y1="6" x2="16" y2="22"></line></svg>`,
+    deal: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 5px; vertical-align: middle;"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7.01" y2="7"></line></svg>`,
   };
 
-  // Mock data for search results
-  const mockData = {
-    experiences: [
-      {
-        id: 1,
-        title: "Everest Base Camp Trek",
-        image: "/Nepal-Travel/images/everest_trek.png",
-        type: "EXPERIENCE",
-        link: "/Nepal-Travel/Public/experience.php",
-      },
-      {
-        id: 2,
-        title: "Pokhara Adventure",
-        image: "/Nepal-Travel/images/pokhara_lake.png",
-        type: "EXPERIENCE",
-        link: "/Nepal-Travel/Public/experience.php",
-      },
-      {
-        id: 3,
-        title: "Kathmandu Cultural Tour",
-        image: "/Nepal-Travel/images/bhaktapur_temple.png",
-        type: "EXPERIENCE",
-        link: "/Nepal-Travel/Public/experience.php",
-      },
-      {
-        id: 10,
-        title: "Chitwan Wildlife Safari",
-        image: "/Nepal-Travel/images/chitwan_rhino.png",
-        type: "EXPERIENCE",
-        link: "/Nepal-Travel/Public/experience.php",
-      },
-      {
-        id: 11,
-        title: "Annapurna Trek",
-        image: "/Nepal-Travel/images/annapurna_trek.png",
-        type: "EXPERIENCE",
-        link: "/Nepal-Travel/Public/experience.php",
-      },
-    ],
-    ideas: [
-      {
-        id: 4,
-        title: "7-Day Nepal Adventure",
-        image: "/Nepal-Travel/images/annapurna_trek.png",
-        type: "IDEA",
-        link: "/Nepal-Travel/Public/travel-ideas.php",
-      },
-      {
-        id: 5,
-        title: "Budget Travel Guide",
-        image: "/Nepal-Travel/images/food_drinks_nepal.png",
-        type: "IDEA",
-        link: "/Nepal-Travel/Public/travel-ideas.php",
-      },
-      {
-        id: 6,
-        title: "Best Time to Visit",
-        image: "/Nepal-Travel/images/city_excitement_nepal.png",
-        type: "IDEA",
-        link: "/Nepal-Travel/Public/travel-ideas.php",
-      },
-      {
-        id: 12,
-        title: "Family Fun in Nepal",
-        image: "/Nepal-Travel/images/family_fun_nepal.png",
-        type: "IDEA",
-        link: "/Nepal-Travel/Public/travel-ideas.php",
-      },
-      {
-        id: 17,
-        title: "Kathmandu Heritage Walk",
-        image: "/Nepal-Travel/images/kathmandu_night_hero.png",
-        type: "IDEA",
-        link: "/Nepal-Travel/Public/travel-ideas.php",
-      },
-      {
-        id: 18,
-        title: "Everest Panorama Story",
-        image: "/Nepal-Travel/images/everest_trek.png",
-        type: "IDEA",
-        link: "/Nepal-Travel/Public/travel-ideas.php",
-      },
-      {
-        id: 19,
-        title: "Pokhara Lakeside Escape",
-        image: "/Nepal-Travel/images/pokhara_lake.png",
-        type: "IDEA",
-        link: "/Nepal-Travel/Public/travel-ideas.php",
-      },
-    ],
-    deals: [
-      {
-        id: 7,
-        title: "Mountain Trek Package - 40% OFF",
-        image: "/Nepal-Travel/images/everest_trek.png",
-        type: "DEAL",
-        link: "/Nepal-Travel/Public/deals-and-packages.php",
-      },
-      {
-        id: 8,
-        title: "Luxury Resort Stay - Early Bird",
-        image: "/Nepal-Travel/images/kathmandu_night_hero.png",
-        type: "DEAL",
-        link: "/Nepal-Travel/Public/deals-and-packages.php",
-      },
-      {
-        id: 9,
-        title: "Group Tour Discount",
-        image: "/Nepal-Travel/images/chitwan_rhino.png",
-        type: "DEAL",
-        link: "/Nepal-Travel/Public/deals-and-packages.php",
-      },
-      {
-        id: 13,
-        title: "Lumbini Pilgrimage Package",
-        image: "/Nepal-Travel/images/lumbini_temple.png",
-        type: "DEAL",
-        link: "/Nepal-Travel/Public/deals-and-packages.php",
-      },
-      {
-        id: 14,
-        title: "Nepal Honeymoon Package - 35% Discount",
-        image: "/Nepal-Travel/images/kathmandu_night_hero.png",
-        type: "PACKAGE",
-        link: "/Nepal-Travel/Public/deals-and-packages.php",
-      },
-      {
-        id: 15,
-        title: "5-Day Kathmandu Valley Tour",
-        image: "/Nepal-Travel/images/bhaktapur_temple.png",
-        type: "PACKAGE",
-        link: "/Nepal-Travel/Public/deals-and-packages.php",
-      },
-      {
-        id: 16,
-        title: "Pokhara Lake & Mountain Package",
-        image: "/Nepal-Travel/images/pokhara_lake.png",
-        type: "PACKAGE",
-        link: "/Nepal-Travel/Public/deals-and-packages.php",
-      },
-      {
-        id: 17,
-        title: "Kathmandu Valley - 5D4N Heritage Exploration",
-        image: "/Nepal-Travel/images/bhaktapur_temple.png",
-        type: "DEAL",
-        link: "/Nepal-Travel/Public/deals-and-packages.php",
-      },
-      {
-        id: 18,
-        title: "Pokhara Honeymoon Escape",
-        image: "/Nepal-Travel/images/pokhara_lake.png",
-        type: "DEAL",
-        link: "/Nepal-Travel/Public/deals-and-packages.php",
-      },
-      {
-        id: 19,
-        title: "Everest Base Camp Special Offer",
-        image: "/Nepal-Travel/images/everest_trek.png",
-        type: "DEAL",
-        link: "/Nepal-Travel/Public/deals-and-packages.php",
-      },
-    ],
-  };
-
-  // Open search portal
-  function openSearchPortal() {
-    searchPortal.classList.add("active");
-    searchInput.focus();
-    resultsGrid.innerHTML = "";
-    suggestionsPanel.style.display = "block";
+  // --- State Management ---
+  function getRecent() {
+    return JSON.parse(localStorage.getItem("nepal_recent_searches") || "[]");
   }
 
-  // Close search portal
-  function closeSearchPortal() {
-    searchPortal.classList.remove("active");
+  function saveRecent(query) {
+    let recent = getRecent();
+    recent = [query, ...recent.filter((q) => q !== query)].slice(0, 5);
+    localStorage.setItem("nepal_recent_searches", JSON.stringify(recent));
+    updateRecentUI();
+  }
+
+  function updateRecentUI() {
+    const recent = getRecent();
+    if (recent.length > 0) {
+      recentBlock.style.display = "block";
+      recentChips.innerHTML = recent
+        .map((q) => `<span class="suggestion-chip">${q}</span>`)
+        .join("");
+
+      recentChips.querySelectorAll(".suggestion-chip").forEach((chip) => {
+        chip.addEventListener("click", () => {
+          searchInput.value = chip.textContent;
+          performSearch(chip.textContent);
+        });
+      });
+    } else {
+      recentBlock.style.display = "none";
+    }
+  }
+
+  // --- Overlay Control ---
+  function openOverlay() {
+    searchOverlay.classList.add("active");
+    document.body.style.overflow = "hidden";
+    updateRecentUI();
+    suggestionsPanel.style.display = "block";
+
+    // Update URL to persist state across refreshes
+    if (window.location.hash !== "#search-portal") {
+      history.pushState(null, null, "#search-portal");
+    }
+
+    setTimeout(() => searchInput.focus(), 500);
+  }
+
+  function closeOverlay() {
+    searchOverlay.classList.remove("active");
+    document.body.style.overflow = "";
     searchInput.value = "";
-    clearSearchBtn.classList.remove("visible");
-    searchPulse.classList.remove("active");
-    resultsGrid.innerHTML = "";
-    suggestionsPanel.style.display = "block";
+    resultsContainer.innerHTML = "";
+    suggestionsPanel.style.display = "none";
+    clearInputBtn.style.display = "none";
+    resetTabs();
+
+    // Remove hash from URL
+    if (window.location.hash === "#search-portal") {
+      history.pushState(
+        null,
+        null,
+        window.location.pathname + window.location.search,
+      );
+    }
   }
 
-  // Close on background click
-  searchPortal.addEventListener("click", function (e) {
-    if (e.target === searchPortal) {
-      closeSearchPortal();
+  if (searchTrigger)
+    searchTrigger.addEventListener("click", (e) => {
+      e.preventDefault();
+      openOverlay();
+    });
+  if (searchClose) searchClose.addEventListener("click", closeOverlay);
+
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && searchOverlay.classList.contains("active"))
+      closeOverlay();
+  });
+
+  // --- Search Input Logic ---
+  searchInput.addEventListener("keydown", function (e) {
+    if (e.key === "Enter") {
+      e.preventDefault(); // Prevent accidental form submission/reload
+      const query = this.value.trim();
+      if (query.length >= 2) performSearch(query);
     }
   });
 
-  // Open button listeners
-  if (openSearchBtn) {
-    openSearchBtn.addEventListener("click", function (e) {
-      e.preventDefault();
-      openSearchPortal();
-    });
-  }
-
-  if (openSearchBtn2) {
-    openSearchBtn2.addEventListener("click", function (e) {
-      e.preventDefault();
-      openSearchPortal();
-    });
-  }
-
-  // Close button listener
-  if (closeSearchBtn) {
-    closeSearchBtn.addEventListener("click", closeSearchPortal);
-  }
-
-  // Clear search input
-  if (clearSearchBtn) {
-    clearSearchBtn.addEventListener("click", function () {
-      searchInput.value = "";
-      searchResults = { all: [], experiences: [], ideas: [], deals: [] };
-      clearSearchBtn.classList.remove("visible");
-      searchPulse.classList.remove("active");
-      resultsGrid.innerHTML = "";
-      suggestionsPanel.style.display = "block";
-      updateResultCounts();
-    });
-  }
-
-  // Search input listener
   searchInput.addEventListener("input", function () {
-    const query = this.value.trim().toLowerCase();
+    const query = this.value.trim();
+    clearInputBtn.style.display = query ? "block" : "none";
 
     if (query.length === 0) {
-      clearSearchBtn.classList.remove("visible");
-      searchResults = { all: [], experiences: [], ideas: [], deals: [] };
-      resultsGrid.innerHTML = "";
       suggestionsPanel.style.display = "block";
-      updateResultCounts();
+      resultsContainer.innerHTML = "";
+      resetTabs();
       return;
     }
 
-    if (query.length > 0) {
-      clearSearchBtn.classList.add("visible");
-      searchPulse.classList.add("active");
-      suggestionsPanel.style.display = "none";
-    }
+    suggestionsPanel.style.display = "none";
 
-    // Simulate search delay
-    setTimeout(() => {
-      performSearch(query);
-      searchPulse.classList.remove("active");
-    }, 500);
+    clearTimeout(searchTimeout);
+    if (query.length < 2) return;
+
+    pulse.classList.add("active");
+    searchTimeout = setTimeout(() => performSearch(query), 400);
   });
 
-  // Perform search
-  function performSearch(query) {
-    searchResults = {
-      all: [],
-      experiences: [],
-      ideas: [],
-      deals: [],
-    };
+  clearInputBtn.addEventListener("click", () => {
+    searchInput.value = "";
+    searchInput.focus();
+    clearInputBtn.style.display = "none";
+    suggestionsPanel.style.display = "block";
+    resultsContainer.innerHTML = "";
+    resetTabs();
+  });
 
-    // Search through experiences
-    mockData.experiences.forEach((item) => {
-      if (item.title.toLowerCase().includes(query)) {
-        searchResults.experiences.push(item);
-        searchResults.all.push(item);
-      }
+  // Trending Chips
+  document.querySelectorAll(".suggestion-chip").forEach((chip) => {
+    chip.addEventListener("click", () => {
+      searchInput.value = chip.textContent;
+      clearInputBtn.style.display = "block";
+      performSearch(chip.textContent);
     });
+  });
 
-    // Search through ideas
-    mockData.ideas.forEach((item) => {
-      if (item.title.toLowerCase().includes(query)) {
-        searchResults.ideas.push(item);
-        searchResults.all.push(item);
+  // Forced Style Redundancy (Mental safety against persistent white-on-white)
+  searchInput.addEventListener("focus", function () {
+    this.style.backgroundColor = "#0c2136";
+    this.style.color = "#ffffff";
+  });
+
+  // --- API & Tabs ---
+  async function performSearch(query) {
+    suggestionsPanel.style.display = "none";
+    pulse.classList.add("active");
+
+    try {
+      const res = await fetch(
+        `../config/global_search.php?q=${encodeURIComponent(query)}`,
+      );
+      const data = await res.json();
+
+      pulse.classList.remove("active");
+      if (data.success) {
+        currentResults = data.results;
+        saveRecent(query);
+        updateTabCounts(data.counts);
+        renderResults();
       }
-    });
-
-    // Search through deals
-    mockData.deals.forEach((item) => {
-      if (item.title.toLowerCase().includes(query)) {
-        searchResults.deals.push(item);
-        searchResults.all.push(item);
-      }
-    });
-
-    // Update counts
-    updateResultCounts();
-
-    // Display results for current tab
-    displayResults(currentTab);
-
-    // Save to recent searches
-    saveRecentSearch(query);
+    } catch (err) {
+      console.error(err);
+      pulse.classList.remove("active");
+    }
   }
 
-  // Update result counts
-  function updateResultCounts() {
-    document.getElementById("count-all").textContent =
-      searchResults.experiences.length +
-      searchResults.ideas.length +
-      searchResults.deals.length;
+  function updateTabCounts(counts) {
+    document.getElementById("count-all").textContent = counts.total;
     document.getElementById("count-experiences").textContent =
-      searchResults.experiences.length;
-    document.getElementById("count-ideas").textContent =
-      searchResults.ideas.length;
-    document.getElementById("count-deals").textContent =
-      searchResults.deals.length;
+      counts.experiences;
+    document.getElementById("count-ideas").textContent = counts.ideas;
+    document.getElementById("count-deals").textContent = counts.deals;
   }
 
-  // Display results
-  function displayResults(tab) {
-    resultsGrid.innerHTML = "";
+  function resetTabs() {
+    tabBtns.forEach((b) => b.classList.remove("active"));
+    tabBtns[0].classList.add("active");
+    currentTab = "all";
+    ["all", "experiences", "ideas", "deals"].forEach((id) => {
+      const el = document.getElementById(`count-${id}`);
+      if (el) el.textContent = "0";
+    });
+  }
 
-    // Check if there are any results
-    const totalResults =
-      searchResults.experiences.length +
-      searchResults.ideas.length +
-      searchResults.deals.length;
+  tabBtns.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      tabBtns.forEach((b) => b.classList.remove("active"));
+      btn.classList.add("active");
+      currentTab = btn.dataset.tab;
+      renderResults();
+    });
+  });
 
-    if (totalResults === 0) {
-      resultsGrid.innerHTML = `
-                <div class="search-empty-state">
-                    <h3>No results found</h3>
-                    <p>Try searching for different keywords</p>
+  function renderResults() {
+    if (!currentResults) return;
+
+    let html = "";
+    const res = currentResults;
+    let globalIndex = 0;
+
+    // Determine what to show based on tab
+    const showExp = currentTab === "all" || currentTab === "experiences";
+    const showIdeas = currentTab === "all" || currentTab === "ideas";
+    const showDeals = currentTab === "all" || currentTab === "deals";
+
+    if (showExp && res.experiences.length > 0) {
+      html += generateCategory(
+        "COMMUNITY STORIES",
+        res.experiences,
+        (p) => ({
+          href: `experience.php?post=${p.id}`,
+          img: p.image_path,
+          title: `${ICONS.experience} @${p.username} in ${p.destination || "Nepal"}`,
+          meta: p.caption.substring(0, 60) + "...",
+        }),
+        globalIndex,
+      );
+      globalIndex += res.experiences.length;
+    }
+
+    if (showIdeas && res.ideas.length > 0) {
+      html += generateCategory(
+        "TRAVEL IDEAS",
+        res.ideas,
+        (i) => ({
+          href: `travel-idea-detail.php?id=${i.id}`,
+          img: i.image,
+          title: `${ICONS.idea} ${i.title}`,
+          meta: i.province,
+        }),
+        globalIndex,
+      );
+      globalIndex += res.ideas.length;
+    }
+
+    if (showDeals && res.deals.length > 0) {
+      html += generateCategory(
+        "HOT DEALS",
+        res.deals,
+        (d) => ({
+          href: `deal.php?id=${d.id}`,
+          img: d.image,
+          title: `${ICONS.deal} ${d.title}`,
+          meta: `${d.price} • ${d.region}`,
+        }),
+        globalIndex,
+      );
+      globalIndex += res.deals.length;
+    }
+
+    if (html === "") {
+      html = `<div class="no-results-msg" style="animation: fadeIn 0.5s ease both;">No matches found in this category for "${searchInput.value}".</div>`;
+    }
+
+    resultsContainer.innerHTML = html;
+  }
+
+  function generateCategory(title, items, mapFn, startIndex) {
+    return `
+            <div class="result-category">
+                <div class="result-category-title">${title}</div>
+                <div class="category-items-grid">
+                    ${items
+                      .map((item, i) => {
+                        const data = mapFn(item);
+                        return `
+                            <a href="${data.href}" class="search-result-card" style="animation-delay: ${(startIndex + i) * 0.05}s">
+                                <img src="${data.img}" class="result-img" alt="Result">
+                                <div class="result-info">
+                                    <span class="result-title">${data.title}</span>
+                                    <span class="result-meta">${data.meta}</span>
+                                </div>
+                            </a>
+                        `;
+                      })
+                      .join("")}
                 </div>
-            `;
-      return;
-    }
-
-    // Display EXPERIENCES section
-    if (searchResults.experiences.length > 0) {
-      const experienceSection = document.createElement("div");
-      experienceSection.className = "result-category";
-
-      const experienceTitle = document.createElement("div");
-      experienceTitle.className = "result-category-title";
-      experienceTitle.textContent = "COMMUNITY STORIES";
-      experienceSection.appendChild(experienceTitle);
-
-      const experienceScrollContainer = document.createElement("div");
-      experienceScrollContainer.className = "category-scroll-container";
-
-      searchResults.experiences.forEach((item) => {
-        const card = document.createElement("div");
-        card.className = "search-result-card search-result-card-horizontal";
-        card.style.cursor = "pointer";
-        card.innerHTML = `
-                  <img src="${item.image}" alt="${item.title}" class="search-result-image" onerror="this.src='/Nepal-Travel/images/placeholder.jpg'">
-                  <div class="search-result-content">
-                      <div class="search-result-badge">${item.type}</div>
-                      <div class="search-result-title">${item.title}</div>
-                  </div>
-              `;
-        card.addEventListener("click", function () {
-          if (item.link) {
-            window.location.href = item.link;
-          }
-        });
-        experienceScrollContainer.appendChild(card);
-      });
-
-      experienceSection.appendChild(experienceScrollContainer);
-      resultsGrid.appendChild(experienceSection);
-    }
-
-    // Display IDEAS section
-    if (searchResults.ideas.length > 0) {
-      const ideasSection = document.createElement("div");
-      ideasSection.className = "result-category";
-
-      const ideasTitle = document.createElement("div");
-      ideasTitle.className = "result-category-title";
-      ideasTitle.textContent = "TRAVEL IDEAS";
-      ideasSection.appendChild(ideasTitle);
-
-      const ideasContainer = document.createElement("div");
-      ideasContainer.className = "category-vertical-container";
-
-      searchResults.ideas.forEach((item) => {
-        const card = document.createElement("div");
-        card.className = "search-result-card search-result-card-vertical";
-        card.style.cursor = "pointer";
-        card.innerHTML = `
-                  <img src="${item.image}" alt="${item.title}" class="search-result-image" onerror="this.src='/Nepal-Travel/images/placeholder.jpg'">
-                  <div class="search-result-content">
-                      <div class="search-result-badge">${item.type}</div>
-                      <div class="search-result-title">${item.title}</div>
-                  </div>
-              `;
-        card.addEventListener("click", function () {
-          if (item.link) {
-            window.location.href = item.link;
-          }
-        });
-        ideasContainer.appendChild(card);
-      });
-
-      ideasSection.appendChild(ideasContainer);
-      resultsGrid.appendChild(ideasSection);
-    }
-
-    // Display DEALS section
-    if (searchResults.deals.length > 0) {
-      const dealsSection = document.createElement("div");
-      dealsSection.className = "result-category";
-
-      const dealsTitle = document.createElement("div");
-      dealsTitle.className = "result-category-title";
-      dealsTitle.textContent = "HOT DEALS";
-      dealsSection.appendChild(dealsTitle);
-
-      const dealsContainer = document.createElement("div");
-      dealsContainer.className = "category-vertical-container";
-
-      searchResults.deals.forEach((item) => {
-        const card = document.createElement("div");
-        card.className = "search-result-card search-result-card-vertical";
-        card.style.cursor = "pointer";
-        card.innerHTML = `
-                  <img src="${item.image}" alt="${item.title}" class="search-result-image" onerror="this.src='/Nepal-Travel/images/placeholder.jpg'">
-                  <div class="search-result-content">
-                      <div class="search-result-badge">${item.type}</div>
-                      <div class="search-result-title">${item.title}</div>
-                  </div>
-              `;
-        card.addEventListener("click", function () {
-          if (item.link) {
-            window.location.href = item.link;
-          }
-        });
-        dealsContainer.appendChild(card);
-      });
-
-      dealsSection.appendChild(dealsContainer);
-      resultsGrid.appendChild(dealsSection);
-    }
+            </div>
+        `;
+  }
+  // Check for hash on load
+  if (window.location.hash === "#search-portal") {
+    openOverlay();
   }
 
-  // Tab switching
-  searchTabs.forEach((tab) => {
-    tab.addEventListener("click", function () {
-      // Update active tab
-      searchTabs.forEach((t) => t.classList.remove("active"));
-      this.classList.add("active");
-
-      currentTab = this.dataset.tab;
-      // Always display all categories regardless of tab
-      displayResults("all");
-    });
-  });
-
-  // Suggestion chip click handler
-  suggestionChips.forEach((chip) => {
-    chip.addEventListener("click", function () {
-      searchInput.value = this.textContent.trim();
-      clearSearchBtn.classList.add("visible");
-      searchInput.dispatchEvent(new Event("input"));
-    });
-  });
-
-  // Save recent searches
-  function saveRecentSearch(query) {
-    let recentSearches =
-      JSON.parse(localStorage.getItem("recentSearches")) || [];
-
-    // Remove duplicate if exists
-    recentSearches = recentSearches.filter((s) => s !== query);
-
-    // Add to beginning
-    recentSearches.unshift(query);
-
-    // Keep only last 5
-    recentSearches = recentSearches.slice(0, 5);
-
-    localStorage.setItem("recentSearches", JSON.stringify(recentSearches));
-    updateRecentSearches();
-  }
-
-  // Update recent searches display
-  function updateRecentSearches() {
-    const recentSearches =
-      JSON.parse(localStorage.getItem("recentSearches")) || [];
-    const recentChips = document.getElementById("recentSearchesChips");
-    const recentBlock = document.getElementById("recentSearchesBlock");
-
-    if (recentSearches.length === 0) {
-      recentBlock.style.display = "none";
-      return;
-    }
-
-    recentBlock.style.display = "block";
-    recentChips.innerHTML = "";
-
-    recentSearches.forEach((search) => {
-      const chip = document.createElement("span");
-      chip.className = "suggestion-chip";
-      chip.textContent = search;
-      chip.style.cursor = "pointer";
-      chip.addEventListener("click", function () {
-        searchInput.value = search;
-        clearSearchBtn.classList.add("visible");
-        searchInput.dispatchEvent(new Event("input"));
-      });
-      recentChips.appendChild(chip);
-    });
-  }
-
-  // Initialize recent searches on load
-  updateRecentSearches();
-
-  // Close on Escape key
-  document.addEventListener("keydown", function (e) {
-    if (e.key === "Escape" && searchPortal.classList.contains("active")) {
-      closeSearchPortal();
+  // Handle back button / forward button portal toggle
+  window.addEventListener("hashchange", () => {
+    if (window.location.hash === "#search-portal") {
+      if (!searchOverlay.classList.contains("active")) openOverlay();
+    } else {
+      if (searchOverlay.classList.contains("active")) closeOverlay();
     }
   });
 });

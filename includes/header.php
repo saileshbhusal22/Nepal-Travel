@@ -199,5 +199,82 @@
 <!-- Live Support Chat Widget -->
 <script src="../assets/js/support_chat.js"></script>
 
+<!-- Global Search CSS & JS -->
+<link rel="stylesheet" href="../assets/css/global-search.css">
+
+<!-- Global Search Portal Modal -->
+<div id="searchPortal" class="search-overlay">
+    <div class="search-container">
+        <div class="search-header">
+            <h2>Discover Nepal</h2>
+        </div>
+
+        <div class="portal-search-wrapper">
+            <input 
+                type="text" 
+                id="globalSearchInput" 
+                class="search-input" 
+                placeholder="Search experiences, travel ideas, deals..."
+                autocomplete="off"
+            >
+            <button id="clearSearchInput" class="clear-btn" style="display:none;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+            </button>
+            <div id="searchPulse" class="pulse-loader"></div>
+        </div>
+
+        <!-- Suggestions Panel (Initial State) -->
+        <div id="suggestionsPanel" class="suggestions-panel">
+            <div id="recentSearchesBlock" class="recent-searches-block" style="display:none;">
+                <h3 style="color: #f5a623; margin-bottom: 15px; font-size: 14px; font-weight: 600;">RECENT SEARCHES</h3>
+                <div id="recentSearchesChips" class="recent-searches-chips"></div>
+            </div>
+
+            <div class="trending-searches-block">
+                <h3 style="color: #f5a623; margin-bottom: 15px; font-size: 14px; font-weight: 600;">TRENDING NOW</h3>
+                <div class="trending-searches-chips">
+                    <span class="suggestion-chip">Kathmandu</span>
+                    <span class="suggestion-chip">Everest Trek</span>
+                    <span class="suggestion-chip">Pokhara</span>
+                    <span class="suggestion-chip">Spiritual Retreats</span>
+                    <span class="suggestion-chip">Adventure</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tabs & Results Grid -->
+        <div class="search-results-wrapper">
+            <div class="search-tabs">
+                <button class="search-tab-btn active" data-tab="all">
+                    ALL <span id="count-all" class="tab-count">0</span>
+                </button>
+                <button class="search-tab-btn" data-tab="experiences">
+                    STORIES <span id="count-experiences" class="tab-count">0</span>
+                </button>
+                <button class="search-tab-btn" data-tab="ideas">
+                    IDEAS <span id="count-ideas" class="tab-count">0</span>
+                </button>
+                <button class="search-tab-btn" data-tab="deals">
+                    DEALS <span id="count-deals" class="tab-count">0</span>
+                </button>
+            </div>
+
+            <div id="searchResultsGrid" class="search-results-grid"></div>
+        </div>
+
+        <button id="closeSearch" class="close-search-btn">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+        </button>
+    </div>
+</div>
+
+<script src="../assets/js/global-search.js"></script>
+
 <!-- Discovery Portal Modal -->
 <div class="discovery-portal-wrapper" id="discoveryPortal">

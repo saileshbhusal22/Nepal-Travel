@@ -52,6 +52,10 @@
   // ═══════════════════════════════════════════════════════════════════════
   // 1. BUILD HTML
   // ═══════════════════════════════════════════════════════════════════════
+  /**
+   * Dynamically constructs the HTML layout for the chatbot and injects it into the DOM.
+   * Also binds necessary element references to internal variables.
+   */
   function buildHTML() {
     const html = `
 <div id="sherpa-chatbot-container">
@@ -175,6 +179,10 @@
   // ═══════════════════════════════════════════════════════════════════════
   // 2. AUTH CHECK
   // ═══════════════════════════════════════════════════════════════════════
+  /**
+   * Checks the user's authentication status using meta tags injected by the backend.
+   * Updates internal state variables accordingly.
+   */
   function checkAuth() {
     // Read from meta tags injected by PHP header
     const meta = document.getElementById("sherpa-user-meta");
@@ -380,6 +388,11 @@
   // ═══════════════════════════════════════════════════════════════════════
   // 7. SEND MESSAGE
   // ═══════════════════════════════════════════════════════════════════════
+  /**
+   * Processes and sends the user's message to the chatbot.
+   * Displays the message in the UI, saves it to the database, and requests the AI response.
+   * @param {string} text - The input text from the user.
+   */
   async function sendUserMessage(text) {
     text = text.trim();
     if (!text || isStreaming) return;
@@ -443,6 +456,10 @@
   // ═══════════════════════════════════════════════════════════════════════
   // 8. STREAM AI RESPONSE
   // ═══════════════════════════════════════════════════════════════════════
+  /**
+   * Sends the conversation context to the backend API and streams the AI's response
+   * character-by-character into the chat window.
+   */
   async function streamResponse() {
     isStreaming = true;
     sendBtn.disabled = true;
