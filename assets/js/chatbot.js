@@ -328,6 +328,11 @@
     }
   }
 
+  /**
+   * Clears the current chat interface and loads a specific past conversation from the database.
+   * @param {number|string} id - The unique ID of the conversation.
+   * @param {string} title - The title of the conversation to display in the UI toast.
+   */
   async function loadConversation(id, title) {
     conversationId = id;
     messages = [];
@@ -652,6 +657,13 @@
   // ═══════════════════════════════════════════════════════════════════════
   // 9. DOM HELPERS
   // ═══════════════════════════════════════════════════════════════════════
+  /**
+   * Constructs the HTML for a single chat bubble (user or assistant) and appends it to the chat window.
+   * Automatically attaches the "Copy to Clipboard" button if the sender is the assistant.
+   * @param {string} role - The sender role ('user' or 'assistant').
+   * @param {string} content - The message content to render.
+   * @param {Date} [dateObj] - Optional timestamp for the message.
+   */
   function appendMessage(role, content, dateObj) {
     const wrapper = document.createElement("div");
     wrapper.className = `sherpa-msg-wrapper sherpa-msg-wrapper--${role}`;
@@ -713,6 +725,12 @@
     return bubble;
   }
 
+  /**
+   * Attaches the timestamp and "Copy to Clipboard" button to the AI's streamed response
+   * once the stream has completely finished generating.
+   * @param {HTMLElement} bubble - The DOM element containing the message.
+   * @param {string} fullContent - The complete response text to be copied.
+   */
   function finaliseBubble(bubble, fullContent) {
     const meta = document.createElement("div");
     meta.className = "sherpa-msg-meta";
@@ -745,6 +763,12 @@
       .replace(/"/g, "&quot;");
   }
 
+  /**
+   * Uses the modern Clipboard API to copy the AI's response text. 
+   * Briefly changes the button icon to a checkmark to provide visual feedback.
+   * @param {string} text - The text to copy to the clipboard.
+   * @param {HTMLElement} btn - The copy button element that was clicked.
+   */
   function copyText(text, btn) {
     navigator.clipboard.writeText(text).then(() => {
       btn.innerHTML = "✅";
