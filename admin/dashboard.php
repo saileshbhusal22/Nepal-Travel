@@ -130,9 +130,6 @@ $confirmed      = $conn->query("SELECT COUNT(*) FROM bookings WHERE status='conf
 $cancelled      = $conn->query("SELECT COUNT(*) FROM bookings WHERE status='booking cancel' OR status='cancelled'")->fetch_row()[0];
 $pending        = $conn->query("SELECT COUNT(*) FROM bookings WHERE status='active'")->fetch_row()[0];
 
-// ── Fetch users ──────────────────────────────────────────────────
-// ── Users ────────────────────────────────────────────────────────
-
 $users_result = $conn->query("SELECT id, full_name, username, email, phone, email_verified, phone_verified, created_at, profile_image FROM users ORDER BY id DESC");
 $users = $users_result ? $users_result->fetch_all(MYSQLI_ASSOC) : [];
 
@@ -169,7 +166,6 @@ $pending_deals = count(array_filter($deals, fn($d) => $d['status'] === 'pending'
 $sub_revenue   = array_sum(array_column(array_filter($subs, fn($s) => in_array($s['status'], ['active','expired'])), 'amount_paid'));
 $experience_revenue = array_sum(array_column(array_filter($experience_subs, fn($s) => in_array($s['status'], ['active','expired'])), 'amount_paid'));
 
-// ── Chat unread count ────────────────────────────────────────────
 $chat_table_exists = $conn->query("SHOW TABLES LIKE 'chat_messages'")->num_rows > 0;
 $total_chat_unread = 0;
 if ($chat_table_exists) {
@@ -177,13 +173,14 @@ if ($chat_table_exists) {
     $total_chat_unread = $unread_res ? (int)$unread_res->fetch_row()[0] : 0;
 }
 
-// ── Flash message ────────────────────────────────────────────────
 $msg = ''; $msg_type = 'success';
 if (isset($_GET['msg']))             { $msg = $_GET['msg']; $msg_type = $_GET['mt'] ?? 'success'; }
 if (isset($_GET['updated']))         { $msg = '✓ Booking status updated successfully.'; $msg_type = 'success'; }
 if (isset($_GET['deleted']))         { $msg = '✓ User deleted successfully.'; $msg_type = 'success'; }
 if (isset($_GET['deleted_booking'])) { $msg = '✓ Booking deleted successfully.'; $msg_type = 'success'; }
 if (isset($_GET['deleted_all']))     { $msg = '✓ All bookings deleted successfully.'; $msg_type = 'success'; }
+
+$total_pending_alerts = $pending_subs + $pending_deals + $pending_experience_subs;
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -203,45 +200,152 @@ if (isset($_GET['deleted_all']))     { $msg = '✓ All bookings deleted successf
   --red:#8C2020;--red2:#E05555;
   --blue:#1E4A8C;--blue2:#4A90D9;
   --amber:#8C5A10;--amber2:#F0A030;
+  --topbar-h:60px;
   --ff-d:'Syne',sans-serif;--ff-b:'DM Sans',sans-serif;--ff-m:'DM Mono',monospace;
 }
 html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--ff-b);-webkit-font-smoothing:antialiased}
 a{text-decoration:none;color:inherit}
 button,input,select,textarea{font-family:var(--ff-b)}
 
-/* ── LAYOUT ── */
-.admin-wrap{display:flex;min-height:100vh}
+/* ── LAYOUT — no sidebar, full width ── */
+.admin-wrap{display:flex;flex-direction:column;min-height:100vh}
 
-/* ── SIDEBAR ── */
-.sidebar{width:240px;flex-shrink:0;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow-y:auto}
-.sb-logo{padding:28px 24px 22px;border-bottom:1px solid var(--border)}
-.sb-logo-title{font-family:var(--ff-d);font-size:17px;font-weight:800;color:var(--text);letter-spacing:-0.3px;display:flex;align-items:center;gap:10px}
-.sb-logo-title em{font-style:italic;color:var(--gold)}
-.sb-logo-sub{font-size:10px;color:var(--muted2);letter-spacing:2px;text-transform:uppercase;margin-top:4px;font-family:var(--ff-m)}
-.sb-nav{padding:16px 12px;flex:1}
-.sb-section-label{font-size:9px;letter-spacing:2.5px;text-transform:uppercase;color:var(--muted2);font-weight:600;padding:0 12px;margin:16px 0 8px;font-family:var(--ff-m)}
-.sb-link{display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:8px;font-size:13px;font-weight:500;color:var(--muted);transition:all 0.18s;cursor:pointer;border:1px solid transparent}
-.sb-link svg{width:16px;height:16px;flex-shrink:0;opacity:0.6}
-.sb-link:hover{background:var(--surface2);color:var(--text);border-color:var(--border)}
-.sb-link.on{background:rgba(201,162,39,0.1);color:var(--gold);border-color:rgba(201,162,39,0.2)}
-.sb-link.on svg{opacity:1}
-.sb-badge{margin-left:auto;background:rgba(201,162,39,0.15);color:var(--gold);font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;font-family:var(--ff-m)}
-.sb-badge-alert{background:rgba(224,85,85,0.2);color:var(--red2)}
-.sb-badge-chat{background:rgba(74,144,217,0.2);color:var(--blue2)}
-.sb-footer{padding:16px 24px;border-top:1px solid var(--border)}
-.sb-avatar{width:34px;height:34px;border-radius:50%;background:rgba(201,162,39,0.2);border:1px solid rgba(201,162,39,0.3);display:flex;align-items:center;justify-content:center;font-family:var(--ff-d);font-size:13px;font-weight:700;color:var(--gold);flex-shrink:0;overflow:hidden}
-.sb-avatar img{width:100%;height:100%;object-fit:cover}
+/* ══════════════════════════════════════
+   TOP BAR
+══════════════════════════════════════ */
+.topbar{
+  background:var(--surface);
+  border-bottom:1px solid var(--border);
+  height:var(--topbar-h);
+  display:flex;align-items:center;
+  padding:0 20px;gap:14px;
+  position:sticky;top:0;z-index:500;
+}
 
-/* ── MAIN ── */
-.main{flex:1;display:flex;flex-direction:column;overflow:hidden}
-.topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:0 36px;height:60px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
-.tb-breadcrumb{font-family:var(--ff-m);font-size:11px;color:var(--muted2);letter-spacing:1px}
+/* Hamburger button */
+.ham-btn{
+  width:40px;height:40px;border-radius:8px;
+  background:var(--surface2);border:1px solid var(--border2);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;
+  cursor:pointer;flex-shrink:0;transition:background 0.2s,border-color 0.2s;
+  padding:0;
+}
+.ham-btn:hover{background:var(--surface3);border-color:rgba(201,162,39,0.3)}
+.ham-btn span{display:block;width:18px;height:2px;background:var(--text);border-radius:2px;transition:all 0.3s cubic-bezier(0.4,0,0.2,1)}
+.ham-btn.open span:nth-child(1){transform:translateY(7px) rotate(45deg)}
+.ham-btn.open span:nth-child(2){opacity:0;transform:scaleX(0)}
+.ham-btn.open span:nth-child(3){transform:translateY(-7px) rotate(-45deg)}
+
+/* Logo in topbar */
+.tb-logo{font-family:var(--ff-d);font-size:16px;font-weight:800;color:var(--text);letter-spacing:-0.3px;display:flex;align-items:center;gap:8px;margin-right:4px}
+.tb-logo em{font-style:italic;color:var(--gold)}
+.tb-logo svg{width:20px;height:20px;flex-shrink:0}
+
+/* Breadcrumb */
+.tb-breadcrumb{font-family:var(--ff-m);font-size:11px;color:var(--muted2);letter-spacing:1px;margin-left:4px}
 .tb-breadcrumb span{color:var(--gold)}
-.tb-actions{display:flex;align-items:center;gap:14px}
-.tb-tag{font-size:10px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--green2);background:rgba(46,125,82,0.15);border:1px solid rgba(76,175,125,0.2);padding:5px 14px;border-radius:20px;font-family:var(--ff-m)}
-.tb-time{font-size:11px;color:var(--muted2);font-family:var(--ff-m)}
-.tb-admin-name{font-size:11px;color:var(--muted);font-family:var(--ff-m);background:var(--surface2);border:1px solid var(--border2);padding:5px 12px;border-radius:20px}
-.content{padding:36px;flex:1;overflow-y:auto}
+
+/* Right side */
+.tb-right{display:flex;align-items:center;gap:10px;margin-left:auto}
+.tb-tag{font-size:10px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--green2);background:rgba(46,125,82,0.15);border:1px solid rgba(76,175,125,0.2);padding:4px 12px;border-radius:20px;font-family:var(--ff-m)}
+.tb-time{font-size:11px;color:var(--muted2);font-family:var(--ff-m);display:none}
+.tb-admin-chip{display:flex;align-items:center;gap:8px;background:var(--surface2);border:1px solid var(--border2);padding:5px 12px 5px 6px;border-radius:24px;cursor:pointer}
+.tb-admin-av{width:26px;height:26px;border-radius:50%;background:rgba(201,162,39,0.2);border:1px solid rgba(201,162,39,0.3);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--gold);font-family:var(--ff-d);overflow:hidden;flex-shrink:0}
+.tb-admin-av img{width:100%;height:100%;object-fit:cover}
+.tb-admin-name{font-size:11px;color:var(--muted);font-family:var(--ff-m)}
+
+/* Alert indicator */
+.tb-alert-dot{position:relative;cursor:pointer}
+.tb-alert-btn{width:36px;height:36px;border-radius:8px;background:var(--surface2);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;font-size:15px}
+.tb-alert-badge{position:absolute;top:-4px;right:-4px;background:var(--red2);color:#fff;font-size:9px;font-weight:800;min-width:16px;height:16px;border-radius:8px;display:flex;align-items:center;justify-content:center;padding:0 3px;font-family:var(--ff-m);border:2px solid var(--surface)}
+
+@media(min-width:640px){
+  .tb-time{display:block}
+  .topbar{padding:0 28px}
+}
+
+/* ══════════════════════════════════════
+   DRAWER / FLYOUT MENU
+══════════════════════════════════════ */
+.drawer-overlay{
+  position:fixed;inset:0;z-index:800;
+  background:rgba(0,0,0,0.7);backdrop-filter:blur(4px);
+  opacity:0;pointer-events:none;
+  transition:opacity 0.28s ease;
+}
+.drawer-overlay.open{opacity:1;pointer-events:all}
+
+.drawer{
+  position:fixed;top:0;left:0;bottom:0;
+  width:280px;z-index:900;
+  background:var(--surface);
+  border-right:1px solid rgba(255,255,255,0.08);
+  display:flex;flex-direction:column;
+  transform:translateX(-100%);
+  transition:transform 0.3s cubic-bezier(0.4,0,0.2,1);
+  box-shadow:8px 0 40px rgba(0,0,0,0.5);
+}
+.drawer.open{transform:translateX(0)}
+
+/* Drawer header */
+.drawer-hd{
+  padding:22px 22px 18px;
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;
+  flex-shrink:0;
+}
+.drawer-logo{font-family:var(--ff-d);font-size:17px;font-weight:800;color:var(--text);display:flex;align-items:center;gap:10px}
+.drawer-logo em{font-style:italic;color:var(--gold)}
+.drawer-logo-sub{font-size:9px;color:var(--muted2);letter-spacing:2px;text-transform:uppercase;margin-top:3px;font-family:var(--ff-m)}
+.drawer-close{width:32px;height:32px;border-radius:50%;background:var(--surface2);border:1px solid var(--border2);color:var(--muted);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;transition:all 0.15s;flex-shrink:0}
+.drawer-close:hover{background:rgba(224,85,85,0.15);color:var(--red2);border-color:rgba(224,85,85,0.3)}
+
+/* Drawer nav */
+.drawer-nav{flex:1;overflow-y:auto;padding:14px 12px;scrollbar-width:thin;scrollbar-color:var(--border2) transparent}
+.drawer-nav::-webkit-scrollbar{width:3px}
+.drawer-nav::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+
+.drawer-section-label{font-size:9px;letter-spacing:2.5px;text-transform:uppercase;color:var(--muted2);font-weight:600;padding:0 12px;margin:16px 0 6px;font-family:var(--ff-m)}
+.drawer-section-label:first-child{margin-top:4px}
+
+.nav-link{
+  display:flex;align-items:center;gap:11px;
+  padding:10px 12px;border-radius:9px;
+  font-size:13px;font-weight:500;color:var(--muted);
+  transition:all 0.18s;cursor:pointer;
+  border:1px solid transparent;
+  text-decoration:none;
+  position:relative;
+}
+.nav-link svg{width:16px;height:16px;flex-shrink:0;opacity:0.6;transition:opacity 0.18s}
+.nav-link:hover{background:var(--surface2);color:var(--text);border-color:var(--border)}
+.nav-link:hover svg{opacity:1}
+.nav-link.on{background:rgba(201,162,39,0.1);color:var(--gold);border-color:rgba(201,162,39,0.2)}
+.nav-link.on svg{opacity:1}
+
+.nav-badge{margin-left:auto;font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;font-family:var(--ff-m)}
+.nav-badge-gold{background:rgba(201,162,39,0.15);color:var(--gold)}
+.nav-badge-alert{background:rgba(224,85,85,0.2);color:var(--red2)}
+.nav-badge-chat{background:rgba(74,144,217,0.2);color:var(--blue2)}
+
+/* Drawer divider */
+.drawer-divider{height:1px;background:var(--border);margin:10px 12px}
+
+/* Drawer footer — admin info */
+.drawer-footer{
+  padding:14px 18px;border-top:1px solid var(--border);flex-shrink:0;
+  display:flex;align-items:center;gap:10px;
+}
+.drawer-footer-av{width:36px;height:36px;border-radius:50%;background:rgba(201,162,39,0.2);border:1px solid rgba(201,162,39,0.3);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:var(--gold);font-family:var(--ff-d);flex-shrink:0;overflow:hidden}
+.drawer-footer-av img{width:100%;height:100%;object-fit:cover}
+.drawer-footer-name{font-size:12px;font-weight:600;color:var(--text)}
+.drawer-footer-sub{font-size:10px;color:var(--muted2);font-family:var(--ff-m)}
+
+/* ── MAIN CONTENT ── */
+.main{flex:1;overflow-y:auto}
+.content{padding:24px 20px;max-width:1600px;margin:0 auto}
+@media(min-width:768px){.content{padding:32px 32px}}
+@media(min-width:1200px){.content{padding:36px 40px}}
 
 /* ── ALERT ── */
 .alert{display:flex;align-items:center;gap:12px;padding:13px 20px;border-radius:8px;font-size:13px;margin-bottom:24px;border-left:3px solid}
@@ -249,47 +353,45 @@ button,input,select,textarea{font-family:var(--ff-b)}
 .alert-error{background:rgba(224,85,85,0.1);color:var(--red2);border-color:var(--red2)}
 
 /* ── SECTION HEADER ── */
-.sec-hd{display:flex;align-items:center;gap:20px;margin-bottom:28px}
-.sec-hd-title{font-family:var(--ff-d);font-size:26px;font-weight:800;color:var(--text)}
-.sec-hd-rule{flex:1;height:1px;background:var(--border2)}
+.sec-hd{display:flex;align-items:center;gap:20px;margin-bottom:28px;flex-wrap:wrap}
+.sec-hd-title{font-family:var(--ff-d);font-size:24px;font-weight:800;color:var(--text)}
+@media(min-width:640px){.sec-hd-title{font-size:28px}}
+.sec-hd-rule{flex:1;height:1px;background:var(--border2);min-width:20px}
 .sec-hd-count{font-family:var(--ff-m);font-size:11px;color:var(--muted2);letter-spacing:1px}
 
 /* ── STAT CARDS ── */
-.stats-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:16px;margin-bottom:36px}
-@keyframes support-slide-up{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
-.stat-card{
-  background:var(--surface);border:1px solid var(--border);
-  border-radius:14px;padding:22px 20px;
-  position:relative;overflow:hidden;
-  transition:border-color 0.2s,transform 0.2s;
-}
-.stats-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:16px;margin-bottom:36px}
-.stats-grid-sub{grid-template-columns:repeat(4,1fr)}
-.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:22px 20px;position:relative;overflow:hidden;transition:border-color 0.2s,transform 0.2s}
+.stats-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin-bottom:28px}
+@media(min-width:640px){.stats-grid{grid-template-columns:repeat(3,1fr)}}
+@media(min-width:900px){.stats-grid{grid-template-columns:repeat(5,1fr)}}
+.stats-grid-sub{grid-template-columns:repeat(2,1fr)}
+@media(min-width:640px){.stats-grid-sub{grid-template-columns:repeat(3,1fr)}}
+@media(min-width:900px){.stats-grid-sub{grid-template-columns:repeat(4,1fr)}}
+
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px 18px;position:relative;overflow:hidden;transition:border-color 0.2s,transform 0.2s}
 .stat-card:hover{border-color:var(--border2);transform:translateY(-2px)}
 .stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--accent,var(--gold))}
-.stat-card-n{font-family:var(--ff-d);font-size:38px;font-weight:800;color:var(--text);line-height:1;margin-bottom:6px}
-.stat-card-l{font-size:11px;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase;font-weight:600}
-.stat-card-ico{position:absolute;top:18px;right:18px;font-size:22px;opacity:0.18}
+.stat-card-n{font-family:var(--ff-d);font-size:34px;font-weight:800;color:var(--text);line-height:1;margin-bottom:6px}
+.stat-card-l{font-size:10px;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase;font-weight:600}
+.stat-card-ico{position:absolute;top:16px;right:16px;font-size:20px;opacity:0.18}
 .stat-pending-badge{display:inline-block;background:rgba(224,85,85,0.15);color:var(--red2);font-size:10px;font-weight:700;padding:2px 7px;border-radius:20px;margin-top:6px;font-family:var(--ff-m)}
 
 /* ── SUB TABS ── */
-.sub-tabs{display:flex;gap:4px;margin-bottom:1.5rem;background:var(--surface2);padding:4px;border-radius:10px;width:fit-content;border:1px solid var(--border)}
-.sub-tab-btn{padding:9px 22px;border-radius:7px;font-size:13px;font-weight:600;border:none;cursor:pointer;transition:all 0.15s;font-family:var(--ff-b);color:var(--muted);background:transparent;display:flex;align-items:center;gap:8px}
+.sub-tabs{display:flex;gap:4px;margin-bottom:1.5rem;background:var(--surface2);padding:4px;border-radius:10px;width:fit-content;border:1px solid var(--border);flex-wrap:wrap}
+.sub-tab-btn{padding:8px 16px;border-radius:7px;font-size:12px;font-weight:600;border:none;cursor:pointer;transition:all 0.15s;font-family:var(--ff-b);color:var(--muted);background:transparent;display:flex;align-items:center;gap:8px}
 .sub-tab-btn.active{background:var(--gold);color:#000}
 .sub-tab-badge{background:rgba(224,85,85,0.9);color:#fff;font-size:9px;font-weight:800;padding:2px 6px;border-radius:10px;font-family:var(--ff-m)}
 
 /* ── TABLE CARD ── */
-.tcard{background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:32px}
-.tcard-hd{padding:18px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:var(--surface2);flex-wrap:wrap;gap:10px}
+.tcard{background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:28px}
+.tcard-hd{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:var(--surface2);flex-wrap:wrap;gap:10px}
 .tcard-hd-title{font-family:var(--ff-d);font-size:15px;font-weight:700;color:var(--text)}
 .tcard-hd-sub{font-size:11px;color:var(--muted2);font-family:var(--ff-m);margin-top:2px}
-.tcard-search{padding:14px 24px;border-bottom:1px solid var(--border);background:var(--surface);display:flex;align-items:center;gap:16px;flex-wrap:wrap}
-.search-inp{flex:1;min-width:200px;padding:9px 14px;background:var(--surface2);border:1px solid var(--border2);border-radius:7px;font-size:13px;color:var(--text);outline:none;transition:border-color 0.2s}
+.tcard-search{padding:12px 20px;border-bottom:1px solid var(--border);background:var(--surface);display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.search-inp{flex:1;min-width:180px;padding:8px 14px;background:var(--surface2);border:1px solid var(--border2);border-radius:7px;font-size:13px;color:var(--text);outline:none;transition:border-color 0.2s}
 .search-inp::placeholder{color:var(--muted2)}
 .search-inp:focus{border-color:rgba(201,162,39,0.4)}
-.filter-btns{display:flex;gap:8px;flex-wrap:wrap}
-.filter-btn{display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:20px;font-size:11px;font-weight:600;letter-spacing:0.5px;border:1px solid var(--border2);background:var(--surface2);color:var(--muted);cursor:pointer;transition:all 0.18s;font-family:var(--ff-m);white-space:nowrap}
+.filter-btns{display:flex;gap:6px;flex-wrap:wrap}
+.filter-btn{display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border-radius:20px;font-size:11px;font-weight:600;letter-spacing:0.5px;border:1px solid var(--border2);background:var(--surface2);color:var(--muted);cursor:pointer;transition:all 0.18s;font-family:var(--ff-m);white-space:nowrap}
 .filter-btn:hover{color:var(--text)}
 .filter-btn.active{background:rgba(201,162,39,0.12);color:var(--gold);border-color:rgba(201,162,39,0.3)}
 .filter-btn .fb-dot{width:5px;height:5px;border-radius:50%;display:inline-block}
@@ -306,14 +408,14 @@ button,input,select,textarea{font-family:var(--ff-b)}
 /* ── TABLE ── */
 .tscroll{overflow-x:auto}
 table{width:100%;border-collapse:collapse}
-thead th{font-size:9px;letter-spacing:2.5px;text-transform:uppercase;color:var(--muted2);font-weight:700;padding:12px 20px;text-align:left;background:var(--surface2);border-bottom:1px solid var(--border);white-space:nowrap;font-family:var(--ff-m)}
-tbody td{padding:13px 20px;border-bottom:1px solid var(--border);font-size:13px;color:var(--text);vertical-align:middle}
+thead th{font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--muted2);font-weight:700;padding:11px 16px;text-align:left;background:var(--surface2);border-bottom:1px solid var(--border);white-space:nowrap;font-family:var(--ff-m)}
+tbody td{padding:12px 16px;border-bottom:1px solid var(--border);font-size:13px;color:var(--text);vertical-align:middle}
 tbody tr:last-child td{border-bottom:none}
 tbody tr:hover td{background:rgba(255,255,255,0.02)}
 .mono{font-family:var(--ff-m);font-size:11px;color:var(--muted)}
 
 /* ── PILLS ── */
-.pill{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:10px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;font-family:var(--ff-m);white-space:nowrap}
+.pill{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:20px;font-size:10px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;font-family:var(--ff-m);white-space:nowrap}
 .pill-confirmed,.pill-active,.pill-approved{background:rgba(46,125,82,0.2);color:var(--green2);border:1px solid rgba(76,175,125,0.2)}
 .pill-cancelled,.pill-rejected{background:rgba(140,32,32,0.2);color:var(--red2);border:1px solid rgba(224,85,85,0.2)}
 .pill-pending{background:rgba(140,90,16,0.2);color:var(--amber2);border:1px solid rgba(240,160,48,0.2)}
@@ -331,7 +433,7 @@ tbody tr:hover td{background:rgba(255,255,255,0.02)}
 
 /* ── ACTION BUTTONS ── */
 .act-row{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
-.btn{display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border-radius:6px;font-size:11px;font-weight:700;border:1px solid;cursor:pointer;transition:all 0.15s;white-space:nowrap;background:transparent;font-family:var(--ff-b)}
+.btn{display:inline-flex;align-items:center;gap:5px;padding:5px 11px;border-radius:6px;font-size:11px;font-weight:700;border:1px solid;cursor:pointer;transition:all 0.15s;white-space:nowrap;background:transparent;font-family:var(--ff-b)}
 .btn-approve{color:var(--green2);border-color:rgba(76,175,125,0.3)}
 .btn-approve:hover{background:var(--green2);color:#000;border-color:var(--green2)}
 .btn-reject{color:var(--red2);border-color:rgba(224,85,85,0.25)}
@@ -346,10 +448,9 @@ tbody tr:hover td{background:rgba(255,255,255,0.02)}
 /* ── STATUS SELECT ── */
 .status-sel{background:var(--surface2);color:var(--text);border:1px solid var(--border2);border-radius:6px;padding:5px 10px;font-size:12px;cursor:pointer;outline:none;font-family:var(--ff-m)}
 .status-sel:focus{border-color:rgba(201,162,39,0.4)}
-.save-btn{background:var(--gold);color:#000;border:none;border-radius:6px;padding:5px 14px;font-size:11px;font-weight:700;cursor:pointer;transition:background 0.15s}
+.save-btn{background:var(--gold);color:#000;border:none;border-radius:6px;padding:5px 12px;font-size:11px;font-weight:700;cursor:pointer;transition:background 0.15s}
 .save-btn:hover{background:var(--gold2)}
 
-/* ── BOOKING ACTIONS CELL ── */
 .bk-actions-cell{min-width:200px}
 .bk-status-form{display:flex;gap:6px;align-items:center;margin-bottom:6px}
 .bk-delete-form{display:flex}
@@ -360,25 +461,14 @@ tbody tr:hover td{background:rgba(255,255,255,0.02)}
 .deal-thumb-ph{width:48px;height:36px;border-radius:5px;background:var(--surface3);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:16px}
 
 /* ── OVERVIEW GRID ── */
-.ov-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:8px}
-.mini-table tbody td{padding:10px 16px;font-size:12px}
-.mini-table thead th{padding:10px 16px}
+.ov-grid{display:grid;grid-template-columns:1fr;gap:20px;margin-top:8px}
+@media(min-width:900px){.ov-grid{grid-template-columns:1fr 1fr}}
+.mini-table tbody td{padding:10px 14px;font-size:12px}
+.mini-table thead th{padding:10px 14px}
 
-/* responsive */
-@media(max-width:1400px){.stats-grid{grid-template-columns:repeat(3,1fr)}}
-@media(max-width:1024px){.sidebar{width:200px}.ov-grid{grid-template-columns:1fr}}
-@media(max-width:768px){
-  .sidebar{display:none}
-  .stats-grid{grid-template-columns:repeat(2,1fr)}
-  .content{padding:20px}
-  .topbar{padding:0 20px}
-  .tcard-search{flex-direction:column;align-items:stretch}
-  .filter-btns{justify-content:flex-start}
-  #support-inbox-wrap{grid-template-columns:1fr!important;height:auto!important}
-}
 /* ── EMPTY ── */
 .empty{padding:50px;text-align:center;color:var(--muted2)}
-.empty-ico{font-size:40px;opacity:0.2;margin-bottom:12px}
+.empty-ico{font-size:36px;opacity:0.2;margin-bottom:12px}
 .empty p{font-size:13px}
 .no-results-row{display:none}
 .no-results-row td{text-align:center;padding:40px;color:var(--muted2);font-size:13px}
@@ -388,11 +478,11 @@ tbody tr:hover td{background:rgba(255,255,255,0.02)}
 .modal-bd.open{display:flex}
 .modal-box{background:#13161f;border:1px solid rgba(255,255,255,0.1);border-radius:18px;width:100%;max-width:480px;max-height:90vh;overflow-y:auto;box-shadow:0 40px 80px rgba(0,0,0,0.7);animation:mIn 0.2s ease}
 @keyframes mIn{from{opacity:0;transform:translateY(16px) scale(0.97)}to{opacity:1;transform:none}}
-.modal-hd{padding:1.3rem 1.5rem 1rem;border-bottom:1px solid rgba(255,255,255,0.07);display:flex;align-items:center;justify-content:space-between}
+.modal-hd{padding:1.2rem 1.4rem 1rem;border-bottom:1px solid rgba(255,255,255,0.07);display:flex;align-items:center;justify-content:space-between}
 .modal-hd-title{font-family:var(--ff-d);font-size:15px;font-weight:700;color:var(--text)}
 .modal-close{background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);color:var(--muted);width:30px;height:30px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:15px;transition:all 0.15s}
 .modal-close:hover{background:rgba(224,85,85,0.2);color:#ff6b6b}
-.modal-body{padding:1.4rem 1.5rem 1.6rem}
+.modal-body{padding:1.3rem 1.4rem 1.5rem}
 .flbl{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);font-weight:600;font-family:var(--ff-m);display:block;margin-bottom:7px}
 .fin{background:var(--surface2);color:var(--text);border:1px solid var(--border2);border-radius:7px;padding:10px 14px;font-size:13px;font-family:var(--ff-b);outline:none;width:100%;transition:border-color 0.2s}
 .fin:focus{border-color:rgba(224,85,85,0.4)}
@@ -401,213 +491,239 @@ tbody tr:hover td{background:rgba(255,255,255,0.02)}
 .btn-confirm-red:hover{background:#c93333}
 
 /* ── TOAST ── */
-.toast{position:fixed;bottom:28px;right:28px;background:var(--surface);border:1px solid var(--border2);color:var(--text);padding:13px 20px;border-radius:8px;font-size:13px;font-weight:500;box-shadow:0 8px 32px rgba(0,0,0,0.4);transform:translateY(12px);opacity:0;transition:all 0.3s cubic-bezier(0.34,1.56,0.64,1);z-index:9999;pointer-events:none;border-left:3px solid var(--green2)}
+.toast{position:fixed;bottom:24px;right:20px;background:var(--surface);border:1px solid var(--border2);color:var(--text);padding:12px 18px;border-radius:8px;font-size:13px;font-weight:500;box-shadow:0 8px 32px rgba(0,0,0,0.4);transform:translateY(12px);opacity:0;transition:all 0.3s cubic-bezier(0.34,1.56,0.64,1);z-index:9999;pointer-events:none;border-left:3px solid var(--green2);max-width:300px}
 .toast.show{transform:translateY(0);opacity:1}
 
-/* ══════════════════════════════════════════════
-   LIVE CHAT PANEL (Admin)
-══════════════════════════════════════════════ */
-.chat-layout{display:grid;grid-template-columns:300px 1fr;height:calc(100vh - 60px - 72px - 28px - 28px);min-height:500px;border:1px solid var(--border);border-radius:14px;overflow:hidden;background:var(--surface)}
+/* ══════════════════════════════════════
+   LIVE CHAT PANEL
+══════════════════════════════════════ */
+.chat-layout{display:grid;grid-template-columns:1fr;height:auto;border:1px solid var(--border);border-radius:14px;overflow:hidden;background:var(--surface)}
+@media(min-width:768px){.chat-layout{grid-template-columns:280px 1fr;height:calc(100vh - var(--topbar-h) - 120px);min-height:520px}}
 
-/* Sessions sidebar */
-.chat-sessions{background:var(--surface2);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden}
-.chat-sessions-hd{padding:16px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.chat-sessions{background:var(--surface2);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;max-height:300px}
+@media(min-width:768px){.chat-sessions{max-height:none}}
+.chat-sessions-hd{padding:14px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
 .chat-sessions-hd-title{font-family:var(--ff-d);font-size:14px;font-weight:700;color:var(--text)}
 .chat-sessions-list{flex:1;overflow-y:auto}
-.chat-sessions-list::-webkit-scrollbar{width:4px}
+.chat-sessions-list::-webkit-scrollbar{width:3px}
 .chat-sessions-list::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
-.chat-session-item{padding:14px 18px;border-bottom:1px solid var(--border);cursor:pointer;transition:background 0.15s;display:flex;align-items:flex-start;gap:12px;position:relative}
+.chat-session-item{padding:12px 16px;border-bottom:1px solid var(--border);cursor:pointer;transition:background 0.15s;display:flex;align-items:flex-start;gap:10px;position:relative}
 .chat-session-item:hover{background:rgba(255,255,255,0.03)}
 .chat-session-item.active{background:rgba(201,162,39,0.08);border-left:2px solid var(--gold)}
-.chat-session-av{width:36px;height:36px;border-radius:50%;background:rgba(74,144,217,0.2);border:1px solid rgba(74,144,217,0.3);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:var(--blue2);font-family:var(--ff-d);flex-shrink:0}
+.chat-session-av{width:34px;height:34px;border-radius:50%;background:rgba(74,144,217,0.2);border:1px solid rgba(74,144,217,0.3);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:var(--blue2);font-family:var(--ff-d);flex-shrink:0}
 .chat-session-info{flex:1;min-width:0}
 .chat-session-name{font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .chat-session-preview{font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px;font-family:var(--ff-m)}
 .chat-session-time{font-size:10px;color:var(--muted2);font-family:var(--ff-m);flex-shrink:0;margin-top:2px}
-.chat-unread-dot{position:absolute;top:14px;right:14px;width:8px;height:8px;border-radius:50%;background:var(--blue2)}
-.chat-unread-badge{background:var(--blue2);color:#fff;font-size:9px;font-weight:800;padding:1px 6px;border-radius:10px;font-family:var(--ff-m);position:absolute;top:12px;right:12px}
-.chat-empty-sessions{padding:40px 20px;text-align:center;color:var(--muted2);font-size:13px}
-.chat-sessions-search{padding:10px 14px;border-bottom:1px solid var(--border);flex-shrink:0}
+.chat-unread-badge{background:var(--blue2);color:#fff;font-size:9px;font-weight:800;padding:1px 6px;border-radius:10px;font-family:var(--ff-m);position:absolute;top:12px;right:10px}
+.chat-empty-sessions{padding:36px 16px;text-align:center;color:var(--muted2);font-size:13px}
+.chat-sessions-search{padding:8px 12px;border-bottom:1px solid var(--border);flex-shrink:0}
 .chat-sessions-search input{width:100%;background:var(--surface3);border:1px solid var(--border2);border-radius:7px;padding:7px 12px;font-size:12px;color:var(--text);outline:none}
 .chat-sessions-search input::placeholder{color:var(--muted2)}
 
-/* Message pane */
-.chat-pane{display:flex;flex-direction:column;overflow:hidden}
-.chat-pane-hd{padding:16px 22px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:14px;flex-shrink:0;background:var(--surface2)}
-.chat-pane-hd-av{width:36px;height:36px;border-radius:50%;background:rgba(74,144,217,0.2);border:1px solid rgba(74,144,217,0.3);display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;color:var(--blue2);font-family:var(--ff-d);flex-shrink:0}
+.chat-pane{display:flex;flex-direction:column;overflow:hidden;min-height:400px}
+@media(min-width:768px){.chat-pane{min-height:0}}
+.chat-pane-hd{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;flex-shrink:0;background:var(--surface2)}
+.chat-pane-hd-av{width:34px;height:34px;border-radius:50%;background:rgba(74,144,217,0.2);border:1px solid rgba(74,144,217,0.3);display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;color:var(--blue2);font-family:var(--ff-d);flex-shrink:0}
 .chat-pane-hd-info{flex:1}
 .chat-pane-hd-name{font-size:14px;font-weight:700;color:var(--text)}
-.chat-pane-hd-sub{font-size:11px;color:var(--muted2);font-family:var(--ff-m);margin-top:2px}
-.chat-online-dot{width:8px;height:8px;border-radius:50%;background:var(--green2);display:inline-block;margin-right:5px;animation:pulse-g 2s infinite}
+.chat-pane-hd-sub{font-size:11px;color:var(--muted2);font-family:var(--ff-m);margin-top:1px}
+.chat-online-dot{width:7px;height:7px;border-radius:50%;background:var(--green2);display:inline-block;margin-right:4px;animation:pulse-g 2s infinite}
 @keyframes pulse-g{0%,100%{opacity:1}50%{opacity:0.5}}
-.chat-messages-area{flex:1;overflow-y:auto;padding:20px 22px;display:flex;flex-direction:column;gap:12px;background:#0f1119}
-.chat-messages-area::-webkit-scrollbar{width:4px}
+.chat-messages-area{flex:1;overflow-y:auto;padding:18px;display:flex;flex-direction:column;gap:11px;background:#0f1119;min-height:200px}
+@media(min-width:768px){.chat-messages-area{min-height:0}}
+.chat-messages-area::-webkit-scrollbar{width:3px}
 .chat-messages-area::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
 .chat-bubble-wrap{display:flex;flex-direction:column}
 .chat-bubble-wrap.user{align-items:flex-start}
 .chat-bubble-wrap.admin{align-items:flex-end}
-.chat-bubble{max-width:72%;padding:10px 16px;border-radius:16px;font-size:13px;line-height:1.55;word-break:break-word;animation:bIn 0.18s ease}
+.chat-bubble{max-width:74%;padding:10px 14px;border-radius:14px;font-size:13px;line-height:1.55;word-break:break-word;animation:bIn 0.18s ease}
 @keyframes bIn{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
-.chat-bubble.user{background:var(--surface3);color:var(--text);border-radius:4px 16px 16px 16px;border:1px solid var(--border2)}
-.chat-bubble.admin{background:linear-gradient(135deg,rgba(201,162,39,0.25),rgba(201,162,39,0.1));color:var(--text);border-radius:16px 4px 16px 16px;border:1px solid rgba(201,162,39,0.25)}
-.chat-bubble-time{font-size:10px;color:var(--muted2);margin-top:4px;font-family:var(--ff-m)}
-.chat-bubble-sender{font-size:10px;color:var(--muted2);margin-bottom:3px;font-family:var(--ff-m)}
-.chat-bubble.admin+.chat-bubble-time{text-align:right}
-.chat-typing-ind{display:none;align-items:center;gap:5px;padding:8px 14px;background:var(--surface3);border-radius:4px 16px 16px 16px;border:1px solid var(--border2);width:fit-content}
-.chat-typing-ind.show{display:flex}
-.chat-typing-ind span{width:6px;height:6px;border-radius:50%;background:var(--muted);animation:typB 1.2s infinite}
-.chat-typing-ind span:nth-child(2){animation-delay:.2s}
-.chat-typing-ind span:nth-child(3){animation-delay:.4s}
-@keyframes typB{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-5px)}}
-.chat-no-session{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--muted2)}
-.chat-no-session-ico{font-size:56px;opacity:0.15;margin-bottom:16px}
-.chat-no-session p{font-size:14px}
-.chat-input-area{padding:14px 22px;border-top:1px solid var(--border);display:flex;gap:10px;align-items:flex-end;flex-shrink:0;background:var(--surface)}
-.chat-input{flex:1;background:var(--surface2);border:1px solid var(--border2);border-radius:10px;padding:11px 16px;font-size:13px;color:var(--text);outline:none;resize:none;max-height:120px;line-height:1.5;transition:border-color 0.2s;font-family:var(--ff-b)}
+.chat-bubble.user{background:var(--surface3);color:var(--text);border-radius:4px 14px 14px 14px;border:1px solid var(--border2)}
+.chat-bubble.admin{background:linear-gradient(135deg,rgba(201,162,39,0.25),rgba(201,162,39,0.1));color:var(--text);border-radius:14px 4px 14px 14px;border:1px solid rgba(201,162,39,0.25)}
+.chat-bubble-time{font-size:10px;color:var(--muted2);margin-top:3px;font-family:var(--ff-m)}
+.chat-no-session{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--muted2);padding:40px}
+.chat-no-session-ico{font-size:48px;opacity:0.15;margin-bottom:14px}
+.chat-no-session p{font-size:13px}
+.chat-input-area{padding:12px 16px;border-top:1px solid var(--border);display:flex;gap:8px;align-items:flex-end;flex-shrink:0;background:var(--surface)}
+.chat-input{flex:1;background:var(--surface2);border:1px solid var(--border2);border-radius:9px;padding:10px 14px;font-size:13px;color:var(--text);outline:none;resize:none;max-height:100px;line-height:1.5;transition:border-color 0.2s;font-family:var(--ff-b)}
 .chat-input::placeholder{color:var(--muted2)}
 .chat-input:focus{border-color:rgba(201,162,39,0.4)}
-.chat-send-btn{background:var(--gold);color:#000;border:none;border-radius:8px;padding:11px 18px;font-size:12px;font-weight:700;cursor:pointer;transition:background 0.15s;display:flex;align-items:center;gap:6px;flex-shrink:0;height:44px}
+.chat-send-btn{background:var(--gold);color:#000;border:none;border-radius:8px;padding:10px 16px;font-size:12px;font-weight:700;cursor:pointer;transition:background 0.15s;display:flex;align-items:center;gap:5px;flex-shrink:0;height:42px}
 .chat-send-btn:hover{background:var(--gold2)}
 .chat-send-btn:disabled{opacity:0.4;cursor:not-allowed}
 .chat-date-sep{text-align:center;font-size:10px;color:var(--muted2);font-family:var(--ff-m);letter-spacing:1px;padding:4px 0;position:relative}
-.chat-date-sep::before,.chat-date-sep::after{content:'';position:absolute;top:50%;width:28%;height:1px;background:var(--border)}
+.chat-date-sep::before,.chat-date-sep::after{content:'';position:absolute;top:50%;width:26%;height:1px;background:var(--border)}
 .chat-date-sep::before{left:5%}
 .chat-date-sep::after{right:5%}
-
-@media(max-width:1200px){.stats-grid{grid-template-columns:repeat(3,1fr)}}
-@media(max-width:1024px){.sidebar{width:200px}.ov-grid{grid-template-columns:1fr}.chat-layout{grid-template-columns:240px 1fr}}
-@media(max-width:768px){.sidebar{display:none}.stats-grid{grid-template-columns:repeat(2,1fr)}.content{padding:20px}.topbar{padding:0 20px}.tcard-search{flex-direction:column;align-items:stretch}.ov-grid{grid-template-columns:1fr}.chat-layout{grid-template-columns:1fr;height:auto}}
-@media(max-width:1024px){.sidebar{width:200px}.ov-grid{grid-template-columns:1fr}}
-@media(max-width:768px){.sidebar{display:none}.stats-grid{grid-template-columns:repeat(2,1fr)}.content{padding:20px}.topbar{padding:0 20px}.tcard-search{flex-direction:column;align-items:stretch}.ov-grid{grid-template-columns:1fr}}
-
 </style>
 </head>
 <body>
 
 <div class="admin-wrap">
 
-  <!-- ══ SIDEBAR ══ -->
-  <aside class="sidebar">
-    <div class="sb-logo">
-      <div class="sb-logo-title">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-          <path d="M12 2L2 19h20L12 2z" fill="rgba(201,162,39,0.3)" stroke="#C9A227" stroke-width="1.5"/>
-        </svg>
-        Nepal <em>Admin</em>
-      </div>
-      <div class="sb-logo-sub">Control Panel</div>
+  <!-- ══ TOPBAR ══ -->
+  <header class="topbar">
+    <!-- Hamburger button -->
+    <button class="ham-btn" id="hamBtn" onclick="toggleDrawer()" aria-label="Open menu">
+      <span></span><span></span><span></span>
+    </button>
+
+    <!-- Logo -->
+    <div class="tb-logo">
+      <svg viewBox="0 0 24 24" fill="none">
+        <path d="M12 2L2 19h20L12 2z" fill="rgba(201,162,39,0.3)" stroke="#C9A227" stroke-width="1.5"/>
+      </svg>
+      Nepal <em>Admin</em>
     </div>
 
-    <nav class="sb-nav">
-      <div class="sb-section-label">Navigation</div>
+    <!-- Breadcrumb -->
+    <div class="tb-breadcrumb" style="display:none" id="tb-crumb-wrap">
+      / <span><?= strtoupper($activeTab) ?></span>
+    </div>
+    <style>@media(min-width:480px){#tb-crumb-wrap{display:block!important}}</style>
 
-      <a href="?tab=overview" class="sb-link <?= $activeTab==='overview'?'on':'' ?>">
-        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
-        Overview
-      </a>
+    <!-- Right actions -->
+    <div class="tb-right">
+      <span class="tb-time" id="clock"></span>
+      <span class="tb-tag">● LIVE</span>
 
-      <a href="?tab=users" class="sb-link <?= $activeTab==='users'?'on':'' ?>">
-        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
-        Users
-        <span class="sb-badge"><?= $total_users ?></span>
-      </a>
+      <?php if ($total_pending_alerts > 0): ?>
+      <div class="tb-alert-dot">
+        <a href="subscription_admin.php" class="tb-alert-btn">🔔</a>
+        <span class="tb-alert-badge"><?= $total_pending_alerts ?></span>
+      </div>
+      <?php endif; ?>
 
-      <a href="?tab=bookings" class="sb-link <?= $activeTab==='bookings'?'on':'' ?>">
-        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17 12h-5v5h5v-5zM16 1v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2h-1V1h-2zm3 18H5V8h14v11z"/></svg>
-        Bookings
-        <span class="sb-badge"><?= $total_bookings ?></span>
-      </a>
-      <a href="subscription_admin.php" class="sb-link <?= $activeTab==='subscriptions'?'on':'' ?>">
-        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 4H4c-1.11 0-1.99.89-1.99 2L2 18c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V6c0-1.11-.89-2-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z"/></svg>
-        Subscriptions
-        <?php if ($pending_subs + $pending_deals + $pending_experience_subs > 0): ?>
-          <span class="sb-badge sb-badge-alert"><?= $pending_subs + $pending_deals + $pending_experience_subs ?></span>
-        <?php else: ?>
-          <span class="sb-badge"><?= count($subs) + count($experience_subs) ?></span>
-        <?php endif; ?>
-      </a>
-
-      <!-- ── Live Chat Link ── -->
-      <a href="?tab=chat" class="sb-link <?= $activeTab==='chat'?'on':'' ?>">
-        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"/></svg>
-        Live Chat
-        <?php if ($total_chat_unread > 0): ?>
-          <span class="sb-badge sb-badge-chat" id="sb-chat-badge"><?= $total_chat_unread ?></span>
-        <?php else: ?>
-          <span class="sb-badge sb-badge-chat" id="sb-chat-badge" style="display:none">0</span>
-        <?php endif; ?>
-      </a>
-
-      <!-- ── Reviews Link ── -->
-      <a href="reviews.php" class="sb-link">
-        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M22 9.24l-7.19-.62L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21 12 17.27 18.18 21l-1.63-7.03L22 9.24zM12 15.4l-3.76 2.27 1-4.28-3.32-2.88 4.38-.38L12 6.1l1.71 4.04 4.38.38-3.32 2.88 1 4.28L12 15.4z"/></svg>
-        Reviews
-        <span class="sb-badge"><?= $total_reviews ?></span>
-      </a>
-
-      <!-- ── Posts Link ── -->
-      <a href="posts.php" class="sb-link">
-        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M21 3H3C2 3 1 4 1 5v14c0 1.1.9 2 2 2h18c1 0 2-.9 2-2V5c0-1-1-2-2-2zm0 16H3V5h18v14zm-10-7h8v2h-8v-2zm0-4h8v2h-8V8zm-6 8h4v-8H5v8z"/></svg>
-        Posts
-      </a>
-
-      <div class="sb-section-label" style="margin-top:24px">Links</div>
-
-      <a href="/Nepal-Travel/Public/index.php" class="sb-link">
-        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
-        View Site
-      </a>
-
-      <a href="deals_crud.php" class="sb-link">
-        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M21.41 11.58l-9-9C12.05 2.22 11.55 2 11 2H4c-1.1 0-2 .9-2 2v7c0 .55.22 1.05.59 1.42l9 9c.36.36.86.58 1.41.58.55 0 1.05-.22 1.41-.59l7-7c.37-.36.59-.86.59-1.41 0-.55-.23-1.06-.59-1.42z"/></svg>
-        Deals &amp; Packages
-      </a>
-
-      <a href="travel_ideas_admin.php" class="sb-link">
-        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M9 21c0 .55.45 1 1 1h4c.55 0 1-.45 1-1v-1H9v1zm3-19C8.14 2 5 5.14 5 9c0 2.38 1.19 4.47 3 5.74V17c0 .55.45 1 1 1h6c.55 0 1-.45 1-1v-2.26c1.81-1.27 3-3.36 3-5.74 0-3.86-3.14-7-7-7z"/></svg>
-        Travel Ideas
-      </a>
-
-      <a href="logout.php" class="sb-link">
-        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/></svg>
-        Sign Out
-      </a>
-    </nav>
-
-    <!-- ── Sidebar footer: shows logged-in admin ── -->
-    <div class="sb-footer">
-      <div style="display:flex;align-items:center;gap:10px">
-        <div class="sb-avatar">
+      <div class="tb-admin-chip">
+        <div class="tb-admin-av">
           <?php if (!empty($admin_avatar) && $admin_avatar !== 'default.png'): ?>
             <img src="/Nepal-Travel/<?= ltrim(htmlspecialchars($admin_avatar), '/') ?>" alt="">
           <?php else: ?>
             <?= $admin_initial ?>
           <?php endif; ?>
         </div>
-        <div>
-          <div style="font-size:12px;font-weight:600"><?= $admin_display ?></div>
-          <div style="font-size:10px;color:var(--muted2);font-family:var(--ff-m)">
-            <?= $admin_username ? '@'.$admin_username : '// Super Admin' ?>
-          </div>
-        </div>
+        <span class="tb-admin-name"><?= $admin_display ?></span>
       </div>
     </div>
-  </aside>
+  </header>
 
-  <!-- ══ MAIN ══ -->
+  <!-- ══ DRAWER OVERLAY ══ -->
+  <div class="drawer-overlay" id="drawerOverlay" onclick="closeDrawer()"></div>
+
+  <!-- ══ DRAWER ══ -->
+  <nav class="drawer" id="drawer">
+
+    <div class="drawer-hd">
+      <div>
+        <div class="drawer-logo">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+            <path d="M12 2L2 19h20L12 2z" fill="rgba(201,162,39,0.3)" stroke="#C9A227" stroke-width="1.5"/>
+          </svg>
+          Nepal <em>Admin</em>
+        </div>
+        <div class="drawer-logo-sub">Control Panel</div>
+      </div>
+      <button class="drawer-close" onclick="closeDrawer()">✕</button>
+    </div>
+
+    <div class="drawer-nav">
+
+      <div class="drawer-section-label">Navigation</div>
+
+      <a href="?tab=overview" class="nav-link <?= $activeTab==='overview'?'on':'' ?>" onclick="closeDrawer()">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
+        Overview
+      </a>
+
+      <a href="?tab=users" class="nav-link <?= $activeTab==='users'?'on':'' ?>" onclick="closeDrawer()">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
+        Users
+        <span class="nav-badge nav-badge-gold"><?= $total_users ?></span>
+      </a>
+
+      <a href="?tab=bookings" class="nav-link <?= $activeTab==='bookings'?'on':'' ?>" onclick="closeDrawer()">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17 12h-5v5h5v-5zM16 1v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2h-1V1h-2zm3 18H5V8h14v11z"/></svg>
+        Bookings
+        <span class="nav-badge nav-badge-gold"><?= $total_bookings ?></span>
+      </a>
+
+      <a href="subscription_admin.php" class="nav-link <?= $activeTab==='subscriptions'?'on':'' ?>">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 4H4c-1.11 0-1.99.89-1.99 2L2 18c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V6c0-1.11-.89-2-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z"/></svg>
+        Subscriptions
+        <?php if ($pending_subs + $pending_deals + $pending_experience_subs > 0): ?>
+          <span class="nav-badge nav-badge-alert"><?= $pending_subs + $pending_deals + $pending_experience_subs ?></span>
+        <?php else: ?>
+          <span class="nav-badge nav-badge-gold"><?= count($subs) + count($experience_subs) ?></span>
+        <?php endif; ?>
+      </a>
+
+      <a href="?tab=chat" class="nav-link <?= $activeTab==='chat'?'on':'' ?>" onclick="closeDrawer()">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"/></svg>
+        Live Chat
+        <?php if ($total_chat_unread > 0): ?>
+          <span class="nav-badge nav-badge-chat" id="sb-chat-badge"><?= $total_chat_unread ?></span>
+        <?php else: ?>
+          <span class="nav-badge nav-badge-chat" id="sb-chat-badge" style="display:none">0</span>
+        <?php endif; ?>
+      </a>
+
+      <a href="reviews.php" class="nav-link">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M22 9.24l-7.19-.62L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21 12 17.27 18.18 21l-1.63-7.03L22 9.24z"/></svg>
+        Reviews
+        <span class="nav-badge nav-badge-gold"><?= $total_reviews ?></span>
+      </a>
+
+      <a href="posts.php" class="nav-link">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M21 3H3C2 3 1 4 1 5v14c0 1.1.9 2 2 2h18c1 0 2-.9 2-2V5c0-1-1-2-2-2zm0 16H3V5h18v14zm-10-7h8v2h-8v-2zm0-4h8v2h-8V8zm-6 8h4v-8H5v8z"/></svg>
+        Posts
+      </a>
+
+      <div class="drawer-divider"></div>
+      <div class="drawer-section-label">Links</div>
+
+      <a href="/Nepal-Travel/Public/index.php" class="nav-link">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+        View Site
+      </a>
+
+      <a href="deals_crud.php" class="nav-link">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M21.41 11.58l-9-9C12.05 2.22 11.55 2 11 2H4c-1.1 0-2 .9-2 2v7c0 .55.22 1.05.59 1.42l9 9c.36.36.86.58 1.41.58.55 0 1.05-.22 1.41-.59l7-7c.37-.36.59-.86.59-1.41 0-.55-.23-1.06-.59-1.42z"/></svg>
+        Deals &amp; Packages
+      </a>
+
+      <a href="travel_ideas_admin.php" class="nav-link">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M9 21c0 .55.45 1 1 1h4c.55 0 1-.45 1-1v-1H9v1zm3-19C8.14 2 5 5.14 5 9c0 2.38 1.19 4.47 3 5.74V17c0 .55.45 1 1 1h6c.55 0 1-.45 1-1v-2.26c1.81-1.27 3-3.36 3-5.74 0-3.86-3.14-7-7-7z"/></svg>
+        Travel Ideas
+      </a>
+
+      <div class="drawer-divider"></div>
+
+      <a href="logout.php" class="nav-link" style="color:var(--red2);border-color:transparent">
+        <svg viewBox="0 0 24 24" fill="currentColor" style="opacity:0.7"><path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/></svg>
+        Sign Out
+      </a>
+
+    </div>
+
+    <!-- Footer -->
+    <div class="drawer-footer">
+      <div class="drawer-footer-av">
+        <?php if (!empty($admin_avatar) && $admin_avatar !== 'default.png'): ?>
+          <img src="/Nepal-Travel/<?= ltrim(htmlspecialchars($admin_avatar), '/') ?>" alt="">
+        <?php else: ?>
+          <?= $admin_initial ?>
+        <?php endif; ?>
+      </div>
+      <div>
+        <div class="drawer-footer-name"><?= $admin_display ?></div>
+        <div class="drawer-footer-sub"><?= $admin_username ? '@'.$admin_username : '// Super Admin' ?></div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ══ MAIN CONTENT ══ -->
   <div class="main">
-    <header class="topbar">
-      <div class="tb-breadcrumb">
-        NEPAL TRAVEL / <span><?= strtoupper($activeTab) ?></span>
-      </div>
-      <div class="tb-actions">
-        <!-- Shows logged-in admin name in topbar too -->
-        <span class="tb-admin-name">👤 <?= $admin_display ?></span>
-        <span class="tb-tag">● LIVE</span>
-        <span class="tb-time" id="clock"></span>
-      </div>
-    </header>
-
     <div class="content">
 
       <?php if ($msg): ?>
@@ -674,7 +790,7 @@ tbody tr:hover td{background:rgba(255,255,255,0.02)}
           </div>
           <div class="stat-card" style="--accent:#E8C44A">
             <div class="stat-card-ico">💰</div>
-            <div class="stat-card-n" style="font-size:22px;padding-top:4px">NPR <?= number_format($sub_revenue) ?></div>
+            <div class="stat-card-n" style="font-size:20px;padding-top:4px">NPR <?= number_format($sub_revenue) ?></div>
             <div class="stat-card-l">Sub Revenue</div>
           </div>
         </div>
@@ -880,12 +996,12 @@ tbody tr:hover td{background:rgba(255,255,255,0.02)}
               <div class="tcard-hd-title">Booking Records</div>
               <div class="tcard-hd-sub">All bookings across all users</div>
             </div>
-            <div style="display:flex;gap:8px;align-items:center">
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
               <span class="pill pill-confirmed"><span class="dot"></span><?= $confirmed ?> Confirmed</span>
               <span class="pill pill-pending"><span class="dot"></span><?= $pending ?> Pending</span>
               <span class="pill pill-cancelled"><span class="dot"></span><?= $cancelled ?> Cancelled</span>
               <?php if(!empty($bookings)): ?>
-              <form method="POST" action="?tab=bookings" style="margin-left:8px"
+              <form method="POST" action="?tab=bookings"
                     onsubmit="return confirm('⚠️ DELETE ALL <?= $total_bookings ?> BOOKINGS?\n\nThis is permanent and cannot be undone. Are you absolutely sure?')">
                 <button type="submit" name="delete_all_bookings" class="btn act-btn-del" style="padding:5px 14px">
                   <svg viewBox="0 0 24 24" fill="currentColor" style="width:12px;height:12px"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
@@ -975,6 +1091,7 @@ tbody tr:hover td{background:rgba(255,255,255,0.02)}
           </div>
         </div>
 
+
       <!-- ════════════════════════════════
            SUBSCRIPTIONS TAB
       ════════════════════════════════ -->
@@ -1006,7 +1123,7 @@ tbody tr:hover td{background:rgba(255,255,255,0.02)}
           </div>
           <div class="stat-card" style="--accent:#E8C44A">
             <div class="stat-card-ico">💰</div>
-            <div class="stat-card-n" style="font-size:22px;padding-top:6px">NPR <?= number_format($sub_revenue) ?></div>
+            <div class="stat-card-n" style="font-size:20px;padding-top:6px">NPR <?= number_format($sub_revenue) ?></div>
             <div class="stat-card-l">Deal Sub Revenue</div>
           </div>
           <div class="stat-card" style="--accent:#9B59B6">
@@ -1017,7 +1134,7 @@ tbody tr:hover td{background:rgba(255,255,255,0.02)}
           </div>
           <div class="stat-card" style="--accent:#1ABC9C">
             <div class="stat-card-ico">💵</div>
-            <div class="stat-card-n" style="font-size:22px;padding-top:6px">NPR <?= number_format($experience_revenue) ?></div>
+            <div class="stat-card-n" style="font-size:20px;padding-top:6px">NPR <?= number_format($experience_revenue) ?></div>
             <div class="stat-card-l">Experience Revenue</div>
           </div>
         </div>
@@ -1035,7 +1152,7 @@ tbody tr:hover td{background:rgba(255,255,255,0.02)}
             🏔️ User Deals
             <?php if ($pending_deals > 0): ?><span class="sub-tab-badge"><?= $pending_deals ?></span><?php endif; ?>
           </button>
-          <a href="subscription_admin.php?tab=experience_subscriptions" class="sub-tab-btn" style="text-decoration:none;margin-left:auto;font-size:12px">Full manager →</a>
+          <a href="subscription_admin.php?tab=experience_subscriptions" class="sub-tab-btn" style="text-decoration:none;font-size:12px">Full manager →</a>
         </div>
 
         <div id="spanel-subs">
@@ -1068,7 +1185,7 @@ tbody tr:hover td{background:rgba(255,255,255,0.02)}
                     <td><span class="pill pill-active" style="font-size:9px"><?= htmlspecialchars($s['display_name']) ?></span></td>
                     <td class="mono">NPR <?= number_format($s['amount_paid']) ?></td>
                     <td class="mono"><?= htmlspecialchars($s['payment_method']) ?></td>
-                    <td class="mono" style="max-width:120px;overflow:hidden;text-overflow:ellipsis" title="<?= htmlspecialchars($s['payment_ref']) ?>">
+                    <td class="mono" style="max-width:110px;overflow:hidden;text-overflow:ellipsis" title="<?= htmlspecialchars($s['payment_ref']) ?>">
                       <?= htmlspecialchars($s['payment_ref'] ?: '—') ?>
                     </td>
                     <td><span class="pill pill-<?= $s['status'] ?>"><?= ucfirst($s['status']) ?></span></td>
@@ -1137,7 +1254,7 @@ tbody tr:hover td{background:rgba(255,255,255,0.02)}
                     <td><span class="pill pill-active" style="font-size:9px"><?= htmlspecialchars($s['display_name']) ?></span></td>
                     <td class="mono">NPR <?= number_format((float)$s['amount_paid']) ?></td>
                     <td class="mono"><?= htmlspecialchars($s['payment_method'] ?? '—') ?></td>
-                    <td class="mono" style="max-width:120px;overflow:hidden;text-overflow:ellipsis" title="<?= htmlspecialchars($s['payment_ref'] ?? '') ?>">
+                    <td class="mono" style="max-width:110px;overflow:hidden;text-overflow:ellipsis" title="<?= htmlspecialchars($s['payment_ref'] ?? '') ?>">
                       <?= htmlspecialchars($s['payment_ref'] ?: '—') ?>
                     </td>
                     <td><span class="pill pill-<?= $s['status'] ?>"><?= ucfirst($s['status']) ?></span></td>
@@ -1204,10 +1321,10 @@ tbody tr:hover td{background:rgba(255,255,255,0.02)}
                         <div class="deal-thumb-ph"><?= $d['emoji'] ?? '🏔️' ?></div>
                       <?php endif; ?>
                     </td>
-                    <td style="font-weight:600;max-width:180px">
+                    <td style="font-weight:600;max-width:160px">
                       <?= htmlspecialchars($d['title']) ?>
                       <?php if(!empty($d['description'])): ?>
-                        <div class="mono" style="margin-top:3px;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"><?= htmlspecialchars($d['description']) ?></div>
+                        <div class="mono" style="margin-top:3px;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"><?= htmlspecialchars($d['description']) ?></div>
                       <?php endif; ?>
                     </td>
                     <td>
@@ -1258,15 +1375,13 @@ tbody tr:hover td{background:rgba(255,255,255,0.02)}
         <div class="sec-hd" style="flex-wrap:wrap;gap:12px">
           <h1 class="sec-hd-title">Live Chat</h1>
           <div class="sec-hd-rule"></div>
-          <span class="sec-hd-count" id="chat-session-count">Loading sessions…</span>
-          <button type="button" class="btn btn-delete" id="delete-all-chats-btn" onclick="deleteAllChats()" style="margin-left:auto;padding:8px 16px;font-size:12px">
+          <span class="sec-hd-count" id="chat-session-count">Loading…</span>
+          <button type="button" class="btn act-btn-del" id="delete-all-chats-btn" onclick="deleteAllChats()" style="margin-left:auto;padding:8px 16px;font-size:12px">
             🗑 Delete All Chats
           </button>
         </div>
 
         <div class="chat-layout">
-
-          <!-- Sessions sidebar -->
           <div class="chat-sessions">
             <div class="chat-sessions-hd">
               <div class="chat-sessions-hd-title">💬 Conversations</div>
@@ -1277,21 +1392,18 @@ tbody tr:hover td{background:rgba(255,255,255,0.02)}
             </div>
             <div class="chat-sessions-list" id="chat-sessions-list">
               <div class="chat-empty-sessions">
-                <div style="font-size:32px;opacity:0.2;margin-bottom:10px">💬</div>
+                <div style="font-size:28px;opacity:0.2;margin-bottom:10px">💬</div>
                 <p>Loading conversations…</p>
               </div>
             </div>
           </div>
 
-          <!-- Message pane -->
           <div class="chat-pane" id="chat-pane">
-            <!-- No session selected state -->
             <div class="chat-no-session" id="chat-no-session">
               <div class="chat-no-session-ico">💬</div>
               <p>Select a conversation to start replying</p>
             </div>
 
-            <!-- Active chat area (hidden until session selected) -->
             <div id="chat-active-pane" style="display:none;flex-direction:column;height:100%">
               <div class="chat-pane-hd" id="chat-pane-hd">
                 <div class="chat-pane-hd-av" id="chat-pane-av">?</div>
@@ -1302,17 +1414,10 @@ tbody tr:hover td{background:rgba(255,255,255,0.02)}
                 <div style="margin-left:auto;font-family:var(--ff-m);font-size:10px;color:var(--muted2)" id="chat-pane-sess"></div>
               </div>
 
-              <div class="chat-messages-area" id="chat-messages-area">
-                <!-- Messages rendered by JS -->
-              </div>
+              <div class="chat-messages-area" id="chat-messages-area"></div>
 
               <div class="chat-input-area">
-                <textarea
-                  id="chat-admin-input"
-                  class="chat-input"
-                  placeholder="Type your reply…"
-                  rows="1"
-                ></textarea>
+                <textarea id="chat-admin-input" class="chat-input" placeholder="Type your reply…" rows="1"></textarea>
                 <button class="chat-send-btn" id="chat-admin-send">
                   <svg viewBox="0 0 24 24" fill="currentColor" style="width:16px;height:16px"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
                   Send
@@ -1320,8 +1425,7 @@ tbody tr:hover td{background:rgba(255,255,255,0.02)}
               </div>
             </div>
           </div>
-
-        </div><!-- /chat-layout -->
+        </div>
 
       <?php endif; ?>
 
@@ -1329,7 +1433,8 @@ tbody tr:hover td{background:rgba(255,255,255,0.02)}
   </div><!-- /main -->
 </div><!-- /admin-wrap -->
 
-<!-- ══ REJECT SUBSCRIPTION MODAL ══ -->
+
+<!-- ══ MODALS ══ -->
 <div class="modal-bd" id="rejectSubModal" onclick="closeBd(event,'rejectSubModal')">
   <div class="modal-box">
     <div class="modal-hd">
@@ -1337,7 +1442,7 @@ tbody tr:hover td{background:rgba(255,255,255,0.02)}
       <button class="modal-close" onclick="closeM('rejectSubModal')">✕</button>
     </div>
     <div class="modal-body">
-      <p style="font-size:13px;color:var(--muted);margin-bottom:16px">Are you sure you want to reject this subscription? The user will not be activated.</p>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:16px">Are you sure you want to reject this subscription?</p>
       <form method="POST">
         <input type="hidden" name="action" value="reject_sub">
         <input type="hidden" name="sub_id" id="reject_sub_id">
@@ -1347,7 +1452,6 @@ tbody tr:hover td{background:rgba(255,255,255,0.02)}
   </div>
 </div>
 
-<!-- ══ REJECT EXPERIENCE SUBSCRIPTION MODAL ══ -->
 <div class="modal-bd" id="rejectExperienceSubModal" onclick="closeBd(event,'rejectExperienceSubModal')">
   <div class="modal-box">
     <div class="modal-hd">
@@ -1365,7 +1469,6 @@ tbody tr:hover td{background:rgba(255,255,255,0.02)}
   </div>
 </div>
 
-<!-- ══ REJECT DEAL MODAL ══ -->
 <div class="modal-bd" id="rejectDealModal" onclick="closeBd(event,'rejectDealModal')">
   <div class="modal-box">
     <div class="modal-hd">
@@ -1384,9 +1487,8 @@ tbody tr:hover td{background:rgba(255,255,255,0.02)}
   </div>
 </div>
 
-<!-- ══ DEAL DETAIL MODAL ══ -->
 <div class="modal-bd" id="dealDetailModal" onclick="closeBd(event,'dealDetailModal')">
-  <div class="modal-box" style="max-width:520px;max-height:85vh;overflow-y:auto">
+  <div class="modal-box" style="max-width:520px">
     <div class="modal-hd">
       <div class="modal-hd-title" id="dd_title">Deal Detail</div>
       <button class="modal-close" onclick="closeM('dealDetailModal')">✕</button>
@@ -1398,44 +1500,60 @@ tbody tr:hover td{background:rgba(255,255,255,0.02)}
 <div class="toast" id="toast"></div>
 
 <script>
-// ─── Chat handler path ─────────────────────────────────────────────────────────
 const CHAT_HANDLER = '/Nepal-Travel/Public/chat_handler.php';
 
-// ── Clock ─────────────────────────────────────────────────────────
-function updateClock(){
-  document.getElementById('clock').textContent =
-    new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+// ── Drawer ─────────────────────────────────────────────────────
+function toggleDrawer(){
+  const d = document.getElementById('drawer');
+  const o = document.getElementById('drawerOverlay');
+  const h = document.getElementById('hamBtn');
+  const open = d.classList.toggle('open');
+  o.classList.toggle('open', open);
+  h.classList.toggle('open', open);
+  document.body.style.overflow = open ? 'hidden' : '';
 }
-updateClock(); setInterval(updateClock,1000);
+function closeDrawer(){
+  document.getElementById('drawer').classList.remove('open');
+  document.getElementById('drawerOverlay').classList.remove('open');
+  document.getElementById('hamBtn').classList.remove('open');
+  document.body.style.overflow = '';
+}
+document.addEventListener('keydown', e => { if(e.key === 'Escape') closeDrawer(); });
 
-// ── Toast ─────────────────────────────────────────────────────────
+// ── Clock ──────────────────────────────────────────────────────
+function updateClock(){
+  const el = document.getElementById('clock');
+  if(el) el.textContent = new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+}
+updateClock(); setInterval(updateClock, 1000);
+
+// ── Toast ──────────────────────────────────────────────────────
 function showToast(msg, isError){
   const t = document.getElementById('toast');
   t.textContent = msg;
   t.style.borderLeftColor = isError ? 'var(--red2)' : 'var(--green2)';
   t.classList.add('show');
-  setTimeout(() => t.classList.remove('show'), 3200);
+  setTimeout(()=>t.classList.remove('show'), 3200);
 }
 <?php if($msg): ?>
 document.addEventListener('DOMContentLoaded',()=>showToast(<?= json_encode($msg) ?>, <?= $msg_type==='error'?'true':'false' ?>));
 <?php endif; ?>
 
-// ── Users search ──────────────────────────────────────────────────
+// ── Table search helpers ───────────────────────────────────────
 function filterTable(inputId, tableId){
   const q = document.getElementById(inputId).value.toLowerCase();
   document.querySelectorAll('#'+tableId+' tbody tr').forEach(r=>{
-    r.style.display = r.textContent.toLowerCase().includes(q)?'':'none';
+    r.style.display = r.textContent.toLowerCase().includes(q) ? '' : 'none';
   });
 }
-
 function filterTable2(tableId, q){
   q = q.toLowerCase();
   document.querySelectorAll('#'+tableId+' tbody tr').forEach(r=>{
-    r.style.display = r.textContent.toLowerCase().includes(q)?'':'none';
+    r.style.display = r.textContent.toLowerCase().includes(q) ? '' : 'none';
   });
 }
 
-// ── Bookings filter ───────────────────────────────────────────────
+// ── Bookings filter ────────────────────────────────────────────
 let activeStatus = 'all';
 function setFilter(btn){
   document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
@@ -1448,40 +1566,40 @@ function filterBookings(){
   let visible = 0;
   document.querySelectorAll('#bkTable tbody tr:not(#bkNoResults)').forEach(row=>{
     const rs = (row.dataset.status||'').toLowerCase();
-    const matchText   = !q||row.textContent.toLowerCase().includes(q);
-    const matchStatus = activeStatus==='all'||rs===activeStatus;
-    const show = matchText&&matchStatus;
-    row.style.display = show?'':'none';
+    const matchText   = !q || row.textContent.toLowerCase().includes(q);
+    const matchStatus = activeStatus==='all' || rs===activeStatus;
+    const show = matchText && matchStatus;
+    row.style.display = show ? '' : 'none';
     if(show) visible++;
   });
   const nr = document.getElementById('bkNoResults');
-  if(nr) nr.style.display = visible===0?'':'none';
+  if(nr) nr.style.display = visible===0 ? '' : 'none';
 }
 
-// ── Subscription sub-tabs ─────────────────────────────────────────
+// ── Subscription sub-tabs ──────────────────────────────────────
 function switchSubTab(tab){
   ['subs','experience','deals'].forEach(t=>{
     const panel = document.getElementById('spanel-'+t);
-    const btn = document.getElementById('stab-'+t);
-    if(panel) panel.style.display = t===tab?'block':'none';
+    const btn   = document.getElementById('stab-'+t);
+    if(panel) panel.style.display = t===tab ? 'block' : 'none';
     if(btn) btn.classList.toggle('active', t===tab);
   });
 }
 <?php if(isset($_GET['subtab']) && $_GET['subtab']==='experience'): ?>
 document.addEventListener('DOMContentLoaded',()=>switchSubTab('experience'));
-<?php elseif(($pending_deals > 0) && isset($_GET['subtab']) && $_GET['subtab']==='deals'): ?>
-document.addEventListener('DOMContentLoaded',()=>switchSubTab('deals'));
-<?php endif; ?>
-<?php if(($pending_deals > 0) && isset($_GET['subtab']) && $_GET['subtab']==='deals'): ?>
+<?php elseif(isset($_GET['subtab']) && $_GET['subtab']==='deals'): ?>
 document.addEventListener('DOMContentLoaded',()=>switchSubTab('deals'));
 <?php endif; ?>
 
-// ── Modal helpers ─────────────────────────────────────────────────
+// ── Modal helpers ──────────────────────────────────────────────
 function openM(id) { document.getElementById(id).classList.add('open'); document.body.style.overflow='hidden'; }
 function closeM(id){ document.getElementById(id).classList.remove('open'); document.body.style.overflow=''; }
 function closeBd(e,id){ if(e.target===document.getElementById(id)) closeM(id); }
-document.addEventListener('keydown',e=>{ if(e.key==='Escape') document.querySelectorAll('.modal-bd.open').forEach(m=>{m.classList.remove('open');document.body.style.overflow='';}) });
-
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape') document.querySelectorAll('.modal-bd.open').forEach(m=>{
+    m.classList.remove('open'); document.body.style.overflow='';
+  });
+});
 function openRejectSub(id){ document.getElementById('reject_sub_id').value=id; openM('rejectSubModal'); }
 function openRejectExperienceSub(id){ document.getElementById('reject_experience_sub_id').value=id; openM('rejectExperienceSubModal'); }
 function openRejectDeal(id){ document.getElementById('reject_deal_id').value=id; openM('rejectDealModal'); }
@@ -1497,28 +1615,23 @@ function viewDealDetail(d){
          <span style="font-size:13px">${val}</span>
        </div>` : '';
   document.getElementById('dd_body').innerHTML = img
-    + row('Category', d.category)
-    + row('Location', d.location)
-    + row('Duration', d.days ? d.days+' days' : '')
-    + row('Season', d.season)
-    + row('Price', d.price ? 'NPR '+Number(d.price).toLocaleString() : '')
-    + row('Original Price', d.original_price>0 ? 'NPR '+Number(d.original_price).toLocaleString() : '')
-    + row('Features', d.features)
+    + row('Category',d.category)
+    + row('Location',d.location)
+    + row('Duration',d.days ? d.days+' days' : '')
+    + row('Season',d.season)
+    + row('Price',d.price ? 'NPR '+Number(d.price).toLocaleString() : '')
+    + row('Original Price',d.original_price>0 ? 'NPR '+Number(d.original_price).toLocaleString() : '')
+    + row('Features',d.features)
     + `<div style="margin-top:12px;font-size:13px;color:rgba(255,255,255,0.55);line-height:1.7">${d.description||''}</div>`;
   openM('dealDetailModal');
 }
 
-// ══════════════════════════════════════════════════════════════════
-//  ADMIN LIVE CHAT ENGINE
-// ══════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════
+//  LIVE CHAT ENGINE
+// ══════════════════════════════════════════════════════════════
 <?php if ($activeTab === 'chat'): ?>
 (function(){
-  let sessions      = [];
-  let activeSession = null;
-  let lastMsgId     = 0;
-  let pollTimer     = null;
-  let globalLastId  = 0;
-
+  let sessions=[], activeSession=null, lastMsgId=0, globalLastId=0;
   const sessListEl  = document.getElementById('chat-sessions-list');
   const msgsEl      = document.getElementById('chat-messages-area');
   const inputEl     = document.getElementById('chat-admin-input');
@@ -1533,55 +1646,29 @@ function viewDealDetail(d){
   const totalBadgeEl= document.getElementById('chat-total-unread-badge');
   const sbBadgeEl   = document.getElementById('sb-chat-badge');
 
-  function fmtTime(str){
-    if(!str) return '';
-    const d = new Date(str.replace(' ','T'));
-    return d.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
-  }
-  function fmtDate(str){
-    if(!str) return '';
-    const d = new Date(str.replace(' ','T'));
-    return d.toLocaleDateString([],{weekday:'short',month:'short',day:'numeric'});
-  }
-  function isToday(str){
-    if(!str) return false;
-    const d = new Date(str.replace(' ','T'));
-    return d.toDateString()===new Date().toDateString();
-  }
+  function fmtTime(str){ if(!str) return ''; const d=new Date(str.replace(' ','T')); return d.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}); }
+  function fmtDate(str){ if(!str) return ''; const d=new Date(str.replace(' ','T')); return d.toLocaleDateString([],{weekday:'short',month:'short',day:'numeric'}); }
+  function isToday(str){ if(!str) return false; return new Date(str.replace(' ','T')).toDateString()===new Date().toDateString(); }
   function fmtSessTime(str){ return isToday(str) ? fmtTime(str) : fmtDate(str); }
-  function initials(name){
-    if(!name || name.startsWith('Guest')) return '?';
-    return name.split(' ').map(w=>w[0]||'').join('').substring(0,2).toUpperCase();
-  }
+  function initials(name){ if(!name||name.startsWith('Guest')) return '?'; return name.split(' ').map(w=>w[0]||'').join('').substring(0,2).toUpperCase(); }
+
+  function escHtml(str){ const d=document.createElement('div'); d.appendChild(document.createTextNode(str||'')); return d.innerHTML; }
 
   function renderSessions(list){
-    const q = (document.getElementById('sessSearch')?.value||'').toLowerCase();
-    const filtered = q ? list.filter(s=>(s.display_name||s.session_id).toLowerCase().includes(q)) : list;
-
+    const q=(document.getElementById('sessSearch')?.value||'').toLowerCase();
+    const filtered=q?list.filter(s=>(s.display_name||s.session_id).toLowerCase().includes(q)):list;
     if(!filtered.length){
-      sessListEl.innerHTML = `<div class="chat-empty-sessions">
-        <div style="font-size:32px;opacity:0.2;margin-bottom:10px">💬</div>
-        <p>${q ? 'No matches found.' : 'No conversations yet.'}</p>
-      </div>`;
+      sessListEl.innerHTML=`<div class="chat-empty-sessions"><div style="font-size:28px;opacity:0.2;margin-bottom:10px">💬</div><p>${q?'No matches.':'No conversations yet.'}</p></div>`;
       return;
     }
-
-    const totalUnread = list.reduce((acc,s)=>acc+(+s.unread||0),0);
-    countEl.textContent = list.length + ' conversation' + (list.length!==1?'s':'');
-    if(totalUnread>0){
-      totalBadgeEl.textContent = totalUnread + ' unread';
-      totalBadgeEl.style.display = 'inline';
-      sbBadgeEl.textContent = totalUnread;
-      sbBadgeEl.style.display = 'inline';
-    } else {
-      totalBadgeEl.style.display = 'none';
-      sbBadgeEl.style.display = 'none';
-    }
-
-    sessListEl.innerHTML = filtered.map(s => {
-      const name     = s.full_name || s.username || ('Guest · ' + s.session_id.substring(0,8));
-      const isActive = activeSession && activeSession.session_id === s.session_id;
-      const unread   = +s.unread || 0;
+    const totalUnread=list.reduce((acc,s)=>acc+(+s.unread||0),0);
+    countEl.textContent=list.length+' conversation'+(list.length!==1?'s':'');
+    if(totalUnread>0){totalBadgeEl.textContent=totalUnread+' unread';totalBadgeEl.style.display='inline';if(sbBadgeEl){sbBadgeEl.textContent=totalUnread;sbBadgeEl.style.display='inline';}}
+    else{totalBadgeEl.style.display='none';if(sbBadgeEl)sbBadgeEl.style.display='none';}
+    sessListEl.innerHTML=filtered.map(s=>{
+      const name=s.full_name||s.username||('Guest · '+s.session_id.substring(0,8));
+      const isActive=activeSession&&activeSession.session_id===s.session_id;
+      const unread=+s.unread||0;
       return `<div class="chat-session-item${isActive?' active':''}" data-sess="${escHtml(s.session_id)}" onclick="openSession(${JSON.stringify(s).replace(/"/g,'&quot;')})">
         <div class="chat-session-av">${initials(name)}</div>
         <div class="chat-session-info">
@@ -1590,192 +1677,129 @@ function viewDealDetail(d){
         </div>
         <div style="flex-shrink:0;text-align:right">
           <div class="chat-session-time">${fmtSessTime(s.last_at)}</div>
-          ${unread>0 ? `<span class="chat-unread-badge" style="margin-top:4px;display:inline-block">${unread}</span>` : ''}
+          ${unread>0?`<span class="chat-unread-badge" style="display:inline-block;margin-top:4px">${unread}</span>`:''}
         </div>
       </div>`;
     }).join('');
   }
 
-  window.filterSessions = function(q){ renderSessions(sessions); };
+  window.filterSessions=function(){ renderSessions(sessions); };
 
-  window.openSession = function(s){
-    activeSession = s;
-    lastMsgId     = 0;
-    const name = s.full_name || s.username || ('Guest · ' + s.session_id.substring(0,8));
-    paneNameEl.textContent = name;
-    paneAvEl.textContent   = initials(name);
-    paneSubEl.innerHTML    = `<span class="chat-online-dot"></span> ${escHtml(s.email||s.session_id.substring(0,16)+'…')}`;
-    paneSessEl.textContent = 'Session: ' + s.session_id.substring(0,12) + '…';
-    noSessEl.style.display     = 'none';
-    activePaneEl.style.display = 'flex';
-    document.querySelectorAll('.chat-session-item').forEach(el=>{
-      el.classList.toggle('active', el.dataset.sess===s.session_id);
-    });
-    msgsEl.innerHTML = '';
+  window.openSession=function(s){
+    activeSession=s; lastMsgId=0;
+    const name=s.full_name||s.username||('Guest · '+s.session_id.substring(0,8));
+    paneNameEl.textContent=name;
+    paneAvEl.textContent=initials(name);
+    paneSubEl.innerHTML=`<span class="chat-online-dot"></span> ${escHtml(s.email||s.session_id.substring(0,16)+'…')}`;
+    paneSessEl.textContent='Session: '+s.session_id.substring(0,12)+'…';
+    noSessEl.style.display='none';
+    activePaneEl.style.display='flex';
+    document.querySelectorAll('.chat-session-item').forEach(el=>{el.classList.toggle('active',el.dataset.sess===s.session_id);});
+    msgsEl.innerHTML='';
     loadHistory(s.session_id);
     inputEl.focus();
   };
 
   function loadHistory(sessId){
     fetch(`${CHAT_HANDLER}?action=admin_poll&since=0&session_id=${encodeURIComponent(sessId)}`)
-    .then(r=>r.json())
-    .then(d=>{
+    .then(r=>r.json()).then(d=>{
       if(!d.ok) return;
-      sessions = d.sessions || sessions;
-      renderSessions(sessions);
-      msgsEl.innerHTML = '';
-      let lastDate = '';
+      sessions=d.sessions||sessions; renderSessions(sessions);
+      msgsEl.innerHTML=''; let lastDate='';
       (d.history||[]).forEach(m=>{
-        const msgDate = fmtDate(m.created_at);
-        if(msgDate !== lastDate){
-          const sep = document.createElement('div');
-          sep.className = 'chat-date-sep';
-          sep.textContent = msgDate;
-          msgsEl.appendChild(sep);
-          lastDate = msgDate;
-        }
-        appendMessage(m.sender, m.message, m.created_at, false);
-        lastMsgId = Math.max(lastMsgId, +m.id);
-        globalLastId = Math.max(globalLastId, +m.id);
+        const md=fmtDate(m.created_at);
+        if(md!==lastDate){const sep=document.createElement('div');sep.className='chat-date-sep';sep.textContent=md;msgsEl.appendChild(sep);lastDate=md;}
+        appendMessage(m.sender,m.message,m.created_at,false);
+        lastMsgId=Math.max(lastMsgId,+m.id); globalLastId=Math.max(globalLastId,+m.id);
       });
       scrollToBottom();
-    })
-    .catch(console.error);
+    }).catch(console.error);
   }
 
-  function appendMessage(sender, text, time, doScroll){
-    const wrap = document.createElement('div');
-    wrap.className = 'chat-bubble-wrap ' + sender;
-    const bubble = document.createElement('div');
-    bubble.className = 'chat-bubble ' + sender;
-    bubble.textContent = text;
-    const t = document.createElement('div');
-    t.className = 'chat-bubble-time';
-    t.textContent = (sender==='admin' ? '🏔️ You · ' : '👤 User · ') + fmtTime(time);
-    wrap.appendChild(bubble);
-    wrap.appendChild(t);
-    msgsEl.appendChild(wrap);
+  function appendMessage(sender,text,time,doScroll){
+    const wrap=document.createElement('div'); wrap.className='chat-bubble-wrap '+sender;
+    const bubble=document.createElement('div'); bubble.className='chat-bubble '+sender; bubble.textContent=text;
+    const t=document.createElement('div'); t.className='chat-bubble-time';
+    t.textContent=(sender==='admin'?'🏔️ You · ':'👤 User · ')+fmtTime(time);
+    wrap.appendChild(bubble); wrap.appendChild(t); msgsEl.appendChild(wrap);
     if(doScroll!==false) scrollToBottom();
   }
-
-  function scrollToBottom(){ msgsEl.scrollTop = msgsEl.scrollHeight; }
+  function scrollToBottom(){ msgsEl.scrollTop=msgsEl.scrollHeight; }
 
   function sendReply(){
     if(!activeSession) return;
-    const txt = inputEl.value.trim();
-    if(!txt) return;
-    appendMessage('admin', txt, new Date().toISOString().replace('T',' ').substring(0,19), true);
-    inputEl.value = '';
-    inputEl.style.height = 'auto';
-    sendBtn.disabled = true;
-    fetch(CHAT_HANDLER, {
-      method: 'POST',
-      headers: {'Content-Type':'application/x-www-form-urlencoded'},
-      body: 'action=admin_reply&session_id='+encodeURIComponent(activeSession.session_id)+'&message='+encodeURIComponent(txt)
-    })
-    .then(r=>r.json())
-    .then(d=>{ if(d.ok) globalLastId = Math.max(globalLastId, +d.id); })
-    .catch(console.error)
-    .finally(()=>{ sendBtn.disabled = false; });
+    const txt=inputEl.value.trim(); if(!txt) return;
+    appendMessage('admin',txt,new Date().toISOString().replace('T',' ').substring(0,19),true);
+    inputEl.value=''; inputEl.style.height='auto'; sendBtn.disabled=true;
+    fetch(CHAT_HANDLER,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},
+      body:'action=admin_reply&session_id='+encodeURIComponent(activeSession.session_id)+'&message='+encodeURIComponent(txt)})
+    .then(r=>r.json()).then(d=>{if(d.ok) globalLastId=Math.max(globalLastId,+d.id);})
+    .catch(console.error).finally(()=>{sendBtn.disabled=false;});
   }
-
-  sendBtn.addEventListener('click', sendReply);
-  inputEl.addEventListener('keydown', e=>{
-    if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); sendReply(); }
-  });
-  inputEl.addEventListener('input', ()=>{
-    inputEl.style.height = 'auto';
-    inputEl.style.height = Math.min(inputEl.scrollHeight, 120) + 'px';
-  });
+  sendBtn.addEventListener('click',sendReply);
+  inputEl.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendReply();}});
+  inputEl.addEventListener('input',()=>{inputEl.style.height='auto';inputEl.style.height=Math.min(inputEl.scrollHeight,100)+'px';});
 
   function poll(){
-    const sessParam = activeSession ? '&session_id='+encodeURIComponent(activeSession.session_id) : '';
-    fetch(`${CHAT_HANDLER}?action=admin_poll&since=${globalLastId}${sessParam}`)
-    .then(r=>r.json())
-    .then(d=>{
-        if(!d.ok) return;
-        // REMOVE the `if(d.sessions && d.sessions.length)` check — always render
-        sessions = d.sessions || sessions;
-        renderSessions(sessions);
-      if(activeSession && d.new_msgs){
+    const sp=activeSession?'&session_id='+encodeURIComponent(activeSession.session_id):'';
+    fetch(`${CHAT_HANDLER}?action=admin_poll&since=${globalLastId}${sp}`)
+    .then(r=>r.json()).then(d=>{
+      if(!d.ok) return;
+      sessions=d.sessions||sessions; renderSessions(sessions);
+      if(activeSession&&d.new_msgs){
         d.new_msgs.forEach(m=>{
-          if(+m.id <= lastMsgId) return;
-          if(m.session_id !== activeSession.session_id) return;
-          if(m.sender === 'user') appendMessage('user', m.message, m.created_at, true);
-          lastMsgId = Math.max(lastMsgId, +m.id);
-          globalLastId = Math.max(globalLastId, +m.id);
+          if(+m.id<=lastMsgId) return;
+          if(m.session_id!==activeSession.session_id) return;
+          if(m.sender==='user') appendMessage('user',m.message,m.created_at,true);
+          lastMsgId=Math.max(lastMsgId,+m.id); globalLastId=Math.max(globalLastId,+m.id);
         });
       }
-    })
-    .catch(console.error);
+    }).catch(console.error);
   }
 
   function initialLoad(){
     fetch(`${CHAT_HANDLER}?action=admin_poll&since=0`)
-    .then(r=>r.json())
-    .then(d=>{
+    .then(r=>r.json()).then(d=>{
       if(!d.ok) return;
-      sessions = d.sessions || [];
-      renderSessions(sessions);
-      countEl.textContent = sessions.length + ' conversation' + (sessions.length!==1?'s':'');
-    })
-    .catch(()=>{ countEl.textContent = 'Could not load sessions'; });
+      sessions=d.sessions||[]; renderSessions(sessions);
+      countEl.textContent=sessions.length+' conversation'+(sessions.length!==1?'s':'');
+    }).catch(()=>{countEl.textContent='Could not load sessions';});
   }
 
-  function escHtml(str){
-    const d = document.createElement('div');
-    d.appendChild(document.createTextNode(str||''));
-    return d.innerHTML;
-  }
-
-  window.deleteAllChats = function(){
+  window.deleteAllChats=function(){
     if(!confirm('Delete ALL live chat messages permanently? This cannot be undone.')) return;
-    const btn = document.getElementById('delete-all-chats-btn');
-    if(btn) btn.disabled = true;
-    fetch(CHAT_HANDLER, {
-      method: 'POST',
-      headers: {'Content-Type':'application/x-www-form-urlencoded'},
-      body: 'action=admin_delete_all'
-    })
-    .then(r=>r.json())
-    .then(d=>{
-      if(!d.ok){ alert(d.error || 'Failed to delete chats.'); return; }
-      sessions = [];
-      activeSession = null;
-      lastMsgId = 0;
-      globalLastId = 0;
-      renderSessions([]);
-      msgsEl.innerHTML = '';
-      noSessEl.style.display = 'flex';
-      activePaneEl.style.display = 'none';
-      countEl.textContent = '0 conversations';
-      if(totalBadgeEl) totalBadgeEl.style.display = 'none';
-      if(sbBadgeEl) sbBadgeEl.style.display = 'none';
-      alert('All chats deleted (' + (d.deleted ?? 0) + ' messages).');
-    })
-    .catch(()=> alert('Could not delete chats. Please try again.'))
-    .finally(()=>{ if(btn) btn.disabled = false; });
+    const btn=document.getElementById('delete-all-chats-btn'); if(btn) btn.disabled=true;
+    fetch(CHAT_HANDLER,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'action=admin_delete_all'})
+    .then(r=>r.json()).then(d=>{
+      if(!d.ok){alert(d.error||'Failed to delete chats.');return;}
+      sessions=[]; activeSession=null; lastMsgId=0; globalLastId=0;
+      renderSessions([]); msgsEl.innerHTML='';
+      noSessEl.style.display='flex'; activePaneEl.style.display='none';
+      countEl.textContent='0 conversations';
+      if(totalBadgeEl) totalBadgeEl.style.display='none';
+      if(sbBadgeEl) sbBadgeEl.style.display='none';
+      alert('All chats deleted ('+(d.deleted??0)+' messages).');
+    }).catch(()=>alert('Could not delete chats.'))
+    .finally(()=>{if(btn) btn.disabled=false;});
   };
 
   initialLoad();
-  pollTimer = setInterval(poll, 3000);
+  setInterval(poll, 3000);
 })();
 <?php endif; ?>
 
-// ── Global sidebar chat badge polling (all tabs except chat) ───────────────────
+// ── Sidebar chat badge polling (non-chat tabs) ─────────────────
 <?php if ($activeTab !== 'chat'): ?>
 (function(){
-  const sbBadge = document.getElementById('sb-chat-badge');
+  const sbBadge=document.getElementById('sb-chat-badge');
   if(!sbBadge) return;
   setInterval(()=>{
     fetch(`${CHAT_HANDLER}?action=unread_count`)
-    .then(r=>r.json())
-    .then(d=>{
+    .then(r=>r.json()).then(d=>{
       if(!d.ok) return;
-      if(d.count>0){ sbBadge.textContent=d.count; sbBadge.style.display='inline'; }
-      else { sbBadge.style.display='none'; }
-    })
-    .catch(()=>{});
+      if(d.count>0){sbBadge.textContent=d.count;sbBadge.style.display='inline';}
+      else sbBadge.style.display='none';
+    }).catch(()=>{});
   }, 10000);
 })();
 <?php endif; ?>

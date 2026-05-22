@@ -137,11 +137,7 @@ $all_categories = array_unique(array_filter(array_column($all_deals, 'category')
     }
     @supports (-webkit-touch-callout: none) { body { background-attachment: scroll; } }
 
-    .page-overlay {
-      min-height: 100vh;
-      background: rgba(8,10,20,0.22);
-      padding-bottom: 5rem;
-    }
+    /* ── NO page-overlay — removed dark background ── */
 
     /* ── HERO SLIDER ── */
     .hero-slider {
@@ -149,7 +145,7 @@ $all_categories = array_unique(array_filter(array_column($all_deals, 'category')
       width: 100%;
       height: clamp(320px, 52vw, 780px);
       overflow: hidden;
-      margin-bottom: clamp(1.8rem, 3.5vw, 3rem);
+      margin-bottom: 0;
     }
     .hero-slide {
       position: absolute; inset: 0;
@@ -160,7 +156,7 @@ $all_categories = array_unique(array_filter(array_column($all_deals, 'category')
     .hero-slide.active { opacity: 1; z-index: 1; }
     .hero-slide-overlay {
       position: absolute; inset: 0;
-      background: linear-gradient(to bottom, rgba(0,0,0,0.06) 0%, rgba(0,0,0,0.48) 55%, rgba(0,0,0,0.70) 100%);
+      background: linear-gradient(to bottom, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0.55) 55%, rgba(0,0,0,0.80) 100%);
     }
     .hero-slide-content {
       position: relative; z-index: 2;
@@ -171,7 +167,7 @@ $all_categories = array_unique(array_filter(array_column($all_deals, 'category')
     .hero-label {
       font-size: clamp(9px,1.4vw,11px); font-weight: 700;
       letter-spacing: 0.22em; text-transform: uppercase;
-      color: rgba(255,255,255,0.55); margin-bottom: 0.6rem;
+      color: rgba(255,255,255,0.75); margin-bottom: 0.6rem;
       font-family: var(--ff-m);
     }
     .hero-title {
@@ -179,7 +175,7 @@ $all_categories = array_unique(array_filter(array_column($all_deals, 'category')
       font-size: clamp(1.45rem,4.5vw,3.2rem);
       font-weight: 700; color: #fff; line-height: 1.13;
       margin-bottom: clamp(0.9rem,2vw,1.6rem);
-      text-shadow: 0 2px 24px rgba(0,0,0,0.5);
+      text-shadow: 0 2px 24px rgba(0,0,0,0.7);
     }
     .hero-cta {
       display: inline-block; background: var(--gold); color: #fff;
@@ -192,14 +188,14 @@ $all_categories = array_unique(array_filter(array_column($all_deals, 'category')
     .hero-cta:hover { background: var(--gold-dk); transform: scale(1.03); }
     .hero-arrow {
       position: absolute; top: 50%; transform: translateY(-50%); z-index: 3;
-      background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.20);
+      background: rgba(255,255,255,0.18); border: 1px solid rgba(255,255,255,0.30);
       color: #fff; font-size: clamp(20px,3vw,26px);
       width: clamp(34px,4.5vw,44px); height: clamp(34px,4.5vw,44px);
       border-radius: 50%; cursor: pointer;
       display: flex; align-items: center; justify-content: center;
       transition: background var(--transition); line-height: 1;
     }
-    .hero-arrow:hover { background: rgba(255,255,255,0.24); }
+    .hero-arrow:hover { background: rgba(255,255,255,0.32); }
     .hero-prev { left: clamp(10px,2vw,20px); }
     .hero-next { right: clamp(10px,2vw,20px); }
     .hero-dots {
@@ -209,374 +205,423 @@ $all_categories = array_unique(array_filter(array_column($all_deals, 'category')
     }
     .hero-dot {
       width: 8px; height: 8px; border-radius: 50%;
-      background: rgba(255,255,255,0.32); cursor: pointer;
+      background: rgba(255,255,255,0.40); cursor: pointer;
       transition: background 0.2s, transform 0.2s; border: none;
     }
     .hero-dot.active { background: var(--gold); transform: scale(1.3); }
 
-    /* ── PAGE HEADING ── */
+    /* ══════════════════════════════════════
+       PAGE HEADING — overlaps bottom of slider
+    ══════════════════════════════════════ */
     .page-heading {
       text-align: center;
-      margin-bottom: clamp(1rem,2.5vw,1.6rem);
-      padding: 0 clamp(1rem,4vw,2rem);
+      padding: clamp(2.5rem,5vw,4rem) clamp(1rem,4vw,2rem) clamp(1.5rem,3vw,2.5rem);
+      background: linear-gradient(to bottom,
+        rgba(5,8,18,0.72) 0%,
+        rgba(5,8,18,0.55) 60%,
+        rgba(5,8,18,0.20) 100%
+      );
+      margin-bottom: 0;
     }
     .page-heading h1 {
       font-family: var(--ff-h);
       font-size: clamp(1.75rem,4.5vw,2.6rem);
-      font-weight: 700; color: #fff; letter-spacing: -0.01em; line-height: 1.1;
+      font-weight: 700; color: #ffffff;
+      letter-spacing: -0.01em; line-height: 1.1;
+      text-shadow: 0 2px 16px rgba(0,0,0,0.6);
     }
     .page-heading p {
-      color: rgba(255,255,255,0.44);
-      font-size: clamp(0.82rem,1.8vw,0.92rem); margin-top: 0.45rem;
+      color: rgba(255,255,255,0.72);
+      font-size: clamp(0.85rem,1.8vw,0.98rem); margin-top: 0.5rem;
+      font-weight: 400;
+    }
+
+    /* ════════════════════════════════════
+       LIST YOUR DEAL BANNER
+    ════════════════════════════════════ */
+    .list-deal-banner {
+      max-width: 1360px;
+      margin: clamp(1.5rem,3vw,2.5rem) auto 0;
+      padding: 0 clamp(1rem,3vw,2.5rem);
+    }
+
+    .list-deal-inner {
+      position: relative;
+      background: linear-gradient(135deg,
+        rgba(15, 20, 40, 0.97) 0%,
+        rgba(20, 30, 60, 0.97) 50%,
+        rgba(15, 20, 40, 0.97) 100%
+      );
+      border: 2px solid rgba(201,162,39,0.55);
+      border-radius: 24px;
+      padding: clamp(2rem,4vw,3.5rem) clamp(1.5rem,4vw,3rem);
+      overflow: hidden;
+      box-shadow:
+        0 20px 50px rgba(0,0,0,0.55),
+        0 0 0 1px rgba(201,162,39,0.15) inset;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .list-deal-inner:hover {
+      transform: translateY(-4px);
+      box-shadow:
+        0 30px 70px rgba(0,0,0,0.65),
+        0 0 0 1px rgba(201,162,39,0.25) inset;
+    }
+
+    .list-deal-inner::before {
+      content: '';
+      position: absolute;
+      top: -30px; right: -30px;
+      width: 280px; height: 280px;
+      background: radial-gradient(circle, rgba(201,162,39,0.18) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .list-deal-inner::after {
+      content: '';
+      position: absolute;
+      bottom: -60px; left: -60px;
+      width: 220px; height: 220px;
+      background: radial-gradient(circle, rgba(37,99,235,0.15) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .list-deal-content {
+      position: relative; z-index: 1;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: clamp(1.5rem,3vw,2.5rem);
+      flex-wrap: wrap;
+    }
+
+    .list-deal-text { flex: 1; min-width: 280px; }
+
+    .list-deal-icon {
+      font-size: clamp(2rem,4vw,3rem);
+      margin-bottom: clamp(0.5rem,1vw,0.8rem);
+      filter: drop-shadow(0 2px 8px rgba(201,162,39,0.4));
+    }
+
+    .list-deal-text h3 {
+      font-family: var(--ff-h);
+      font-size: clamp(1.3rem,3.2vw,2rem);
+      font-weight: 700;
+      color: #ffffff;
+      margin-bottom: clamp(0.5rem,1.2vw,0.8rem);
+      line-height: 1.2;
+      text-shadow: 0 2px 12px rgba(0,0,0,0.4);
+    }
+
+    .list-deal-text p {
+      font-size: clamp(0.875rem,1.8vw,1.05rem);
+      color: rgba(255,255,255,0.82);
+      line-height: 1.6;
+      max-width: 600px;
+    }
+
+    .list-deal-cta-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.8rem;
+      align-items: flex-end;
+    }
+
+    .list-deal-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      background: linear-gradient(135deg, var(--gold) 0%, var(--gold-lt) 100%);
+      color: #000000;
+      font-size: clamp(0.875rem,1.8vw,1rem);
+      font-weight: 800;
+      padding: clamp(14px,2.2vw,18px) clamp(28px,4vw,40px);
+      border-radius: 50px;
+      text-decoration: none;
+      white-space: nowrap;
+      letter-spacing: 0.04em;
+      box-shadow:
+        0 4px 20px rgba(201,162,39,0.5),
+        0 0 0 3px rgba(201,162,39,0.15);
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .list-deal-btn::before {
+      content: '';
+      position: absolute; top: 0; left: -100%; width: 100%; height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.35), transparent);
+      transition: left 0.5s ease;
+    }
+    .list-deal-btn:hover::before { left: 100%; }
+    .list-deal-btn:hover {
+      background: linear-gradient(135deg, var(--gold-lt) 0%, var(--gold) 100%);
+      transform: translateY(-2px) scale(1.02);
+      box-shadow: 0 8px 30px rgba(201,162,39,0.6), 0 0 0 4px rgba(201,162,39,0.2);
+    }
+
+    .list-deal-btn-icon { font-size: 1.2em; animation: pulse 2s ease-in-out infinite; }
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50%       { transform: scale(1.1); }
+    }
+
+    .list-deal-benefits {
+      display: flex; gap: clamp(1rem,2vw,1.5rem);
+      margin-top: 0.8rem; flex-wrap: wrap;
+    }
+    .benefit-item {
+      display: flex; align-items: center; gap: 6px;
+      font-size: clamp(0.75rem,1.5vw,0.88rem);
+      color: rgba(255,255,255,0.75); font-weight: 500;
+    }
+    .benefit-icon { color: var(--gold-lt); font-size: 1.1em; }
+
+    /* ══════════════════════════════════════
+       DEALS SECTION — search + filter + cards
+       wrapped in a subtle frosted panel
+    ══════════════════════════════════════ */
+    #deals-section {
+      max-width: 1360px;
+      margin: clamp(2rem,4vw,3.5rem) auto 0;
+      padding: clamp(1.5rem,3vw,2.5rem) clamp(1rem,3vw,2.5rem) clamp(2rem,4vw,4rem);
+      background: rgba(5, 10, 25, 0.55);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-radius: 28px;
+      border: 1px solid rgba(255,255,255,0.10);
+      box-shadow: 0 24px 64px rgba(0,0,0,0.40);
     }
 
     /* ── SEARCH ── */
     .search-wrap {
       display: flex; justify-content: center;
       margin-bottom: clamp(0.9rem,2vw,1.3rem);
-      padding: 0 clamp(1rem,4vw,1.5rem);
     }
     .search-inner { position: relative; width: 100%; max-width: 500px; }
     .search-icon {
       position: absolute; left: 15px; top: 50%;
-      transform: translateY(-50%); font-size: 14px; pointer-events: none; line-height: 1;
+      transform: translateY(-50%); font-size: 16px; pointer-events: none; line-height: 1;
     }
     .search-input {
-      width: 100%; padding: 12px 40px 12px 42px;
-      background: rgba(255,255,255,0.09); border: 1px solid rgba(255,255,255,0.14);
-      border-radius: 28px; color: #fff;
-      font-family: var(--ff-b); font-size: clamp(12px,2vw,14px); outline: none;
+      width: 100%; padding: 14px 44px 14px 46px;
+      background: rgba(10, 14, 28, 0.88);
+      border: 2px solid rgba(255,255,255,0.22);
+      border-radius: 28px; color: #ffffff;
+      font-family: var(--ff-b); font-size: clamp(13px,2vw,15px); outline: none;
       transition: background var(--transition), border-color var(--transition);
+      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
     }
-    .search-input::placeholder { color: rgba(255,255,255,0.33); }
-    .search-input:focus { background: rgba(255,255,255,0.12); border-color: rgba(100,150,255,0.46); }
+    .search-input::placeholder { color: rgba(255,255,255,0.45); }
+    .search-input:focus {
+      background: rgba(15, 20, 40, 0.97);
+      border-color: rgba(100,150,255,0.65);
+      box-shadow: 0 4px 24px rgba(37,99,235,0.25);
+    }
     .search-clear {
       display: none; position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
-      background: rgba(255,255,255,0.11); border: none; color: rgba(255,255,255,0.55);
-      width: 21px; height: 21px; border-radius: 50%; cursor: pointer; font-size: 10px;
+      background: rgba(255,255,255,0.18); border: none; color: rgba(255,255,255,0.80);
+      width: 24px; height: 24px; border-radius: 50%; cursor: pointer; font-size: 11px;
       align-items: center; justify-content: center; transition: background 0.15s;
     }
-    .search-clear:hover { background: rgba(255,255,255,0.2); color: #fff; }
+    .search-clear:hover { background: rgba(255,80,80,0.40); color: #fff; }
     .search-clear.visible { display: flex; }
 
     /* ── FILTER BAR ── */
     .filter-wrap {
       overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none;
       margin-bottom: clamp(1.5rem,3.5vw,2.5rem);
-      padding: 0 clamp(1rem,4vw,1.5rem);
+      padding: 0.5rem 0;
     }
     .filter-wrap::-webkit-scrollbar { display: none; }
-    .filter-bar { display: flex; gap: 0.4rem; width: max-content; margin: 0 auto; }
+    .filter-bar { display: flex; gap: 0.5rem; width: max-content; margin: 0 auto; }
     .filter-btn {
-      background: rgba(255,255,255,0.07); color: rgba(255,255,255,0.62);
-      border: 1px solid rgba(255,255,255,0.11);
-      padding: clamp(6px,1.3vw,8px) clamp(14px,2.5vw,22px);
+      background: rgba(10, 14, 28, 0.78);
+      color: rgba(255,255,255,0.82);
+      border: 1.5px solid rgba(255,255,255,0.28);
+      padding: clamp(7px,1.3vw,10px) clamp(18px,2.5vw,26px);
       border-radius: 28px; font-family: var(--ff-b);
-      font-size: clamp(11px,1.7vw,13px); font-weight: 500;
+      font-size: clamp(12px,1.7vw,14px); font-weight: 600;
       cursor: pointer; white-space: nowrap;
       transition: background var(--transition), color var(--transition), border-color var(--transition);
+      box-shadow: 0 2px 10px rgba(0,0,0,0.25);
     }
-    .filter-btn:hover, .filter-btn.active {
-      background: var(--blue); color: #fff; border-color: var(--blue);
+    .filter-btn:hover {
+      background: rgba(37,99,235,0.70);
+      color: #fff;
+      border-color: #2563eb;
     }
-
-    /* ── LIST YOUR DEAL BANNER ── */
-    .list-deal-banner {
-      max-width: 1320px; margin: 0 auto clamp(1.5rem,3.5vw,2.5rem);
-      padding: 0 clamp(1rem,3vw,2.5rem);
+    .filter-btn.active {
+      background: #2563eb;
+      color: #fff;
+      border-color: #2563eb;
+      box-shadow: 0 4px 16px rgba(37,99,235,0.45);
     }
-    .list-deal-inner {
-      background: linear-gradient(135deg, rgba(201,162,39,0.11) 0%, rgba(37,99,235,0.09) 100%);
-      border: 1px solid rgba(201,162,39,0.23);
-      border-radius: var(--radius);
-      padding: clamp(1rem,2.5vw,1.5rem) clamp(1.2rem,3.5vw,2rem);
-      display: flex; align-items: center; justify-content: space-between;
-      gap: clamp(0.8rem,2.5vw,1.2rem); flex-wrap: wrap;
-    }
-    .list-deal-text h3 {
-      font-family: var(--ff-h); font-size: clamp(0.95rem,2.2vw,1.18rem);
-      font-weight: 700; color: #fff; margin-bottom: 3px;
-    }
-    .list-deal-text p { font-size: clamp(11px,1.6vw,12px); color: rgba(255,255,255,0.44); }
-    .list-deal-btn {
-      display: inline-flex; align-items: center; gap: 6px;
-      background: var(--gold); color: #000;
-      font-size: clamp(11px,1.6vw,13px); font-weight: 800;
-      padding: clamp(9px,1.8vw,12px) clamp(18px,3vw,26px);
-      border-radius: 9px; text-decoration: none; white-space: nowrap;
-      letter-spacing: 0.04em; flex-shrink: 0;
-      transition: background var(--transition), transform 0.15s;
-    }
-    .list-deal-btn:hover { background: var(--gold-lt); transform: scale(1.02); }
 
     /* ════════════════════════════════════
-       COMPACT DEAL CARDS
+       DEAL CARDS — white cards
     ════════════════════════════════════ */
     .cards-grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
       gap: clamp(1rem,2.5vw,1.8rem);
-      max-width: 1360px; margin: 0 auto;
-      padding: 0 clamp(1rem,3vw,2.5rem);
     }
 
-    /* The card itself — matches user's request */
     .tour-card {
       background: #ffffff;
       border-radius: 20px;
-      border: 1px solid rgba(0, 0, 0, 0.05);
+      border: 1px solid rgba(0,0,0,0.06);
       overflow: hidden;
-      display: flex;
-      flex-direction: column;
+      display: flex; flex-direction: column;
       transition: transform var(--transition), border-color var(--transition), box-shadow var(--transition);
       cursor: pointer;
       text-decoration: none;
       color: inherit;
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.18);
     }
     .tour-card:hover {
       transform: translateY(-6px);
-      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.12);
-      border-color: rgba(37, 99, 235, 0.15);
+      box-shadow: 0 24px 48px rgba(0,0,0,0.28);
+      border-color: rgba(37,99,235,0.18);
     }
-    .tour-card.partner-card {
-      border: 1px solid rgba(201, 162, 39, 0.18);
-    }
+    .tour-card.partner-card { border: 1px solid rgba(201,162,39,0.25); }
     .tour-card.partner-card:hover {
-      border-color: rgba(201, 162, 39, 0.4);
-      box-shadow: 0 20px 40px rgba(201, 162, 39, 0.1);
+      border-color: rgba(201,162,39,0.5);
+      box-shadow: 0 24px 48px rgba(201,162,39,0.16);
     }
 
-    /* ── Image ── */
-    .card-photo {
-      position: relative;
-      overflow: hidden;
-      height: 280px;
-      flex-shrink: 0;
-    }
+    /* Image */
+    .card-photo { position: relative; overflow: hidden; height: 220px; flex-shrink: 0; }
     .card-photo img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      display: block;
+      width: 100%; height: 100%; object-fit: cover; display: block;
       transition: transform 0.38s ease;
     }
-    .tour-card:hover .card-photo img {
-      transform: scale(1.04);
-    }
+    .tour-card:hover .card-photo img { transform: scale(1.04); }
 
     .card-icon-fallback {
-      height: 280px;
-      flex-shrink: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      height: 220px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
       font-size: 64px;
-      background: #f3f4f6;
+      background: linear-gradient(135deg, #e8eaf6, #f3f4f6);
       position: relative;
     }
 
-    /* ── Badges ── */
+    /* Badges */
     .cat-badge {
-      position: absolute;
-      top: 16px;
-      left: 16px;
-      background: #2563eb !important;
-      color: #ffffff !important;
-      font-size: 11px;
-      font-weight: 700;
-      padding: 6px 14px;
-      border-radius: 8px;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      z-index: 2;
+      position: absolute; top: 14px; left: 14px;
+      background: #2563eb !important; color: #ffffff !important;
+      font-size: 11px; font-weight: 700;
+      padding: 5px 13px; border-radius: 7px;
+      text-transform: uppercase; letter-spacing: 0.05em; z-index: 2;
     }
     .duration-badge {
-      position: absolute;
-      top: 16px;
-      right: 16px;
-      background: #ffffff;
-      color: #1f2937;
-      font-size: 11px;
-      font-weight: 700;
-      padding: 6px 14px;
-      border-radius: 8px;
-      z-index: 2;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      position: absolute; top: 14px; right: 14px;
+      background: #ffffff; color: #1f2937;
+      font-size: 11px; font-weight: 700;
+      padding: 5px 13px; border-radius: 7px; z-index: 2;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.14);
     }
     .discount-badge {
-      position: absolute;
-      bottom: 16px;
-      right: 16px;
-      background: #db2777 !important;
-      color: #ffffff !important;
-      font-size: 11px;
-      font-weight: 800;
-      padding: 6px 12px;
-      border-radius: 6px;
-      text-transform: uppercase;
-      z-index: 2;
+      position: absolute; bottom: 14px; right: 14px;
+      background: #db2777 !important; color: #ffffff !important;
+      font-size: 11px; font-weight: 800;
+      padding: 5px 11px; border-radius: 6px;
+      text-transform: uppercase; z-index: 2;
     }
     .partner-badge {
-      position: absolute;
-      bottom: 16px;
-      left: 16px;
-      z-index: 2;
-      background: rgba(201, 162, 39, 0.95);
-      color: #000000;
-      font-size: 9px;
-      font-weight: 800;
-      letter-spacing: 1px;
-      padding: 4px 10px;
-      border-radius: 18px;
-      text-transform: uppercase;
+      position: absolute; bottom: 14px; left: 14px; z-index: 2;
+      background: rgba(201,162,39,0.96); color: #000000;
+      font-size: 9px; font-weight: 800; letter-spacing: 1px;
+      padding: 4px 10px; border-radius: 18px; text-transform: uppercase;
     }
     .expiry-badge {
-      position: absolute;
-      bottom: 45px;
-      right: 16px;
-      z-index: 2;
-      font-size: 10px;
-      font-weight: 700;
-      padding: 4px 10px;
-      border-radius: 6px;
-      font-family: var(--ff-m);
+      position: absolute; bottom: 42px; right: 14px; z-index: 2;
+      font-size: 10px; font-weight: 700;
+      padding: 4px 10px; border-radius: 6px; font-family: var(--ff-m);
     }
-    .expiry-soon { background: rgba(232, 67, 147, 0.95); color: #fff; }
-    .expiry-ok   { background: rgba(76, 175, 125, 0.95); color: #fff; }
-    .expiry-warn { background: rgba(240, 160, 48, 0.95); color: #000; }
+    .expiry-soon { background: rgba(219,39,119,0.95); color: #fff; }
+    .expiry-ok   { background: rgba(22,163,74,0.95);  color: #fff; }
+    .expiry-warn { background: rgba(234,179,8,0.95);  color: #000; }
 
-    /* ── Card body ── */
+    /* Card body */
     .card-body {
-      padding: 24px;
-      flex: 1;
-      display: flex;
-      flex-direction: column;
+      padding: 22px; flex: 1;
+      display: flex; flex-direction: column;
       background: #ffffff;
     }
 
-    /* Yellow location label */
     .card-location-lbl {
-      font-size: 12px;
-      font-weight: 800;
-      color: #ca8a04;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
+      font-size: 11px; font-weight: 800; color: #b45309;
+      text-transform: uppercase; letter-spacing: 0.06em;
     }
 
-    /* Title */
     .card-title-new {
-      font-size: 20px;
-      font-weight: 800;
-      color: #111827;
-      line-height: 1.3;
-      margin-top: 8px;
-      margin-bottom: 8px;
+      font-size: 18px; font-weight: 800; color: #111827;
+      line-height: 1.3; margin-top: 7px; margin-bottom: 8px;
       display: -webkit-box;
-      -webkit-line-clamp: 2;
-      -webkit-box-orient: vertical;
-      overflow: hidden;
-      height: 52px; /* fixed height for alignment */
+      -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+      overflow: hidden; min-height: 47px;
     }
 
-    /* Rating row */
-    .rating-row-new {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      margin-bottom: 4px;
-    }
-    .star-filled {
-      color: #f59e0b;
-      font-size: 14px;
-    }
-    .star-empty {
-      color: #e5e7eb;
-      font-size: 14px;
-    }
-    .rating-value-new {
-      color: #374151;
-      font-weight: 700;
-      font-size: 13px;
-    }
-    .rating-count-new {
-      color: #9ca3af;
-      font-size: 12px;
-    }
-    .no-reviews-new {
-      color: #9ca3af;
-      font-size: 13px;
-      font-style: italic;
-    }
+    /* Rating */
+    .rating-row-new { display: flex; align-items: center; gap: 5px; margin-bottom: 4px; }
+    .star-filled { color: #f59e0b; font-size: 14px; }
+    .star-empty  { color: #d1d5db; font-size: 14px; }
+    .rating-value-new { color: #374151; font-weight: 700; font-size: 13px; }
+    .rating-count-new { color: #9ca3af; font-size: 12px; cursor: pointer; }
+    .rating-count-new:hover { color: #2563eb; text-decoration: underline; }
+    .no-reviews-new { color: #9ca3af; font-size: 12px; font-style: italic; }
 
     /* Divider */
-    .card-divider {
-      border: 0;
-      border-top: 1px solid #f3f4f6;
-      margin: 16px 0;
-    }
+    .card-divider { border: 0; border-top: 1px solid #f3f4f6; margin: 14px 0; }
 
     /* Bottom row */
-    .card-bottom-new {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-top: auto;
-    }
-    .card-price-col-new {
-      display: flex;
-      flex-direction: column;
-    }
+    .card-bottom-new { display: flex; align-items: center; justify-content: space-between; margin-top: auto; }
+    .card-price-col-new { display: flex; flex-direction: column; }
     .price-original-new {
-      font-size: 13px;
-      color: #9ca3af;
-      text-decoration: line-through;
-      line-height: 1.2;
-      margin-bottom: 2px;
+      font-size: 12px; color: #9ca3af;
+      text-decoration: line-through; line-height: 1.2; margin-bottom: 2px;
     }
-    .price-main-new {
-      font-size: 20px;
-      font-weight: 800;
-      color: #1d4ed8;
-      line-height: 1.1;
-    }
+    .price-main-new { font-size: 20px; font-weight: 800; color: #1d4ed8; line-height: 1.1; }
 
     .view-btn-new {
-      background: #2563eb;
-      color: #ffffff;
-      font-size: 12px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      border: none;
-      border-radius: 9999px;
-      padding: 10px 20px;
-      white-space: nowrap;
+      background: #2563eb; color: #ffffff;
+      font-size: 11px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.06em;
+      border: none; border-radius: 9999px;
+      padding: 10px 20px; white-space: nowrap;
       transition: background 0.2s;
     }
-    .tour-card:hover .view-btn-new {
-      background: #1d4ed8;
-    }
+    .tour-card:hover .view-btn-new { background: #1d4ed8; }
 
     .tour-card.hidden { display: none; }
     .no-results {
-      text-align: center; color: rgba(255,255,255,0.38);
-      font-size: 1rem; padding: 3rem 0; grid-column: 1 / -1;
+      text-align: center; color: rgba(255,255,255,0.55);
+      font-size: 1rem; padding: 3rem 0;
+      grid-column: 1 / -1;
+      background: rgba(10,14,28,0.5);
+      border-radius: 14px;
     }
+
+    /* bottom page padding */
+    .page-bottom { padding-bottom: 5rem; }
 
     /* ── REVIEWS MODAL ── */
     .modal-backdrop {
       display: none; position: fixed; inset: 0; z-index: 9999;
-      background: rgba(0,0,0,0.74); backdrop-filter: blur(5px);
+      background: rgba(0,0,0,0.78); backdrop-filter: blur(6px);
       align-items: center; justify-content: center;
       padding: clamp(0.8rem,3vw,1.5rem); overflow-y: auto;
     }
     .modal-backdrop.open { display: flex; }
     .modal-box {
-      background: var(--bg-modal); border: 1px solid rgba(255,255,255,0.09);
+      background: #13161f; border: 1px solid rgba(255,255,255,0.10);
       border-radius: clamp(14px,3vw,20px); width: 100%; max-width: 540px;
       max-height: min(88vh,680px); display: flex; flex-direction: column;
-      box-shadow: 0 28px 72px rgba(0,0,0,0.68); animation: modalIn 0.22s ease; margin: auto;
+      box-shadow: 0 28px 72px rgba(0,0,0,0.80); animation: modalIn 0.22s ease; margin: auto;
     }
     @keyframes modalIn {
       from { opacity: 0; transform: translateY(16px) scale(0.97); }
@@ -584,7 +629,7 @@ $all_categories = array_unique(array_filter(array_column($all_deals, 'category')
     }
     .modal-header {
       padding: clamp(1rem,2.5vw,1.3rem) clamp(1rem,3vw,1.5rem) clamp(0.8rem,2vw,1rem);
-      border-bottom: 1px solid rgba(255,255,255,0.07);
+      border-bottom: 1px solid rgba(255,255,255,0.08);
       display: flex; align-items: flex-start; justify-content: space-between;
       gap: 1rem; flex-shrink: 0;
     }
@@ -596,23 +641,23 @@ $all_categories = array_unique(array_filter(array_column($all_deals, 'category')
     .modal-summary { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
     .modal-avg-stars { display: flex; gap: 2px; }
     .modal-avg-num { font-size: clamp(19px,3.5vw,23px); font-weight: 700; color: #fff; line-height: 1; }
-    .modal-avg-label { font-size: clamp(11px,1.7vw,12px); color: rgba(255,255,255,0.38); align-self: flex-end; margin-bottom: 2px; }
+    .modal-avg-label { font-size: clamp(11px,1.7vw,12px); color: rgba(255,255,255,0.45); align-self: flex-end; margin-bottom: 2px; }
     .modal-close {
-      background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.12);
-      color: rgba(255,255,255,0.58); font-size: 16px; line-height: 1;
+      background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.14);
+      color: rgba(255,255,255,0.60); font-size: 16px; line-height: 1;
       min-width: 32px; width: 32px; height: 32px; border-radius: 50%; cursor: pointer;
       display: flex; align-items: center; justify-content: center; flex-shrink: 0;
       transition: background 0.15s, color 0.15s; touch-action: manipulation;
     }
-    .modal-close:hover { background: rgba(255,80,80,0.16); color: #ff6b6b; border-color: rgba(255,80,80,0.28); }
+    .modal-close:hover { background: rgba(255,80,80,0.20); color: #ff6b6b; border-color: rgba(255,80,80,0.30); }
     .modal-breakdown {
       padding: clamp(0.6rem,1.8vw,0.85rem) clamp(1rem,3vw,1.5rem);
       border-bottom: 1px solid rgba(255,255,255,0.06);
       display: flex; flex-direction: column; gap: 5px; flex-shrink: 0;
     }
-    .breakdown-row { display: flex; align-items: center; gap: 8px; font-size: 12px; color: rgba(255,255,255,0.46); }
+    .breakdown-row { display: flex; align-items: center; gap: 8px; font-size: 12px; color: rgba(255,255,255,0.50); }
     .breakdown-label { width: 26px; text-align: right; flex-shrink: 0; font-size: 11px; }
-    .breakdown-bar-bg { flex: 1; height: 4px; background: rgba(255,255,255,0.07); border-radius: 10px; overflow: hidden; }
+    .breakdown-bar-bg { flex: 1; height: 4px; background: rgba(255,255,255,0.08); border-radius: 10px; overflow: hidden; }
     .breakdown-bar-fill { height: 100%; background: linear-gradient(90deg,#f4b942,#f97316); border-radius: 10px; transition: width 0.5s ease; }
     .breakdown-count { width: 16px; text-align: left; flex-shrink: 0; font-size: 11px; }
     .modal-reviews {
@@ -623,13 +668,13 @@ $all_categories = array_unique(array_filter(array_column($all_deals, 'category')
     }
     .modal-reviews::-webkit-scrollbar { width: 4px; }
     .modal-reviews::-webkit-scrollbar-track { background: transparent; }
-    .modal-reviews::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.11); border-radius: 10px; }
+    .modal-reviews::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 10px; }
     .review-item {
-      background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07);
+      background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
       border-radius: 13px; padding: clamp(0.75rem,1.8vw,0.95rem) clamp(0.85rem,2vw,1rem);
       transition: border-color 0.15s;
     }
-    .review-item:hover { border-color: rgba(255,255,255,0.11); }
+    .review-item:hover { border-color: rgba(255,255,255,0.14); }
     .review-top {
       display: flex; align-items: center; justify-content: space-between;
       gap: 0.8rem; margin-bottom: 0.55rem; flex-wrap: wrap;
@@ -642,13 +687,13 @@ $all_categories = array_unique(array_filter(array_column($all_deals, 'category')
       font-size: clamp(11px,1.8vw,12px); font-weight: 700; color: #fff;
     }
     .reviewer-name { font-size: clamp(12px,2vw,13px); font-weight: 600; color: #fff; }
-    .reviewer-date { font-size: clamp(10px,1.5vw,11px); color: rgba(255,255,255,0.28); margin-top: 1px; }
+    .reviewer-date { font-size: clamp(10px,1.5vw,11px); color: rgba(255,255,255,0.30); margin-top: 1px; }
     .review-stars-inline { display: flex; gap: 2px; }
     .review-stars-inline .rs { font-size: 12px; }
     .review-stars-inline .rs.filled { color: #f4b942; }
-    .review-stars-inline .rs.empty  { color: rgba(255,255,255,0.14); }
-    .review-text { font-size: clamp(12px,1.8vw,13px); color: rgba(255,255,255,0.58); line-height: 1.6; }
-    .modal-empty { text-align: center; padding: 2.5rem 1rem; color: rgba(255,255,255,0.28); font-size: 13px; }
+    .review-stars-inline .rs.empty  { color: rgba(255,255,255,0.16); }
+    .review-text { font-size: clamp(12px,1.8vw,13px); color: rgba(255,255,255,0.62); line-height: 1.6; }
+    .modal-empty { text-align: center; padding: 2.5rem 1rem; color: rgba(255,255,255,0.32); font-size: 13px; }
     .modal-empty-icon { font-size: 36px; margin-bottom: 0.65rem; }
     .av-0{background:#4f46e5} .av-1{background:#0ea5e9} .av-2{background:#10b981}
     .av-3{background:#f59e0b} .av-4{background:#ec4899} .av-5{background:#8b5cf6}
@@ -657,19 +702,25 @@ $all_categories = array_unique(array_filter(array_column($all_deals, 'category')
     /* ── RESPONSIVE ── */
     @media (min-width:1400px) { .cards-grid { grid-template-columns: repeat(4,1fr); } }
     @media (max-width:1100px) { .cards-grid { grid-template-columns: repeat(3,1fr); } }
-    @media (max-width:860px)  { .cards-grid { grid-template-columns: repeat(2,1fr); gap: 0.9rem; padding: 0 0.9rem; } }
+    @media (max-width:860px)  {
+      .cards-grid { grid-template-columns: repeat(2,1fr); gap: 0.9rem; }
+      .list-deal-content { flex-direction: column; align-items: stretch; }
+      .list-deal-cta-group { align-items: stretch; }
+      .list-deal-btn { width: 100%; }
+    }
     @media (max-width:520px) {
-      .cards-grid { grid-template-columns: 1fr; padding: 0 0.75rem; }
-      .card-photo, .card-icon-fallback { height: 148px; }
+      .cards-grid { grid-template-columns: 1fr; }
+      .card-photo, .card-icon-fallback { height: 180px; }
       .hero-slider { height: 300px; }
-      .list-deal-inner { flex-direction: column; align-items: flex-start; gap: 0.9rem; }
-      .list-deal-btn { width: 100%; justify-content: center; }
+      .list-deal-inner { padding: clamp(1.5rem,3vw,2rem); }
       .modal-box { max-height: 92vh; border-radius: 16px; }
+      #deals-section { border-radius: 16px; padding: 1.2rem; }
     }
     @media (max-width:360px) {
       .hero-title { font-size: 1.3rem; }
-      .page-heading h1 { font-size: 1.6rem; }
-      .card-body { padding: 10px 12px 11px; }
+      .page-heading h1 { font-size: 1.55rem; }
+      .card-body { padding: 14px; }
+      .list-deal-text h3 { font-size: 1.1rem; }
     }
     @media (hover:none) {
       .tour-card:hover { transform: none; }
@@ -681,7 +732,6 @@ $all_categories = array_unique(array_filter(array_column($all_deals, 'category')
   </style>
 </head>
 <body>
-<div class="page-overlay">
 
   <!-- ── HERO SLIDER ── -->
   <?php if (!empty($slider_deals)): ?>
@@ -708,183 +758,204 @@ $all_categories = array_unique(array_filter(array_column($all_deals, 'category')
   <?php endif; ?>
 
   <!-- ── PAGE HEADING ── -->
-  <div class="page-heading" id="deals-section">
+  <div class="page-heading">
     <h1>Deals &amp; Packages</h1>
     <p>Handpicked treks and tours across Nepal — at the best prices</p>
-  </div>
-
-  <!-- ── SEARCH ── -->
-  <div class="search-wrap">
-    <div class="search-inner">
-      <span class="search-icon">🔍</span>
-      <input type="text" id="dealSearch" class="search-input"
-             placeholder="Search deals, locations, treks..."
-             oninput="applyFilters()" autocomplete="off">
-      <button class="search-clear" id="searchClearBtn" onclick="clearSearch()" aria-label="Clear">✕</button>
-    </div>
-  </div>
-
-  <!-- ── FILTER BAR ── -->
-  <div class="filter-wrap">
-    <div class="filter-bar">
-      <button class="filter-btn active" data-filter="all">All</button>
-      <?php foreach ($all_categories as $cat): ?>
-        <button class="filter-btn" data-filter="<?= htmlspecialchars($cat) ?>"><?= htmlspecialchars($cat) ?></button>
-      <?php endforeach; ?>
-    </div>
   </div>
 
   <!-- ── LIST YOUR DEAL BANNER ── -->
   <div class="list-deal-banner">
     <div class="list-deal-inner">
-      <div class="list-deal-text">
-        <h3>🏔️ Have a Nepal travel deal to offer?</h3>
-        <p>List your trek, tour or package and reach thousands of travelers planning their Nepal adventure.</p>
+      <div class="list-deal-content">
+        <div class="list-deal-text">
+          <div class="list-deal-icon">🏔️</div>
+          <h3>Have a Nepal travel deal to offer?</h3>
+          <p>List your trek, tour or package and reach thousands of travelers planning their Nepal adventure.</p>
+          <div class="list-deal-benefits">
+            <div class="benefit-item">
+              <span class="benefit-icon">✓</span>
+              <span>Instant visibility</span>
+            </div>
+            <div class="benefit-item">
+              <span class="benefit-icon">✓</span>
+              <span>Reach active travelers</span>
+            </div>
+            <div class="benefit-item">
+              <span class="benefit-icon">✓</span>
+              <span>Easy listing process</span>
+            </div>
+          </div>
+        </div>
+        <div class="list-deal-cta-group">
+          <a href="subscription.php" class="list-deal-btn">
+            <span class="list-deal-btn-icon">✦</span>
+            <span>List Your Deal Now</span>
+          </a>
+        </div>
       </div>
-      <a href="subscription.php" class="list-deal-btn">✦ List Your Deal</a>
     </div>
   </div>
 
-  <!-- ── CARDS GRID ── -->
-  <div class="cards-grid" id="cardsGrid">
+  <!-- ══════════════════════════════════════
+       DEALS SECTION: search + filter + cards
+  ══════════════════════════════════════ -->
+  <div id="deals-section">
 
-    <?php if (empty($all_deals)): ?>
-      <p class="no-results">No deals found.</p>
-    <?php endif; ?>
+    <!-- SEARCH -->
+    <div class="search-wrap">
+      <div class="search-inner">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="dealSearch" class="search-input"
+               placeholder="Search deals, locations, treks..."
+               oninput="applyFilters()" autocomplete="off">
+        <button class="search-clear" id="searchClearBtn" onclick="clearSearch()" aria-label="Clear">✕</button>
+      </div>
+    </div>
 
-    <?php foreach ($all_deals as $deal):
-      $isUserDeal = ($deal['deal_source'] ?? 'admin') === 'user_submitted';
-      $dealId     = (int)$deal['id'];
+    <!-- FILTER BAR -->
+    <div class="filter-wrap">
+      <div class="filter-bar">
+        <button class="filter-btn active" data-filter="all">All</button>
+        <?php foreach ($all_categories as $cat): ?>
+          <button class="filter-btn" data-filter="<?= htmlspecialchars($cat) ?>"><?= htmlspecialchars($cat) ?></button>
+        <?php endforeach; ?>
+      </div>
+    </div>
 
-      $discount = 0;
-      if (!empty($deal['original_price']) && (float)$deal['original_price'] > 0)
-          $discount = round((((float)$deal['original_price'] - (float)$deal['price']) / (float)$deal['original_price']) * 100);
+    <!-- CARDS GRID -->
+    <div class="cards-grid" id="cardsGrid">
 
-      $features = [];
-      if (!empty($deal['features']))
-          $features = array_slice(array_map('trim', explode(',', $deal['features'])), 0, 2);
-
-      $hasImage      = !empty($deal['image_url']) && strtoupper(trim($deal['image_url'])) !== 'NULL';
-      $locationLabel = !empty($deal['location']) ? $deal['location'] : ($deal['season'] ?? '');
-
-      if (!$isUserDeal) {
-          $avgRating   = isset($reviewData[$dealId])   ? (float)$reviewData[$dealId]['avg_rating']   : 0;
-          $reviewCount = isset($reviewData[$dealId])   ? (int)$reviewData[$dealId]['reviews_count']  : 0;
-          $dealReviews = $reviewDetails[$dealId] ?? [];
-      } else {
-          $avgRating   = isset($udReviewData[$dealId])  ? (float)$udReviewData[$dealId]['avg_rating']  : 0;
-          $reviewCount = isset($udReviewData[$dealId])  ? (int)$udReviewData[$dealId]['reviews_count'] : 0;
-          $dealReviews = $udReviewDetails[$dealId] ?? [];
-      }
-
-      $starsHtml = '';
-      for ($s=1;$s<=5;$s++)
-          $starsHtml .= $s<=round($avgRating)
-              ? '<span class="star-filled">★</span>'
-              : '<span class="star-empty">★</span>';
-
-      $reviewsJson   = json_encode($dealReviews, JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP);
-      $dealTitleJson = json_encode($deal['title'], JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP);
-
-      $daysLeft=null; $expiryClass=''; $expiryLabel='';
-      if ($isUserDeal && !empty($deal['visible_until'])) {
-          $diff = strtotime($deal['visible_until']) - time();
-          $daysLeft = max(0,(int)ceil($diff/86400));
-          if ($daysLeft<=3)      { $expiryClass='expiry-soon'; $expiryLabel="⏱ {$daysLeft}d left"; }
-          elseif ($daysLeft<=7)  { $expiryClass='expiry-warn'; $expiryLabel="⏱ {$daysLeft}d left"; }
-          else                   { $expiryClass='expiry-ok';   $expiryLabel="⏱ {$daysLeft}d left"; }
-      }
-
-      $detailLink = $isUserDeal ? "Ud_deal_details.php?ud={$dealId}" : "deal-details.php?id={$dealId}";
-      $searchData = strtolower(implode(' ', [
-          $deal['title']??'', $deal['location']??'', $deal['category']??'',
-          $deal['season']??'', $deal['features']??'', $deal['description']??'',
-      ]));
-    ?>
-
-    <a href="<?= $detailLink ?>"
-       class="tour-card<?= $isUserDeal?' partner-card':'' ?>"
-       data-category="<?= htmlspecialchars($deal['category']??'') ?>"
-       data-source="<?= $isUserDeal?'user':'admin' ?>"
-       data-search="<?= htmlspecialchars($searchData) ?>"
-       style="text-decoration:none;">
-
-      <!-- IMAGE / FALLBACK -->
-      <?php if ($hasImage): ?>
-        <div class="card-photo">
-          <img src="<?= htmlspecialchars($deal['image_url']) ?>" alt="<?= htmlspecialchars($deal['title']) ?>" loading="lazy">
-          <span class="cat-badge"><?= htmlspecialchars($deal['category']??'') ?></span>
-          <?php if (!empty($deal['days'])): ?>
-            <span class="duration-badge"><?= (int)$deal['days'] ?> Days</span>
-          <?php endif; ?>
-          <?php if ($discount>0): ?><span class="discount-badge">-<?= $discount ?>% OFF</span><?php endif; ?>
-          <?php if ($isUserDeal): ?>
-            <span class="partner-badge">Partner Listing</span>
-            <?php if ($expiryLabel): ?><span class="expiry-badge <?= $expiryClass ?>"><?= $expiryLabel ?></span><?php endif; ?>
-          <?php endif; ?>
-        </div>
-      <?php else: ?>
-        <div class="card-icon-fallback">
-          <?= !empty($deal['emoji'])?$deal['emoji']:'🏔️' ?>
-          <span class="cat-badge"><?= htmlspecialchars($deal['category']??'') ?></span>
-          <?php if (!empty($deal['days'])): ?>
-            <span class="duration-badge"><?= (int)$deal['days'] ?> Days</span>
-          <?php endif; ?>
-          <?php if ($discount>0): ?><span class="discount-badge">-<?= $discount ?>% OFF</span><?php endif; ?>
-          <?php if ($isUserDeal): ?>
-            <span class="partner-badge">Partner Listing</span>
-            <?php if ($expiryLabel): ?><span class="expiry-badge <?= $expiryClass ?>"><?= $expiryLabel ?></span><?php endif; ?>
-          <?php endif; ?>
-        </div>
+      <?php if (empty($all_deals)): ?>
+        <p class="no-results">No deals found.</p>
       <?php endif; ?>
 
-      <!-- CARD BODY -->
-      <div class="card-body">
-        
-        <!-- Location Label -->
-        <div class="card-location-lbl"><?= htmlspecialchars($locationLabel ?: 'Nepal') ?></div>
+      <?php foreach ($all_deals as $deal):
+        $isUserDeal = ($deal['deal_source'] ?? 'admin') === 'user_submitted';
+        $dealId     = (int)$deal['id'];
 
-        <!-- Title -->
-        <div class="card-title-new"><?= htmlspecialchars($deal['title']) ?></div>
+        $discount = 0;
+        if (!empty($deal['original_price']) && (float)$deal['original_price'] > 0)
+            $discount = round((((float)$deal['original_price'] - (float)$deal['price']) / (float)$deal['original_price']) * 100);
 
-        <!-- Rating -->
-        <?php if ($avgRating>0): ?>
-          <div class="rating-row-new has-reviews"
-               onclick="event.preventDefault();openReviews(<?= $dealId ?>,<?= $reviewsJson ?>,<?= $dealTitleJson ?>)"
-               title="See all reviews">
-            <?= $starsHtml ?>
-            <span class="rating-value-new"><?= number_format($avgRating,1) ?></span>
-            <span class="rating-count-new">(<?= $reviewCount ?> review<?= $reviewCount!==1?'s':'' ?> ↗)</span>
+        $features = [];
+        if (!empty($deal['features']))
+            $features = array_slice(array_map('trim', explode(',', $deal['features'])), 0, 2);
+
+        $hasImage      = !empty($deal['image_url']) && strtoupper(trim($deal['image_url'])) !== 'NULL';
+        $locationLabel = !empty($deal['location']) ? $deal['location'] : ($deal['season'] ?? '');
+
+        if (!$isUserDeal) {
+            $avgRating   = isset($reviewData[$dealId])   ? (float)$reviewData[$dealId]['avg_rating']   : 0;
+            $reviewCount = isset($reviewData[$dealId])   ? (int)$reviewData[$dealId]['reviews_count']  : 0;
+            $dealReviews = $reviewDetails[$dealId] ?? [];
+        } else {
+            $avgRating   = isset($udReviewData[$dealId])  ? (float)$udReviewData[$dealId]['avg_rating']  : 0;
+            $reviewCount = isset($udReviewData[$dealId])  ? (int)$udReviewData[$dealId]['reviews_count'] : 0;
+            $dealReviews = $udReviewDetails[$dealId] ?? [];
+        }
+
+        $starsHtml = '';
+        for ($s=1;$s<=5;$s++)
+            $starsHtml .= $s<=round($avgRating)
+                ? '<span class="star-filled">★</span>'
+                : '<span class="star-empty">★</span>';
+
+        $reviewsJson   = json_encode($dealReviews, JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP);
+        $dealTitleJson = json_encode($deal['title'], JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP);
+
+        $daysLeft=null; $expiryClass=''; $expiryLabel='';
+        if ($isUserDeal && !empty($deal['visible_until'])) {
+            $diff = strtotime($deal['visible_until']) - time();
+            $daysLeft = max(0,(int)ceil($diff/86400));
+            if ($daysLeft<=3)      { $expiryClass='expiry-soon'; $expiryLabel="⏱ {$daysLeft}d left"; }
+            elseif ($daysLeft<=7)  { $expiryClass='expiry-warn'; $expiryLabel="⏱ {$daysLeft}d left"; }
+            else                   { $expiryClass='expiry-ok';   $expiryLabel="⏱ {$daysLeft}d left"; }
+        }
+
+        $detailLink = $isUserDeal ? "Ud_deal_details.php?ud={$dealId}" : "deal-details.php?id={$dealId}";
+        $searchData = strtolower(implode(' ', [
+            $deal['title']??'', $deal['location']??'', $deal['category']??'',
+            $deal['season']??'', $deal['features']??'', $deal['description']??'',
+        ]));
+      ?>
+
+      <a href="<?= $detailLink ?>"
+         class="tour-card<?= $isUserDeal?' partner-card':'' ?>"
+         data-category="<?= htmlspecialchars($deal['category']??'') ?>"
+         data-source="<?= $isUserDeal?'user':'admin' ?>"
+         data-search="<?= htmlspecialchars($searchData) ?>"
+         style="text-decoration:none;">
+
+        <!-- IMAGE / FALLBACK -->
+        <?php if ($hasImage): ?>
+          <div class="card-photo">
+            <img src="<?= htmlspecialchars($deal['image_url']) ?>" alt="<?= htmlspecialchars($deal['title']) ?>" loading="lazy">
+            <span class="cat-badge"><?= htmlspecialchars($deal['category']??'') ?></span>
+            <?php if (!empty($deal['days'])): ?>
+              <span class="duration-badge"><?= (int)$deal['days'] ?> Days</span>
+            <?php endif; ?>
+            <?php if ($discount>0): ?><span class="discount-badge">-<?= $discount ?>% OFF</span><?php endif; ?>
+            <?php if ($isUserDeal): ?>
+              <span class="partner-badge">Partner Listing</span>
+              <?php if ($expiryLabel): ?><span class="expiry-badge <?= $expiryClass ?>"><?= $expiryLabel ?></span><?php endif; ?>
+            <?php endif; ?>
           </div>
         <?php else: ?>
-          <div class="rating-row-new">
-            <?= str_repeat('<span class="star-empty">★</span>',5) ?>
-            <span class="no-reviews-new">No reviews yet</span>
+          <div class="card-icon-fallback">
+            <?= !empty($deal['emoji'])?$deal['emoji']:'🏔️' ?>
+            <span class="cat-badge"><?= htmlspecialchars($deal['category']??'') ?></span>
+            <?php if (!empty($deal['days'])): ?>
+              <span class="duration-badge"><?= (int)$deal['days'] ?> Days</span>
+            <?php endif; ?>
+            <?php if ($discount>0): ?><span class="discount-badge">-<?= $discount ?>% OFF</span><?php endif; ?>
+            <?php if ($isUserDeal): ?>
+              <span class="partner-badge">Partner Listing</span>
+              <?php if ($expiryLabel): ?><span class="expiry-badge <?= $expiryClass ?>"><?= $expiryLabel ?></span><?php endif; ?>
+            <?php endif; ?>
           </div>
         <?php endif; ?>
 
-        <!-- Divider line -->
-        <hr class="card-divider">
+        <!-- CARD BODY -->
+        <div class="card-body">
+          <div class="card-location-lbl"><?= htmlspecialchars($locationLabel ?: 'Nepal') ?></div>
+          <div class="card-title-new"><?= htmlspecialchars($deal['title']) ?></div>
 
-        <!-- Bottom row: Price and CTA button -->
-        <div class="card-bottom-new">
-          <div class="card-price-col-new">
-            <?php if (!empty($deal['original_price']) && (float)$deal['original_price']>(float)$deal['price']): ?>
-              <div class="price-original-new">NPR <?= number_format((float)$deal['original_price']) ?></div>
-            <?php endif; ?>
-            <div class="price-main-new">NPR <?= number_format((float)$deal['price']) ?></div>
+          <!-- Rating -->
+          <?php if ($avgRating>0): ?>
+            <div class="rating-row-new has-reviews"
+                 onclick="event.preventDefault();openReviews(<?= $dealId ?>,<?= $reviewsJson ?>,<?= $dealTitleJson ?>)"
+                 title="See all reviews">
+              <?= $starsHtml ?>
+              <span class="rating-value-new"><?= number_format($avgRating,1) ?></span>
+              <span class="rating-count-new">(<?= $reviewCount ?> review<?= $reviewCount!==1?'s':'' ?> ↗)</span>
+            </div>
+          <?php else: ?>
+            <div class="rating-row-new">
+              <?= str_repeat('<span class="star-empty">★</span>',5) ?>
+              <span class="no-reviews-new">No reviews yet</span>
+            </div>
+          <?php endif; ?>
+
+          <hr class="card-divider">
+
+          <div class="card-bottom-new">
+            <div class="card-price-col-new">
+              <?php if (!empty($deal['original_price']) && (float)$deal['original_price']>(float)$deal['price']): ?>
+                <div class="price-original-new">NPR <?= number_format((float)$deal['original_price']) ?></div>
+              <?php endif; ?>
+              <div class="price-main-new">NPR <?= number_format((float)$deal['price']) ?></div>
+            </div>
+            <span class="view-btn-new">View Details</span>
           </div>
-          
-          <span class="view-btn-new">View Details</span>
         </div>
+      </a>
 
-      </div><!-- /card-body -->
-    </a>
+      <?php endforeach; ?>
+    </div><!-- /cards-grid -->
 
-    <?php endforeach; ?>
-  </div><!-- /cards-grid -->
+  </div><!-- /#deals-section -->
 
-</div><!-- /page-overlay -->
+  <div class="page-bottom"></div>
 
 <!-- ── REVIEWS MODAL ── -->
 <div class="modal-backdrop" id="reviewsModal" onclick="closeIfBackdrop(event)">

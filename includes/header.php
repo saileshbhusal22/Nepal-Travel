@@ -904,6 +904,7 @@ $auth_register_url = auth_build_register_url();
             <button class="search-tab-btn" data-tab="experiences">Stories (<span id="count-experiences">0</span>)</button>
             <button class="search-tab-btn" data-tab="ideas">Ideas (<span id="count-ideas">0</span>)</button>
             <button class="search-tab-btn" data-tab="deals">Deals (<span id="count-deals">0</span>)</button>
+            <button class="search-tab-btn" data-tab="events">Events (<span id="count-events">0</span>)</button>
         </div>
         <div id="suggestionsPanel" class="suggestions-panel">
             <div class="suggestions-section">

@@ -19,170 +19,7 @@ document.addEventListener("DOMContentLoaded", function () {
     experiences: [],
     ideas: [],
     deals: [],
-  };
-
-  // Mock data for search results
-  const mockData = {
-    experiences: [
-      {
-        id: 1,
-        title: "Everest Base Camp Trek",
-        image: "/Nepal-Travel/images/everest_trek.png",
-        type: "EXPERIENCE",
-        link: "/Nepal-Travel/Public/experience.php",
-      },
-      {
-        id: 2,
-        title: "Pokhara Adventure",
-        image: "/Nepal-Travel/images/pokhara_lake.png",
-        type: "EXPERIENCE",
-        link: "/Nepal-Travel/Public/experience.php",
-      },
-      {
-        id: 3,
-        title: "Kathmandu Cultural Tour",
-        image: "/Nepal-Travel/images/bhaktapur_temple.png",
-        type: "EXPERIENCE",
-        link: "/Nepal-Travel/Public/experience.php",
-      },
-      {
-        id: 10,
-        title: "Chitwan Wildlife Safari",
-        image: "/Nepal-Travel/images/chitwan_rhino.png",
-        type: "EXPERIENCE",
-        link: "/Nepal-Travel/Public/experience.php",
-      },
-      {
-        id: 11,
-        title: "Annapurna Trek",
-        image: "/Nepal-Travel/images/annapurna_trek.png",
-        type: "EXPERIENCE",
-        link: "/Nepal-Travel/Public/experience.php",
-      },
-    ],
-    ideas: [
-      {
-        id: 4,
-        title: "7-Day Nepal Adventure",
-        image: "/Nepal-Travel/images/annapurna_trek.png",
-        type: "IDEA",
-        link: "/Nepal-Travel/Public/travel-ideas.php",
-      },
-      {
-        id: 5,
-        title: "Budget Travel Guide",
-        image: "/Nepal-Travel/images/food_drinks_nepal.png",
-        type: "IDEA",
-        link: "/Nepal-Travel/Public/travel-ideas.php",
-      },
-      {
-        id: 6,
-        title: "Best Time to Visit",
-        image: "/Nepal-Travel/images/city_excitement_nepal.png",
-        type: "IDEA",
-        link: "/Nepal-Travel/Public/travel-ideas.php",
-      },
-      {
-        id: 12,
-        title: "Family Fun in Nepal",
-        image: "/Nepal-Travel/images/family_fun_nepal.png",
-        type: "IDEA",
-        link: "/Nepal-Travel/Public/travel-ideas.php",
-      },
-      {
-        id: 17,
-        title: "Kathmandu Heritage Walk",
-        image: "/Nepal-Travel/images/kathmandu_night_hero.png",
-        type: "IDEA",
-        link: "/Nepal-Travel/Public/travel-ideas.php",
-      },
-      {
-        id: 18,
-        title: "Everest Panorama Story",
-        image: "/Nepal-Travel/images/everest_trek.png",
-        type: "IDEA",
-        link: "/Nepal-Travel/Public/travel-ideas.php",
-      },
-      {
-        id: 19,
-        title: "Pokhara Lakeside Escape",
-        image: "/Nepal-Travel/images/pokhara_lake.png",
-        type: "IDEA",
-        link: "/Nepal-Travel/Public/travel-ideas.php",
-      },
-    ],
-    deals: [
-      {
-        id: 7,
-        title: "Mountain Trek Package - 40% OFF",
-        image: "/Nepal-Travel/images/everest_trek.png",
-        type: "DEAL",
-        link: "/Nepal-Travel/Public/deals-and-packages.php",
-      },
-      {
-        id: 8,
-        title: "Luxury Resort Stay - Early Bird",
-        image: "/Nepal-Travel/images/kathmandu_night_hero.png",
-        type: "DEAL",
-        link: "/Nepal-Travel/Public/deals-and-packages.php",
-      },
-      {
-        id: 9,
-        title: "Group Tour Discount",
-        image: "/Nepal-Travel/images/chitwan_rhino.png",
-        type: "DEAL",
-        link: "/Nepal-Travel/Public/deals-and-packages.php",
-      },
-      {
-        id: 13,
-        title: "Lumbini Pilgrimage Package",
-        image: "/Nepal-Travel/images/lumbini_temple.png",
-        type: "DEAL",
-        link: "/Nepal-Travel/Public/deals-and-packages.php",
-      },
-      {
-        id: 14,
-        title: "Nepal Honeymoon Package - 35% Discount",
-        image: "/Nepal-Travel/images/kathmandu_night_hero.png",
-        type: "PACKAGE",
-        link: "/Nepal-Travel/Public/deals-and-packages.php",
-      },
-      {
-        id: 15,
-        title: "5-Day Kathmandu Valley Tour",
-        image: "/Nepal-Travel/images/bhaktapur_temple.png",
-        type: "PACKAGE",
-        link: "/Nepal-Travel/Public/deals-and-packages.php",
-      },
-      {
-        id: 16,
-        title: "Pokhara Lake & Mountain Package",
-        image: "/Nepal-Travel/images/pokhara_lake.png",
-        type: "PACKAGE",
-        link: "/Nepal-Travel/Public/deals-and-packages.php",
-      },
-      {
-        id: 17,
-        title: "Kathmandu Valley - 5D4N Heritage Exploration",
-        image: "/Nepal-Travel/images/bhaktapur_temple.png",
-        type: "DEAL",
-        link: "/Nepal-Travel/Public/deals-and-packages.php",
-      },
-      {
-        id: 18,
-        title: "Pokhara Honeymoon Escape",
-        image: "/Nepal-Travel/images/pokhara_lake.png",
-        type: "DEAL",
-        link: "/Nepal-Travel/Public/deals-and-packages.php",
-      },
-      {
-        id: 19,
-        title: "Everest Base Camp Special Offer",
-        image: "/Nepal-Travel/images/everest_trek.png",
-        type: "DEAL",
-        link: "/Nepal-Travel/Public/deals-and-packages.php",
-      },
-    ],
+    events: [],
   };
 
   // Open search portal
@@ -234,7 +71,7 @@ document.addEventListener("DOMContentLoaded", function () {
   if (clearSearchBtn) {
     clearSearchBtn.addEventListener("click", function () {
       searchInput.value = "";
-      searchResults = { all: [], experiences: [], ideas: [], deals: [] };
+      searchResults = { all: [], experiences: [], ideas: [], deals: [], events: [] };
       clearSearchBtn.classList.remove("visible");
       searchPulse.classList.remove("active");
       resultsGrid.innerHTML = "";
@@ -249,7 +86,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     if (query.length === 0) {
       clearSearchBtn.classList.remove("visible");
-      searchResults = { all: [], experiences: [], ideas: [], deals: [] };
+      searchResults = { all: [], experiences: [], ideas: [], deals: [], events: [] };
       resultsGrid.innerHTML = "";
       suggestionsPanel.style.display = "block";
       updateResultCounts();
@@ -270,37 +107,26 @@ document.addEventListener("DOMContentLoaded", function () {
   });
 
   // Perform search
-  function performSearch(query) {
-    searchResults = {
-      all: [],
-      experiences: [],
-      ideas: [],
-      deals: [],
-    };
-
-    // Search through experiences
-    mockData.experiences.forEach((item) => {
-      if (item.title.toLowerCase().includes(query)) {
-        searchResults.experiences.push(item);
-        searchResults.all.push(item);
+  async function performSearch(query) {
+    try {
+      const response = await fetch(`/Nepal-Travel/api/v1/search.php?q=${encodeURIComponent(query)}`);
+      const data = await response.json();
+      
+      if (data.success && data.results) {
+        searchResults = {
+          all: [...data.results.experiences, ...data.results.ideas, ...data.results.deals, ...data.results.events],
+          experiences: data.results.experiences,
+          ideas: data.results.ideas,
+          deals: data.results.deals,
+          events: data.results.events,
+        };
+      } else {
+        searchResults = { all: [], experiences: [], ideas: [], deals: [], events: [] };
       }
-    });
-
-    // Search through ideas
-    mockData.ideas.forEach((item) => {
-      if (item.title.toLowerCase().includes(query)) {
-        searchResults.ideas.push(item);
-        searchResults.all.push(item);
-      }
-    });
-
-    // Search through deals
-    mockData.deals.forEach((item) => {
-      if (item.title.toLowerCase().includes(query)) {
-        searchResults.deals.push(item);
-        searchResults.all.push(item);
-      }
-    });
+    } catch (error) {
+      console.error("Search error:", error);
+      searchResults = { all: [], experiences: [], ideas: [], deals: [], events: [] };
+    }
 
     // Update counts
     updateResultCounts();
@@ -314,16 +140,21 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // Update result counts
   function updateResultCounts() {
-    document.getElementById("count-all").textContent =
-      searchResults.experiences.length +
+    let allCount = searchResults.experiences.length +
       searchResults.ideas.length +
-      searchResults.deals.length;
+      searchResults.deals.length +
+      searchResults.events.length;
+    
+    document.getElementById("count-all").textContent = allCount;
     document.getElementById("count-experiences").textContent =
       searchResults.experiences.length;
     document.getElementById("count-ideas").textContent =
       searchResults.ideas.length;
     document.getElementById("count-deals").textContent =
       searchResults.deals.length;
+    
+    const countEventsEl = document.getElementById("count-events");
+    if (countEventsEl) countEventsEl.textContent = searchResults.events.length;
   }
 
   // Display results
@@ -334,7 +165,8 @@ document.addEventListener("DOMContentLoaded", function () {
     const totalResults =
       searchResults.experiences.length +
       searchResults.ideas.length +
-      searchResults.deals.length;
+      searchResults.deals.length +
+      searchResults.events.length;
 
     if (totalResults === 0) {
       resultsGrid.innerHTML = `
@@ -347,7 +179,7 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     // Display EXPERIENCES section
-    if (searchResults.experiences.length > 0) {
+    if (searchResults.experiences.length > 0 && (tab === 'all' || tab === 'experiences')) {
       const experienceSection = document.createElement("div");
       experienceSection.className = "result-category";
 
@@ -383,7 +215,7 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     // Display IDEAS section
-    if (searchResults.ideas.length > 0) {
+    if (searchResults.ideas.length > 0 && (tab === 'all' || tab === 'ideas')) {
       const ideasSection = document.createElement("div");
       ideasSection.className = "result-category";
 
@@ -419,7 +251,7 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     // Display DEALS section
-    if (searchResults.deals.length > 0) {
+    if (searchResults.deals.length > 0 && (tab === 'all' || tab === 'deals')) {
       const dealsSection = document.createElement("div");
       dealsSection.className = "result-category";
 
@@ -452,6 +284,42 @@ document.addEventListener("DOMContentLoaded", function () {
 
       dealsSection.appendChild(dealsContainer);
       resultsGrid.appendChild(dealsSection);
+    }
+
+    // Display EVENTS section
+    if (searchResults.events && searchResults.events.length > 0 && (tab === 'all' || tab === 'events')) {
+      const eventsSection = document.createElement("div");
+      eventsSection.className = "result-category";
+
+      const eventsTitle = document.createElement("div");
+      eventsTitle.className = "result-category-title";
+      eventsTitle.textContent = "EVENTS & HAPPENINGS";
+      eventsSection.appendChild(eventsTitle);
+
+      const eventsContainer = document.createElement("div");
+      eventsContainer.className = "category-vertical-container";
+
+      searchResults.events.forEach((item) => {
+        const card = document.createElement("div");
+        card.className = "search-result-card search-result-card-vertical";
+        card.style.cursor = "pointer";
+        card.innerHTML = `
+                  <img src="${item.image}" alt="${item.title}" class="search-result-image" onerror="this.src='/Nepal-Travel/images/placeholder.jpg'">
+                  <div class="search-result-content">
+                      <div class="search-result-badge">${item.type}</div>
+                      <div class="search-result-title">${item.title}</div>
+                  </div>
+              `;
+        card.addEventListener("click", function () {
+          if (item.link) {
+            window.location.href = item.link;
+          }
+        });
+        eventsContainer.appendChild(card);
+      });
+
+      eventsSection.appendChild(eventsContainer);
+      resultsGrid.appendChild(eventsSection);
     }
   }
 
