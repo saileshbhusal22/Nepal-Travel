@@ -1,5 +1,9 @@
 <?php
 /**
+ * Author: Sanskar Shah
+ * Group: L5CG6
+ */
+/**
  * Simple .env loader without using external libraries like Composer/phpdotenv
  */
 function loadEnv($path) {

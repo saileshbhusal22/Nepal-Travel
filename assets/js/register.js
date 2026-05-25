@@ -1,3 +1,8 @@
+/**
+ * Author: Ishwor Dhital
+ * Student ID: 2462304
+ * Group: L5CG6
+ */
 const emailInput = document.getElementById("email");
 const usernameInput = document.getElementById("username");
 const phoneInput = document.getElementById("phone");

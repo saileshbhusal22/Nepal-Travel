@@ -1,5 +1,9 @@
 <?php
-
+/**
+ * Author: Ishwor Dhital
+ * Student ID: 2462304
+ * Group: L5CG6
+ */
 if (!defined('SMTP_HOST')) {
     define('SMTP_HOST', 'smtp.gmail.com');
     define('SMTP_USER', 'nepaltravel2006@gmail.com');

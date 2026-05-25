@@ -1,8 +1,8 @@
 <?php
 /**
- * khalti_booking_callback.php
- * Khalti redirects here after payment with ?pidx=... &status=Completed etc.
- * We verify the payment via Khalti lookup API, then activate the booking and send confirmation email.
+ * Author: Ishwor Dhital
+ * Student ID: 2462304
+ * Group: L5CG6
  */
 session_start();
 

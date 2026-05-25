@@ -1,10 +1,14 @@
 <?php
+/**
+ * Author: Sanskar Shah
+ * Group: L5CG6
+ */
 require_once __DIR__ . '/env_loader.php';
 loadEnv(dirname(__DIR__) . '/.env');
 
 define('OPENROUTER_API_KEY', $_ENV['OPENROUTER_API_KEY'] ?? getenv('OPENROUTER_API_KEY') ?? '');
 define('OPENROUTER_API_URL', 'https://openrouter.ai/api/v1/chat/completions');
-define('OPENROUTER_MODEL', 'openrouter/auto'); 
+define('OPENROUTER_MODEL', 'openrouter/auto');
 define('OPENROUTER_TEMPERATURE', 0.8);
 define('OPENROUTER_MAX_TOKENS', 4000);
 

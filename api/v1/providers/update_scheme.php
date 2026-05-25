@@ -1,4 +1,9 @@
 <?php
+/**
+ 
+ * Author: Bijay Sapkota
+ * Group: L5CG6
+ */
 require_once __DIR__ . '/../../../config/db.php';
 
 $columns_needed = [

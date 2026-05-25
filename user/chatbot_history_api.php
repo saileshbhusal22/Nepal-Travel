@@ -1,4 +1,8 @@
 <?php
+/**
+ * Author: Sanskar Shah
+ * Group: L5CG6
+ */
 session_start();
 header('Content-Type: application/json');
 header('Cache-Control: no-cache, must-revalidate');

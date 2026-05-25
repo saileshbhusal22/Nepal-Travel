@@ -1,7 +1,8 @@
 <?php
 /**
- * khalti_event_booking_initiate.php
- * Initiates a Khalti payment gateway v2 transaction for event tickets.
+ * Author: Ishwor Dhital
+ * Student ID: 2462304
+ * Group: L5CG6
  */
 if (session_status() === PHP_SESSION_NONE) {
     session_start();

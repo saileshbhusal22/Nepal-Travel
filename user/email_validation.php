@@ -1,5 +1,10 @@
 <?php
 /**
+ * Author: Ishwor Dhital
+ * Student ID: 2462304
+ * Group: L5CG6
+ */
+/**
  * Email Validation and Fake Email Detection
  * Blocks disposable, temporary, and suspicious email domains
  */

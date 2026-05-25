@@ -1,8 +1,8 @@
 <?php
 /**
- * khalti_booking_initiate.php
- * Called when user submits a booking with Khalti payment.
- * Creates a pending booking then redirects to Khalti checkout.
+ * Author: Ishwor Dhital
+ * Student ID: 2462304
+ * Group: L5CG6
  */
 session_start();
 require_once __DIR__ . '/../config/db.php';

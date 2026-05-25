@@ -1,4 +1,9 @@
 <?php include '../includes/header.php'; ?>
+/**
+
+ * Author: Ramal Gurung
+ * Group: L5CG6
+ */
 <?php
 $profile_id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 if ($profile_id === 0) {

@@ -1,4 +1,9 @@
 <?php
+/**
+ * Author: Ishwor Dhital
+ * Student ID: 2462304
+ * Group: L5CG6
+ */
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);

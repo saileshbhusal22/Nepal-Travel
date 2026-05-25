@@ -1,7 +1,8 @@
 <?php
 /**
- * khalti_event_booking_callback.php
- * Khalti redirects here after successful event ticket payment.
+ * Author: Ishwor Dhital
+ * Student ID: 2462304
+ * Group: L5CG6
  */
 if (session_status() === PHP_SESSION_NONE) {
     session_start();

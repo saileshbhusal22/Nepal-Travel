@@ -1,3 +1,9 @@
+
+/**
+
+ * Author: Ramal Gurung
+ * Group: L5CG6
+ */
 document.addEventListener("DOMContentLoaded", () => {
     // API Base Path - Fix for 404 errors on fetch requests
     const BASE_API_PATH = '/Nepal-Travel/Public/api/experience/';

@@ -1,11 +1,8 @@
 <?php
 /**
- * esewa_booking_initiate.php
- * Fixed ES104 "Invalid payload signature" error.
- *
- * Root cause: the amount string in the HMAC message must be
- * EXACTLY the same string that goes into the form's total_amount field.
- * eSewa sandbox prefers plain integers for whole amounts ("100" not "100.00").
+ * Author: Ishwor Dhital
+ * Student ID: 2462304
+ * Group: L5CG6
  */
 session_start();
 require_once __DIR__ . '/../config/db.php';

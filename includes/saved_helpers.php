@@ -1,5 +1,9 @@
 <?php
-
+/**
+ 
+ * Author: Bijay Sapkota
+ * Group: L5CG6
+ */
 function ensureSavedDealsTable(mysqli $conn): void
 {
     $conn->query("CREATE TABLE IF NOT EXISTS saved_deals (

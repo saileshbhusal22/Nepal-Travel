@@ -1,4 +1,9 @@
 <?php
+/**
+ * Author: Ishwor Dhital
+ * Student ID: 2462304
+ * Group: L5CG6
+ */
 session_start();
 
 if (!isset($_SESSION['user_id'])) {

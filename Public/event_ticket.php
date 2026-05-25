@@ -1,5 +1,10 @@
 <?php
 /**
+ 
+ * Author: Bijay Sapkota
+ * Group: L5CG6
+ */
+/**
  * event_ticket.php
  * Dedicated event ticket confirmation page for eSewa / free event bookings.
  * Separate from ticket.php (which handles tour package bookings) to avoid team conflicts.

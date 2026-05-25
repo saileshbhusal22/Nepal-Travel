@@ -1,22 +1,8 @@
 <?php
 /**
- * chat_handler.php
- * Place this at: /Nepal-Travel/Public/chat_handler.php
- *
- * Required DB table (run once):
- * ─────────────────────────────────────────────────────────────
- * CREATE TABLE IF NOT EXISTS chat_messages (
- *   id           INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
- *   session_id   VARCHAR(64)  NOT NULL,
- *   user_id      INT UNSIGNED DEFAULT NULL,
- *   sender       ENUM('user','admin') NOT NULL,
- *   message      TEXT NOT NULL,
- *   is_read      TINYINT(1) DEFAULT 0,
- *   created_at   DATETIME DEFAULT CURRENT_TIMESTAMP,
- *   INDEX idx_session (session_id),
- *   INDEX idx_created (created_at)
- * ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
- * ─────────────────────────────────────────────────────────────
+ * Author: Ishwor Dhital
+ * Student ID: 2462304
+ * Group: L5CG6
  */
 
 $action = $_REQUEST['action'] ?? '';

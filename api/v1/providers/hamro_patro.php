@@ -1,4 +1,9 @@
 <?php
+/**
+ 
+ * Author: Bijay Sapkota
+ * Group: L5CG6
+ */
 class HamroPatroProvider {
     private $url = "https://www.hamropatro.com/calendar";
 

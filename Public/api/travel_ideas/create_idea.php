@@ -1,4 +1,9 @@
 <?php
+/**
+
+ * Author: Ramal Gurung
+ * Group: L5CG6
+ */
 ini_set('display_errors', '0');
 ini_set('display_startup_errors', '0');
 ini_set('log_errors', '1');
@@ -280,9 +285,25 @@ if (empty($title)) {
 }
 
 if (empty($slug)) {
-    // generate a simple slug
-    $slug = strtolower(preg_replace('/[^A-Za-z0-9-]+/', '-', $title));
-    $slug = trim($slug, '-');
+    $base_slug = strtolower(preg_replace('/[^A-Za-z0-9-]+/', '-', $title));
+    $base_slug = trim($base_slug, '-');
+    $slug = $base_slug;
+    $counter = 1;
+    while (true) {
+        $checkStmt = $conn->prepare("SELECT id FROM travel_ideas WHERE slug = ? LIMIT 1");
+        if ($checkStmt) {
+            $checkStmt->bind_param('s', $slug);
+            $checkStmt->execute();
+            $res = $checkStmt->get_result();
+            $exists = $res->num_rows > 0;
+            $checkStmt->close();
+            if (!$exists) break;
+        } else {
+            break;
+        }
+        $slug = $base_slug . '-' . $counter;
+        $counter++;
+    }
 }
 
 // handle image upload (optional)

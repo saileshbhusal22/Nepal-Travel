@@ -2,6 +2,10 @@
  * Sherpa AI Chatbot — Auth-gated, DB-persisted, multi-conversation
  * Requires: marked.min.js, PHP session with user_id
  */
+/**
+ * Author: Sanskar Shah
+ * Group: L5CG6
+ */
 (function () {
   "use strict";
 
@@ -11,7 +15,7 @@
   const RECOMMENDATIONS_URL =
     "/Nepal-Travel/user/chatbot_recommendations_api.php";
   const SUGGESTIONS = [
-    { icon: "🏔️", text: "Plan a 7-day Everest Base Camp trek" },
+    { icon: "🏔️", text: "Plan a 15-day Everest Base Camp trek" },
     { icon: "🏙️", text: "Best places to visit in Kathmandu" },
     { icon: "🦏", text: "Chitwan National Park safari guide" },
     { icon: "🌊", text: "Pokhara lakeside 3-day itinerary" },

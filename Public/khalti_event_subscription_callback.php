@@ -1,8 +1,8 @@
 <?php
 /**
- * khalti_event_subscription_callback.php
- * Khalti redirects here after payment verification.
- * We verify the payment status via Khalti lookup API and activate the event hosting subscription.
+ * Author: Ishwor Dhital
+ * Student ID: 2462304
+ * Group: L5CG6
  */
 session_start();
 require_once __DIR__ . '/../config/db.php';

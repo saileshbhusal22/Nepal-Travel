@@ -1,4 +1,9 @@
 <?php
+/**
+
+ * Author: Ramal Gurung
+ * Group: L5CG6
+ */
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
@@ -97,4 +102,4 @@ if ($stmt->execute()) {
 }
 
 $stmt->close();
-$conn->close();
+$conn->close();

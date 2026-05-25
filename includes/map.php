@@ -1,3 +1,8 @@
+<!-- 
+    
+    Author: Ramal Gurung
+    Group: L5CG6
+-->
 <svg viewBox="0 0 800 400" xmlns="http://www.w3.org/2000/svg" id="nepal-map">
                     <svg viewBox="0 0 800 400" xmlns="http://www.w3.org/2000/svg" id="nepal-map">
                         <path id="HUMLA" data-name="HUMLA" class="district"

@@ -1,4 +1,9 @@
 <?php 
+/**
+
+ * Author: Ramal Gurung
+ * Group: L5CG6
+ */
 $current_page = 'travel-ideas.php';
 include __DIR__ . '/../includes/header.php'; 
 
@@ -10,7 +15,7 @@ try {
     require_once __DIR__ . '/../includes/travel-idea-db-seeder.php';
     $tblRes = $conn->query("SHOW TABLES LIKE 'travel_ideas'");
     if ($tblRes && $tblRes->num_rows > 0) {
-            $stmt = $conn->prepare("SELECT t.id, t.slug, t.title, COALESCE(p.name, '') AS province, t.province_slug, t.image_path, t.subtitle AS description, t.duration_days, t.nights, t.difficulty, GROUP_CONCAT(DISTINCT et.name ORDER BY et.name SEPARATOR ', ') AS type FROM travel_ideas t LEFT JOIN provinces p ON p.id = t.province_id LEFT JOIN travel_idea_experiences tie ON tie.idea_id = t.id LEFT JOIN experience_types et ON et.id = tie.experience_type_id GROUP BY t.id ORDER BY t.created_at DESC LIMIT 200");
+            $stmt = $conn->prepare("SELECT t.id, t.user_id, t.slug, t.title, COALESCE(p.name, '') AS province, t.province_slug, t.image_path, t.subtitle AS description, t.duration_days, t.nights, t.difficulty, GROUP_CONCAT(DISTINCT et.name ORDER BY et.name SEPARATOR ', ') AS type FROM travel_ideas t LEFT JOIN provinces p ON p.id = t.province_id LEFT JOIN travel_idea_experiences tie ON tie.idea_id = t.id LEFT JOIN experience_types et ON et.id = tie.experience_type_id GROUP BY t.id ORDER BY t.created_at DESC LIMIT 200");
             if ($stmt) {
                 $stmt->execute();
                 $res = $stmt->get_result();
@@ -37,7 +42,8 @@ try {
                         'duration' => $durationText,
                         'duration_days' => $durationDays,
                         'difficulty' => $row['difficulty'] ?? '',
-                        'type' => $experienceType !== '' ? $experienceType : 'Other'
+                        'type' => $experienceType !== '' ? $experienceType : 'Other',
+                        'user_id' => $row['user_id'] ?? null
                     ];
                 }
                 $stmt->close();
@@ -46,7 +52,7 @@ try {
             if (empty($travel_ideas)) {
                 travelIdeaDbSeedStaticTravelIdeas($conn);
 
-                $stmt = $conn->prepare("SELECT t.id, t.slug, t.title, COALESCE(p.name, '') AS province, t.province_slug, t.image_path, t.subtitle AS description, t.duration_days, t.nights, t.difficulty, GROUP_CONCAT(DISTINCT et.name ORDER BY et.name SEPARATOR ', ') AS type FROM travel_ideas t LEFT JOIN provinces p ON p.id = t.province_id LEFT JOIN travel_idea_experiences tie ON tie.idea_id = t.id LEFT JOIN experience_types et ON et.id = tie.experience_type_id GROUP BY t.id ORDER BY t.created_at DESC LIMIT 200");
+                $stmt = $conn->prepare("SELECT t.id, t.user_id, t.slug, t.title, COALESCE(p.name, '') AS province, t.province_slug, t.image_path, t.subtitle AS description, t.duration_days, t.nights, t.difficulty, GROUP_CONCAT(DISTINCT et.name ORDER BY et.name SEPARATOR ', ') AS type FROM travel_ideas t LEFT JOIN provinces p ON p.id = t.province_id LEFT JOIN travel_idea_experiences tie ON tie.idea_id = t.id LEFT JOIN experience_types et ON et.id = tie.experience_type_id GROUP BY t.id ORDER BY t.created_at DESC LIMIT 200");
                 if ($stmt) {
                     $stmt->execute();
                     $res = $stmt->get_result();
@@ -73,7 +79,8 @@ try {
                             'duration' => $durationText,
                             'duration_days' => $durationDays,
                             'difficulty' => $row['difficulty'] ?? '',
-                            'type' => $experienceType !== '' ? $experienceType : 'Other'
+                            'type' => $experienceType !== '' ? $experienceType : 'Other',
+                            'user_id' => $row['user_id'] ?? null
                         ];
                     }
                     $stmt->close();
@@ -417,7 +424,21 @@ if (isset($_GET['search']) && trim($_GET['search']) !== '') {
         
         <!-- Sidebar -->
         <aside>
-            <div style="background: white; border-radius: 15px; padding: 25px; box-shadow: var(--card-shadow); position: sticky; top: 120px;">
+            <div style="background: white; border-radius: 15px; padding: 25px; box-shadow: var(--card-shadow); position: sticky; top: 120px; max-height: calc(100vh - 140px); overflow-y: auto;">
+                <?php if (isset($_SESSION['user_id'])): ?>
+                <!-- My Ideas Filter -->
+                <div style="margin-bottom: 25px;">
+                    <h3 style="font-size: 14px; font-weight: 800; color: var(--primary-blue); letter-spacing: 1px; margin-bottom: 15px; display: flex; justify-content: space-between;">
+                        MY IDEAS
+                        <span id="resetMyIdeas" style="display:none; font-size: 9px; color: var(--primary-yellow); cursor: pointer;">RESET</span>
+                    </h3>
+                    <div class="filter-group" id="myIdeasFilters">
+                        <button class="filter-btn active" data-ownership="all">All Ideas</button>
+                        <button class="filter-btn" data-ownership="mine">My Shared Ideas</button>
+                    </div>
+                </div>
+                <?php endif; ?>
+
                 <!-- Province Filter -->
                 <div style="margin-bottom: 25px;">
                     <h3 style="font-size: 14px; font-weight: 800; color: var(--primary-blue); letter-spacing: 1px; margin-bottom: 15px; display: flex; justify-content: space-between;">
@@ -465,6 +486,8 @@ if (isset($_GET['search']) && trim($_GET['search']) !== '') {
                         <button class="filter-btn" data-duration="long">8+ Days</button>
                     </div>
                 </div>
+
+
             </div>
         </aside>
 
@@ -492,11 +515,13 @@ if (isset($_GET['search']) && trim($_GET['search']) !== '') {
                    data-type="<?php echo htmlspecialchars($idea['type'] ?? 'Other'); ?>"
                    data-duration="<?php echo htmlspecialchars($durRange); ?>"
                    data-title="<?php echo strtolower($idea['title']); ?>"
-                   data-desc="<?php echo strtolower($idea['description']); ?>">
+                   data-desc="<?php echo strtolower($idea['description']); ?>"
+                   data-userid="<?php echo htmlspecialchars($idea['user_id'] ?? ''); ?>">
                     <div class="card-img-wrapper">
                         <img src="<?php echo htmlspecialchars($idea['image']); ?>" alt="<?php echo htmlspecialchars($idea['title']); ?>">
                         <span class="province-badge"><?php echo htmlspecialchars($idea['province']); ?></span>
                         <span class="season-badge">🍂 <?php echo htmlspecialchars($idea['season'] ?? 'All Seasons'); ?></span>
+                        
                     </div>
                     <div class="card-content">
                         <h2 class="card-title"><?php echo htmlspecialchars($idea['title']); ?></h2>
@@ -515,7 +540,15 @@ if (isset($_GET['search']) && trim($_GET['search']) !== '') {
                             </div>
                         </div>
 
-                        <div class="view-btn">View Journey Detail</div>
+                        <?php if(isset($_SESSION['user_id']) && $_SESSION['user_id'] == ($idea['user_id'] ?? '')): ?>
+                            <div style="display: flex; gap: 10px; margin-top: auto;">
+                                <div class="view-btn" style="flex: 2; margin-top: 0; display: flex; align-items: center; justify-content: center;">View Detail</div>
+                                <button class="edit-idea-btn" data-id="<?php echo $idea['id']; ?>" style="flex: 1; background: var(--primary-yellow); color: white; border: none; border-radius: 8px; font-size: 12px; font-weight: 700; text-transform: uppercase; cursor: pointer; transition: all 0.3s ease;">Edit</button>
+                                <button class="delete-idea-btn" data-id="<?php echo $idea['id']; ?>" style="flex: 1; background: #d32f2f; color: white; border: none; border-radius: 8px; font-size: 12px; font-weight: 700; text-transform: uppercase; cursor: pointer; transition: all 0.3s ease;">Delete</button>
+                            </div>
+                        <?php else: ?>
+                            <div class="view-btn">View Journey Detail</div>
+                        <?php endif; ?>
                     </div>
                 </a>
                 <?php endforeach; ?>
@@ -534,9 +567,10 @@ if (isset($_GET['search']) && trim($_GET['search']) !== '') {
 <div id="travelIdeaModal" class="modal-overlay" style="display: none; position: fixed; inset: 0; z-index: 2000; background: rgba(15, 23, 42, 0.65); align-items: flex-start; justify-content: center; padding: 40px 24px 24px; overflow-y: auto;">
     <div class="modal-content" style="background: #fff; border-radius: 24px; max-width: 760px; width: 100%; padding: 30px; position: relative; box-shadow: 0 30px 80px rgba(15, 23, 42, 0.18);">
         <button id="closeTravelIdeaModal" style="position: absolute; top: 18px; right: 18px; border: none; background: transparent; font-size: 28px; line-height: 1; color: #334155; cursor: pointer;">&times;</button>
-        <h2 style="margin: 0 0 12px; color: #1b3a5a; font-size: 28px;">Share a Travel Idea</h2>
+        <h2 id="travelIdeaModalTitle" style="margin: 0 0 12px; color: #1b3a5a; font-size: 28px;">Share a Travel Idea</h2>
         <p style="margin: 0 0 24px; color: #64748b;">Upload a photo, tag a district, and tell the community about your next recommended route.</p>
         <form id="travelIdeaForm" enctype="multipart/form-data" style="display:grid; gap:18px;">
+            <input type="hidden" name="id" id="travelIdeaId">
             <div style="display:grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap:16px;">
                 <label style="display:block; font-weight:700; color:#334155;">
                     Journey Title
@@ -750,6 +784,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const searchInput = document.getElementById('searchInput');
     const cards = document.querySelectorAll('.idea-card');
     const noResults = document.getElementById('noResults');
+    const myIdeasBtns = document.querySelectorAll('#myIdeasFilters .filter-btn');
+    const currentUserId = '<?php echo $_SESSION["user_id"] ?? ""; ?>';
 
     const urlParams = new URLSearchParams(window.location.search);
     const searchInputValue = (urlParams.get('destination') || urlParams.get('search') || '').trim();
@@ -759,6 +795,22 @@ document.addEventListener('DOMContentLoaded', function() {
     let activeType = 'all';
     let activeDuration = 'all';
     let searchQuery = initialSearchQuery || '';
+    let showOnlyMyIdeas = false;
+
+    if (myIdeasBtns.length > 0) {
+        myIdeasBtns.forEach(btn => {
+            btn.addEventListener('click', function() {
+                const activeOwnership = this.getAttribute('data-ownership');
+                myIdeasBtns.forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                
+                showOnlyMyIdeas = (activeOwnership === 'mine');
+                applyFilters();
+            });
+        });
+    }
+
+
 
     function applyFilters() {
         let visibleCount = 0;
@@ -769,13 +821,15 @@ document.addEventListener('DOMContentLoaded', function() {
             const cardDuration = card.getAttribute('data-duration');
             const cardTitle = card.getAttribute('data-title');
             const cardDesc = card.getAttribute('data-desc');
+            const cardUserId = card.getAttribute('data-userid');
             
             const provinceMatch = (activeProvince === 'all' || cardProvince === activeProvince);
             const typeMatch = (activeType === 'all' || cardType === activeType);
             const durationMatch = (activeDuration === 'all' || cardDuration === activeDuration);
             const searchMatch = (searchQuery === '' || cardTitle.includes(searchQuery) || cardDesc.includes(searchQuery));
+            const ownershipMatch = (!showOnlyMyIdeas || (currentUserId !== '' && cardUserId === currentUserId));
 
-            if (provinceMatch && typeMatch && durationMatch && searchMatch) {
+            if (provinceMatch && typeMatch && durationMatch && searchMatch && ownershipMatch) {
                 card.style.display = 'flex';
                 visibleCount++;
             } else {
@@ -785,6 +839,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
         noResults.classList.toggle('hidden', visibleCount > 0);
         
+        if (document.getElementById('resetMyIdeas')) {
+            document.getElementById('resetMyIdeas').style.display = (showOnlyMyIdeas ? 'inline' : 'none');
+        }
         document.getElementById('resetProvince').style.display = (activeProvince === 'all' ? 'none' : 'inline');
         document.getElementById('resetType').style.display = (activeType === 'all' ? 'none' : 'inline');
         document.getElementById('resetDuration').style.display = (activeDuration === 'all' ? 'none' : 'inline');
@@ -826,6 +883,12 @@ document.addEventListener('DOMContentLoaded', function() {
         searchInput.value = searchInputValue;
         applyFilters();
         document.getElementById('ideasGrid').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    if (document.getElementById('resetMyIdeas')) {
+        document.getElementById('resetMyIdeas').addEventListener('click', () => {
+            document.querySelector('[data-ownership="all"]').click();
+        });
     }
 
     document.getElementById('resetProvince').addEventListener('click', () => {
@@ -921,7 +984,19 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     };
 
-    if (openBtn) openBtn.addEventListener('click', () => { if(modal) { modal.style.display = 'flex'; document.body.style.overflow='hidden'; }});
+    if (openBtn) openBtn.addEventListener('click', () => { 
+        if(modal) { 
+            if(form) form.reset();
+            const idInput = document.getElementById('travelIdeaId');
+            if(idInput) idInput.value = '';
+            const title = document.getElementById('travelIdeaModalTitle');
+            if(title) title.innerText = 'Share a Travel Idea';
+            const imgInput = document.getElementById('travelPostImage');
+            if(imgInput) imgInput.required = true;
+            modal.style.display = 'flex'; 
+            document.body.style.overflow='hidden'; 
+        }
+    });
     if (closeBtn) closeBtn.addEventListener('click', () => { if(modal) { modal.style.display = 'none'; document.body.style.overflow=''; }});
     if (modal) modal.addEventListener('click', (e) => { if (e.target === modal) { modal.style.display = 'none'; document.body.style.overflow=''; } });
 
@@ -935,6 +1010,136 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     initializeItinerary();
+
+    document.querySelectorAll('.delete-idea-btn').forEach(btn => {
+        btn.addEventListener('click', async function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            if (!confirm('Are you sure you want to delete this travel idea?')) return;
+            const ideaId = this.getAttribute('data-id');
+            const originalText = this.innerText;
+            this.innerText = '...';
+            this.disabled = true;
+            try {
+                const fd = new FormData();
+                fd.append('id', ideaId);
+                const res = await fetch('api/travel_ideas/delete_idea.php', { method: 'POST', body: fd });
+                const data = await res.json();
+                if (data.success) {
+                    this.closest('a.idea-card').remove();
+                } else {
+                    alert(data.message || 'Failed to delete');
+                    this.innerText = originalText;
+                    this.disabled = false;
+                }
+            } catch (err) {
+                console.error(err);
+                alert('Error deleting idea');
+                this.innerText = originalText;
+                this.disabled = false;
+            }
+        });
+    });
+
+    document.querySelectorAll('.edit-idea-btn').forEach(btn => {
+        btn.addEventListener('click', async function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            const ideaId = this.getAttribute('data-id');
+            const originalText = this.innerText;
+            this.innerText = '...';
+            this.disabled = true;
+            try {
+                const res = await fetch('api/travel_ideas/get_idea.php?id=' + ideaId);
+                const data = await res.json();
+                console.log("Edit Idea Data:", data);
+                if (data.success && data.idea) {
+                    const form = document.getElementById('travelIdeaForm');
+                    if (form) form.reset();
+                    
+                    const idInput = document.getElementById('travelIdeaId');
+                    if (idInput) idInput.value = ideaId;
+                    
+                    const title = document.getElementById('travelIdeaModalTitle');
+                    if (title) title.innerText = 'Edit Travel Idea';
+                    
+                    const imgInput = document.getElementById('travelPostImage');
+                    if (imgInput) imgInput.required = false;
+                    
+                    const setVal = (name, val) => {
+                        const el = document.querySelector(`#travelIdeaForm [name="${name}"]`);
+                        if (el) el.value = val || '';
+                    };
+                    
+                    setVal('title', data.idea.title);
+                    setVal('subtitle', data.idea.subtitle);
+                    
+                    const provinceValue = data.idea.province_slug || data.idea.province || '';
+                    const provinceEl = document.querySelector('#travelIdeaForm [name="province"]');
+                    if (provinceEl) {
+                        const expectedVal = data.idea.province || (provinceValue.charAt(0).toUpperCase() + provinceValue.slice(1));
+                        // try to match option exactly, else assign
+                        let found = false;
+                        for (let opt of provinceEl.options) {
+                            if (opt.value.toLowerCase() === expectedVal.toLowerCase() || opt.value.toLowerCase() === provinceValue.toLowerCase()) {
+                                provinceEl.value = opt.value;
+                                found = true;
+                                break;
+                            }
+                        }
+                        if (!found) provinceEl.value = expectedVal;
+                    }
+                    
+                    setVal('difficulty', data.idea.difficulty);
+                    setVal('duration_days', data.idea.duration_days);
+                    setVal('nights', data.idea.nights);
+                    setVal('transport', data.idea.transport);
+                    setVal('accommodation', data.idea.accommodation);
+                    setVal('best_time', data.idea.best_time);
+                    setVal('pro_tip', data.idea.pro_tip);
+                    
+                    if (data.details) {
+                        setVal('content', data.details.content);
+                        try {
+                            const logistics = JSON.parse(data.details.logistics || '{}');
+                            if (logistics.transport && !data.idea.transport) setVal('transport', logistics.transport);
+                            if (logistics.accommodation && !data.idea.accommodation) setVal('accommodation', logistics.accommodation);
+                            if (logistics.best_time && !data.idea.best_time) setVal('best_time', logistics.best_time);
+                            if (logistics.pro_tip && !data.idea.pro_tip) setVal('pro_tip', logistics.pro_tip);
+                        } catch(e) { console.error("Error parsing logistics", e); }
+                    }
+                    
+                    // Populate Itineraries
+                    const itineraryContainer = document.getElementById('itineraryContainer');
+                    if (itineraryContainer && data.itineraries && data.itineraries.length > 0) {
+                        itineraryContainer.innerHTML = '';
+                        data.itineraries.forEach(item => {
+                            if (typeof addItineraryDay === 'function') {
+                                addItineraryDay({
+                                    day_order: item.day_order,
+                                    title: item.day_title,
+                                    morning: item.morning,
+                                    afternoon: item.afternoon,
+                                    evening: item.evening
+                                });
+                            }
+                        });
+                    }
+                    
+                    const modal = document.getElementById('travelIdeaModal');
+                    if (modal) { modal.style.display = 'flex'; document.body.style.overflow='hidden'; }
+                } else {
+                    alert('Could not load idea data');
+                }
+            } catch (err) {
+                console.error(err);
+                alert('Error loading idea data');
+            } finally {
+                this.innerText = originalText;
+                this.disabled = false;
+            }
+        });
+    });
 
     if (postImage) {
         postImage.addEventListener('change', function() {
@@ -956,11 +1161,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
             const send = async (formData) => {
                 try {
-                    const res = await postTravelIdea(form, { apiBase: 'api/travel_ideas/create_idea.php', formData });
+                    const ideaId = document.getElementById('travelIdeaId') ? document.getElementById('travelIdeaId').value : '';
+                    const apiEndpoint = ideaId ? 'api/travel_ideas/update_idea.php' : 'api/travel_ideas/create_idea.php';
+                    const res = await postTravelIdea(form, { apiBase: apiEndpoint, formData });
                     if (res.success) {
                         form.reset(); const ctn = imagePreview.closest('.travel-image-preview-container'); if (ctn) ctn.style.display='none'; if (cropper) { cropper.destroy(); cropper=null; }
                         if (modal) { modal.style.display='none'; document.body.style.overflow=''; }
-                        alert('Travel idea shared!');
+                        alert(ideaId ? 'Travel idea updated!' : 'Travel idea shared!');
                         window.location.reload();
                     } else {
                         if (err) { err.textContent = res.message || 'Failed'; err.style.display='block'; }

@@ -1,5 +1,10 @@
 <?php
 /**
+
+ * Author: Ramal Gurung
+ * Group: L5CG6
+ */
+/**
  * Detailed itineraries and content for Travel Ideas
  */
 $travel_idea_details = [

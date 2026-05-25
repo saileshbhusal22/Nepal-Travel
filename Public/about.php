@@ -1,4 +1,9 @@
 <?php
+/**
+ 
+ * Author: Bijay Sapkota
+ * Group: L5CG6
+ */
 $current_page = 'about.php';
 include dirname(__FILE__) . '/../includes/header.php';
 ?>

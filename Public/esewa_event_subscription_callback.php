@@ -1,7 +1,8 @@
 <?php
 /**
- * esewa_event_subscription_callback.php
- * Handles eSewa redirect callbacks and executes verification lookup for event hosting plan subscriptions.
+ * Author: Ishwor Dhital
+ * Student ID: 2462304
+ * Group: L5CG6
  */
 session_start();
 require_once __DIR__ . '/../config/db.php';

@@ -1,3 +1,8 @@
+/**
+ 
+ * Author: Bijay Sapkota
+ * Group: L5CG6
+ */
 document.addEventListener('DOMContentLoaded', function () {
     const eventsGrid = document.getElementById('eventsGrid');
     const monthTabs = document.querySelectorAll('.month-tab');

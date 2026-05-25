@@ -1,5 +1,9 @@
 // Helper to submit a travel idea form to Public/api/travel_ideas/create_idea.php
+/**
 
+ * Author: Ramal Gurung
+ * Group: L5CG6
+ */
 async function postTravelIdea(formEl, options = {}) {
     const API = options.apiBase || 'api/travel_ideas/create_idea.php';
     const submitBtn = formEl.querySelector('button[type="submit"]');

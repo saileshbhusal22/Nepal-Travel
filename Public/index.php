@@ -1,5 +1,9 @@
 <?php 
-
+/**
+ 
+ * Author: Bijay Sapkota
+ * Group: L5CG6
+ */
 ini_set('display_errors', 1);
 error_reporting(E_ALL);
 

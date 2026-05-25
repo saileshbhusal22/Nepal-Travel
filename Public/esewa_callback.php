@@ -1,16 +1,8 @@
 <?php
 /**
- * esewa_callback.php
- * eSewa redirects here after payment (success or failure) for a subscription.
- *
- * Converted from khalti_callback.php — uses eSewa v2 epayment API.
- * FIXES applied (mirrored from esewa_booking_callback.php):
- * 1. Amount format in status-check API matches initiate (plain integer, no ".00").
- * 2. Status comparison is case-insensitive (strtoupper).
- * 3. total_amount from eSewa response is stripped of commas before float cast.
- * 4. eSewa V2 URL quirk: "?data=" may be appended after "?status=success"
- *    making PHP see status as "success?data=eyJ..." and $_GET['data'] empty.
- * 5. Detailed error logging throughout.
+ * Author: Ishwor Dhital
+ * Student ID: 2462304
+ * Group: L5CG6
  */
 session_start();
 require_once __DIR__ . '/../config/db.php';

@@ -1,12 +1,8 @@
 <?php
 /**
- * esewa_initiate.php
- * Called when user submits the eSewa payment form for a subscription.
- * Creates a pending subscription then redirects to eSewa checkout.
- *
- * Converted from khalti_initiate.php — uses eSewa v2 epayment API.
- * Fix: amount string in HMAC message must EXACTLY match the form's total_amount field.
- * eSewa sandbox prefers plain integers for whole amounts ("100" not "100.00").
+ * Author: Ishwor Dhital
+ * Student ID: 2462304
+ * Group: L5CG6
  */
 session_start();
 require_once __DIR__ . '/../config/db.php';

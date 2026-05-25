@@ -1,8 +1,8 @@
 <?php
 /**
- * event_esewa_booking_callback.php
- * eSewa redirects here after successful payment with ?data=BASE64_STRING
- * We verify the payment signature, check database matching, activate the ticket booking, send receipt email, and redirect to event_ticket.php.
+ * Author: Ishwor Dhital
+ * Student ID: 2462304
+ * Group: L5CG6
  */
 if (session_status() === PHP_SESSION_NONE) {
     session_start();

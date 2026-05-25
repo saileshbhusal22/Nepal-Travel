@@ -1,0 +1,10 @@
+<form id="travelIdeaForm">
+  <input name="title" value="old">
+  <textarea name="content">old content</textarea>
+</form>
+<script>
+  document.querySelector('#travelIdeaForm [name="title"]').value = 'new title';
+  document.querySelector('#travelIdeaForm [name="content"]').value = 'new content';
+  console.log(document.querySelector('#travelIdeaForm [name="title"]').value);
+  console.log(document.querySelector('#travelIdeaForm [name="content"]').value);
+</script>

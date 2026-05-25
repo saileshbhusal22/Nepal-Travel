@@ -1,4 +1,8 @@
 <?php
+/**
+ * Author: Sanskar Shah
+ * Group: L5CG6
+ */
 require_once __DIR__ . '/db.php';
 
 $sqls = [

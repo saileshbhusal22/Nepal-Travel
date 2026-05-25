@@ -1,4 +1,9 @@
 <?php
+/**
+
+ * Author: Ramal Gurung
+ * Group: L5CG6
+ */
 require_once __DIR__ . '/travel-ideas-data.php';
 require_once __DIR__ . '/travel-idea-details-data.php';
 

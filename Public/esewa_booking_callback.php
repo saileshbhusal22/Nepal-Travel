@@ -1,14 +1,8 @@
 <?php
 /**
- * esewa_booking_callback.php
- * eSewa redirects here after payment (success or failure).
- *
- * FIXES APPLIED:
- * 1. Amount format in status-check API now matches initiate (plain integer, no ".00").
- * 2. Status comparison is now case-insensitive (strtoupper).
- * 3. total_amount from eSewa response is stripped of commas before float cast.
- * 4. Booking status set to 'active' (consistent with cash bookings & duplicate checks).
- * 5. Added detailed error logging throughout.
+ * Author: Ishwor Dhital
+ * Student ID: 2462304
+ * Group: L5CG6
  */
 session_start();
 

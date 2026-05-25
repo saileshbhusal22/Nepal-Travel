@@ -1,7 +1,8 @@
 <?php
 /**
- * khalti_subscription_initiate.php
- * Initiates a Khalti payment gateway v2 transaction for buying/renewing a subscription plan.
+ * Author: Ishwor Dhital
+ * Student ID: 2462304
+ * Group: L5CG6
  */
 session_start();
 require_once __DIR__ . '/../config/db.php';

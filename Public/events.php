@@ -1,4 +1,9 @@
 <?php 
+/**
+ 
+ * Author: Bijay Sapkota
+ * Group: L5CG6
+ */
 if (session_status() === PHP_SESSION_NONE) { session_start(); }
 $current_page = 'events.php';
 include '../includes/header.php'; 

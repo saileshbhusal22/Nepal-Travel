@@ -1,4 +1,9 @@
 <?php
+/**
+ * Author: Ishwor Dhital
+ * Student ID: 2462304
+ * Group: L5CG6
+ */
 // Catch ANY PHP error/warning and return it as JSON instead of breaking the response
 set_error_handler(function($errno, $errstr) {
     echo json_encode(['success' => false, 'message' => "PHP Error: $errstr (code $errno)"]);
